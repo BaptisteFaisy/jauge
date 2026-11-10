@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+.mypy_cache/
+
+# uv
+uv.lock.tmp
+
+# CDK
+cdk.out/
+.cdk.staging/
+
+# Node (portail sans build : rien à suivre, garde-fou)
+node_modules/
+
+# AWS / secrets — jamais versionnés
+.aws/
+*.pem
+*.key
+.env
+.env.*
+!.env.example
+cdk.context.json
+
+# Divers
+.DS_Store
+*.log
+scratch/
+.tmp/

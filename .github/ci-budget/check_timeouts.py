@@ -61,15 +61,15 @@ def check_file(path, errors, warnings):
     for name, timeout in jobs:
         if timeout is None:
             errors.append(
-                "%s: job '%s' sans timeout-minutes (défaut 360 min, interdit)"
-                % (rel, name))
+                "%s: job '%s' sans timeout-minutes (défaut 360 min, interdit)" % (rel, name)
+            )
         elif timeout > MAX_MINUTES:
             errors.append(
                 "%s: job '%s' timeout-minutes: %d > %d (budget CI)"
-                % (rel, name, timeout, MAX_MINUTES))
+                % (rel, name, timeout, MAX_MINUTES)
+            )
     if not any(line.startswith("concurrency:") for line in lines):
-        warnings.append("%s: pas de concurrency (annulation des runs obsolètes)"
-                        % rel)
+        warnings.append("%s: pas de concurrency (annulation des runs obsolètes)" % rel)
     if "actions/checkout" in "\n".join(lines) and "fetch-depth: 1" not in "\n".join(lines):
         warnings.append("%s: checkout sans fetch-depth: 1" % rel)
 
@@ -91,11 +91,12 @@ def main():
     for message in errors:
         print("::error::%s" % message)
 
-    print("%d workflow(s) contrôlé(s) : %d erreur(s), %d avertissement(s)"
-          % (len(paths), len(errors), len(warnings)))
+    print(
+        "%d workflow(s) contrôlé(s) : %d erreur(s), %d avertissement(s)"
+        % (len(paths), len(errors), len(warnings))
+    )
     if errors:
-        print("Règle : CI ≤ %d min par job — voir ~/Bureau/CI-BUDGET-5MIN.md"
-              % MAX_MINUTES)
+        print("Règle : CI ≤ %d min par job — voir ~/Bureau/CI-BUDGET-5MIN.md" % MAX_MINUTES)
         return 1
     return 0
 

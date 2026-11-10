@@ -1,0 +1,105 @@
+name: CI
+
+# Budget CI : verdict <= 5 minutes (règle user 2026-10-24). Chaque job porte
+# timeout-minutes: 5, un concurrency qui annule le run précédent, et un
+# checkout superficiel. Les dépendances passent par uv avec cache du dépôt uv.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  UV_LINK_MODE: copy
+  # uv est installé dans ~/.local/bin sur les runners self-hosted (r630).
+  PATH: /home/baptiste/.local/bin:/usr/local/bin:/usr/bin:/bin
+
+jobs:
+  lint:
+    name: lint
+    runs-on: [self-hosted, jauge-worker]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Ruff (lint + format)
+        run: |
+          set -euo pipefail
+          command -v uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
+          uv tool run --from 'ruff>=0.6' ruff check .
+          uv tool run --from 'ruff>=0.6' ruff format --check .
+
+  limits:
+    name: limits
+    runs-on: [self-hosted, jauge-worker]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Tailles (fichiers < 500 lignes, fonctions < 50 lignes)
+        run: python3 scripts/check_limits.py
+
+  test:
+    name: test
+    runs-on: [self-hosted, jauge-worker]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/cache@v4
+        with:
+          path: /home/baptiste/.cache/uv
+          key: uv-jauge-${{ hashFiles('uv.lock') }}
+          restore-keys: uv-jauge-
+      - name: Dépendances + tests
+        run: |
+          set -euo pipefail
+          command -v uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
+          uv sync --frozen --group dev --group agents
+          uv run --group dev --group agents pytest -q -m 'not infra and not slow'
+
+  iac:
+    name: iac
+    runs-on: [self-hosted, jauge-worker]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/cache@v4
+        with:
+          path: /home/baptiste/.cache/uv
+          key: uv-jauge-${{ hashFiles('uv.lock') }}
+          restore-keys: uv-jauge-
+      - name: CloudFormation (cfn-lint) + CDK (assertions)
+        run: |
+          set -euo pipefail
+          command -v uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
+          uv sync --frozen --group dev --group infra
+          shopt -s nullglob globstar
+          files=(infra/**/*.yaml infra/**/*.yml infra/**/*.json)
+          if [ ${#files[@]} -gt 0 ]; then
+            uv run --group dev --group infra cfn-lint "${files[@]}"
+          else
+            echo "aucun gabarit dans infra/ pour l'instant"
+          fi
+          if [ -d tests/infra ]; then
+            uv run --group dev --group infra pytest -q -m infra tests/infra
+          else
+            echo "aucun test infra pour l'instant"
+          fi
