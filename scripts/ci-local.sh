@@ -22,7 +22,12 @@ uv run pytest -q -m 'not infra and not slow'
 
 echo "==> iac (cfn-lint + tests CDK)"
 shopt -s nullglob globstar
-fichiers=(infra/**/*.yaml infra/**/*.yml infra/**/*.json)
+# *.asl.json = définitions Step Functions, pas des gabarits CloudFormation
+fichiers=()
+for f in infra/**/*.yaml infra/**/*.yml infra/**/*.json; do
+  case "$f" in *.asl.json) continue ;; esac
+  fichiers+=("$f")
+done
 if [ ${#fichiers[@]} -gt 0 ]; then
   uv run cfn-lint "${fichiers[@]}"
 else

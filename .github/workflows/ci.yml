@@ -92,7 +92,12 @@ jobs:
           command -v uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
           uv sync --frozen --group dev --group infra
           shopt -s nullglob globstar
-          files=(infra/**/*.yaml infra/**/*.yml infra/**/*.json)
+          # *.asl.json = définitions Step Functions, pas des gabarits CloudFormation
+          files=()
+          for f in infra/**/*.yaml infra/**/*.yml infra/**/*.json; do
+            case "$f" in *.asl.json) continue ;; esac
+            files+=("$f")
+          done
           if [ ${#files[@]} -gt 0 ]; then
             uv run --group dev --group infra cfn-lint "${files[@]}"
           else
