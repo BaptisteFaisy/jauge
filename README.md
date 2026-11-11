@@ -1,118 +1,215 @@
 # Jauge — FinOps for generative AI on Amazon Bedrock
 
-**Attribute** every inference dollar to an application, a team and a request
-type. **Prove** that a cheaper model does the job, by replaying real requests
-against candidate models and measuring quality. **Apply** the change through a
-gateway rule in stages, then verify the saving on the bill.
+**Attribute** every inference dollar to an application, a team and a request type.
+**Prove** that a cheaper model does the job, by replaying the customer's own
+requests against candidate models and judging the answers. **Apply** the change
+through a gateway rule in stages, then verify the saving on the invoice.
 
-Jauge is sold by an MSP as a subscription with a share of verified savings. It
-is built for the *AWS MSP AI Hackathon* (Track 2 — Deliver AI-Driven Outcomes
-for Customers).
+Jauge is a managed service sold by an AWS MSP: a subscription plus a share of
+verified savings. It is built for the **AWS MSP AI Hackathon** — Track 2,
+*Deliver AI-Driven Outcomes for Customers*.
 
-> Internal working documents are in French under `docs/fr/`. All submission
-> deliverables (this README, `docs/HLD.md`, `docs/ARCHITECTURE.md`, the portal)
-> are in English.
+> The normative specification and the internal working notes are in French under
+> `docs/fr/`. Every submission deliverable — this README, the High-Level Design,
+> the architecture document, the portal — is in English.
 
-## Why
+---
 
-A company running generative AI in production gets a growing inference bill and
-cannot answer three questions:
+## The problem
 
-1. Which application and which team produce the spend?
-2. Would a cheaper model do the same job — **with evidence**, not an opinion?
-3. Did the change actually reduce the bill, at constant volume?
+A company runs generative AI in production on Amazon Bedrock. Its inference bill
+grows every month and it cannot answer three questions:
 
-Saying “this model is cheaper” convinces nobody. Showing “on 200 of your real
-requests, 97 % of the answers are judged equivalent, and the bill drops by
-$992 per month” closes the decision.
+1. **Which application and which team produce the spend?** The "Amazon Bedrock"
+   line of the invoice says nothing about who consumes it.
+2. **Would a cheaper model do the same job — with evidence?** The team picked the
+   most capable model during the prototype and never revisited it. Nobody dares
+   to change it, because nobody can measure what the change would cost in
+   quality.
+3. **Did the change actually reduce the bill, at constant volume?** Cost
+   reductions are usually declared, not verified.
 
-## Two planes, privacy by construction
+The levers that would cut the bill — a smaller model, prompt caching, a cheaper
+service tier, batch processing — stay unused because proving they are safe takes
+time the product team does not have.
 
-| Plane | Where | Holds |
+## The value proposition: proof by replay
+
+Saying *"this model is cheaper"* convinces nobody. Jauge replaces the opinion
+with a measurement:
+
+1. **Draw a reproducible sample** of the customer's real requests — 200 by
+   default, stratified, seeded, sensitive requests excluded.
+2. **Replay** them inside the customer's own AWS account, on the current model
+   (twice, to measure its own variability) and on each candidate, at the same
+   parameters.
+3. **Judge** each pair with an LLM judge, and check the deterministic
+   constraints of the task — valid JSON, schema, label, length.
+4. **Decide** with a rule, not a feeling: equivalence rate above the
+   application's threshold, the *lower bound* of the 95 % confidence interval
+   above 90 %, and no critical deterministic failure.
+5. **Switch** traffic with an AgentCore Gateway rule — 10 %, 50 %, 100 % — with
+   automatic rollback if online quality drops. The application's code and model
+   id never change.
+6. **Verify** the saving 30 days later, at constant volume, against the tagged
+   invoice line.
+
+A campaign that finds no acceptable model ends with *"keep your model"*, with the
+evidence. That is a result too.
+
+---
+
+## Architecture in one diagram
+
+```mermaid
+flowchart TB
+  subgraph CLIENT["Customer AWS account — data plane"]
+    direction LR
+    APPS["Applications"] --> GWI["AgentCore Gateway<br/>inference target + rules"]
+    GWI --> BR["Amazon Bedrock"]
+    BR -.-> LOGS["S3 invocation logs"]
+    LOGS --> ATH["Glue / Athena"]
+    SFN["Step Functions<br/>replay"] --> BR
+    SFN --> EVAL["Bedrock evaluation jobs<br/>judge model"]
+    EVAL --> RES["S3 replay results<br/>pairs + explanations"]
+    CUR["CUR 2.0 + Cost Explorer"]
+    ROLE["Cross-account role<br/>external ID — no read on logs"]
+  end
+  subgraph MSP["MSP AWS account — control plane"]
+    direction LR
+    PORTAL["Portal<br/>CloudFront + S3"] --> API["API Gateway + Lambda"]
+    API --> COG["Cognito"]
+    API --> DB["DynamoDB<br/>aggregates, campaigns, rollouts"]
+    API --> AGT["Strands agents<br/>AgentCore Runtime"]
+    AGT --> BRM["Bedrock"]
+    AGT --> DB
+  end
+  ATH -- "aggregates only" --> API
+  CUR -- "aggregates only" --> API
+  AGT -- "AssumeRole" --> ROLE
+  ROLE --> ATH
+  ROLE --> SFN
+  ROLE --> GWI
+```
+
+**Privacy by construction.** Request and response text never leaves the customer
+account: the MSP cross-account role has no read permission on the log or replay
+result buckets. It can start the replay state machine and read aggregate tables —
+nothing else. In code, the only type that carries text is
+`PaireRejoueeDataPlane`, documented as data-plane-only; every control-plane type
+carries numbers and identifiers only.
+
+Full diagram: [`docs/architecture.svg`](docs/architecture.svg) ·
+[`docs/architecture.mmd`](docs/architecture.mmd) ·
+design rationale: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+
+---
+
+## What is in this repository today
+
+Status on `main`, stated plainly — this section is updated as modules land.
+
+| Area | Status |
+|---|---|
+| Shared entities: tenants, applications, pricing, daily cost, levers, campaigns, recommendations, rollouts | **Delivered** — `src/jauge/models/` |
+| Typed error hierarchy, id/seed/fingerprint helpers | **Delivered** — `src/jauge/common/` |
+| Request cost from a dated price table (input, output, cache write, cache read; Standard-tier fallback) | **Delivered** — `src/jauge/engine/calculator.py` |
+| Daily aggregation per application/team/model, bill reconciliation with gap and unattributed share | **Delivered** — `src/jauge/engine/attribution.py` |
+| Wilson confidence interval, percentiles, minimum sample size, monthly saving, percentage drop | **Delivered** — `src/jauge/engine/stats.py` |
+| Store contract (tenant-scoped) + in-memory implementation | **Delivered** — `src/jauge/store/` |
+| Log ingestion, lever rules, replay, evaluation, rollout, agents, API, reports, portal, infrastructure, demo, end-to-end acceptance | **Planned** — one pull request per module, see [`docs/MODULES.md`](docs/MODULES.md) |
+
+Test suite today: **22 tests, offline, ~0.1 s** — `uv run pytest -q`.
+
+### Results: measured vs target
+
+No result is claimed that the repository does not produce. The figures below are
+**targets** from the specification, not measurements:
+
+| Indicator | Target | Status |
 |---|---|---|
-| **Data plane** | Customer AWS account | Invocation logs, request/response text, replay execution, judge evaluation, results |
-| **Control plane** | MSP AWS account | Strands agents, portal, aggregates, scores, recommendations, rollout control |
+| Inference bill reduction at equal quality, on a treated application | 20–40 % (production assumption, to be validated) | **Target** — measured during the demo, published after the recording |
+| Attribution coverage on demo accounts | 100 % | **Target** |
+| Reconciliation gap between recalculated and invoiced cost | < 3 % | **Target** |
+| Time from onboarding to the first quantified recommendation | < 1 day | **Target** |
 
-Request and response text never leaves the customer account. The MSP
-cross-account role has **no read access** to the log or result buckets: it can
-only start the replay state machine and read aggregate tables. Every number
-shown to a human is computed by code — never by a language model.
+Every number Jauge displays is computed by code from logs and the invoice; no
+language model computes one (`ENF-IA-01`).
 
-## Architecture
+---
 
-```
-Customer account (data plane)                MSP account (control plane)
-─────────────────────────────                ────────────────────────────
-Applications ──▶ AgentCore Gateway           Portal (CloudFront + S3)
-                     │  routing rules         │
-                     ▼                        ▼
-              Amazon Bedrock            API Gateway + Lambda ── Cognito
-                     │                        │
-                     ▼                        ▼
-         S3 invocation logs             Strands agents on AgentCore Runtime
-                     │                  (orchestrator + 4 specialists)
-                     ▼                        │
-         Glue / Athena tables                 ▼
-                     │                  DynamoDB (aggregates, campaigns,
-                     ▼                   recommendations, rollouts)
-         Step Functions replay machine
-                     │
-                     ▼
-         Bedrock judge evaluation jobs
+## Quickstart
+
+```bash
+# 1. Install (Python 3.12+, uv: https://docs.astral.sh/uv/)
+uv sync --all-groups
+
+# 2. Run the test suite — offline, no AWS account, no credentials
+uv run pytest -q
+#   ......................        [100%]
+#   22 passed in 0.04s
+
+# 3. Run the same gates as CI
+bash scripts/ci-local.sh
 ```
 
-Full diagram and design rationale: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md),
-high-level design: [`docs/HLD.md`](docs/HLD.md).
+**Planned, not yet in the repository** (modules M12 and M8): the seeded local demo
+and the API/portal.
+
+```bash
+uv run python -m demo.seed                  # populate the in-memory store
+uv run uvicorn jauge.api.app:app --reload   # API + portal on http://127.0.0.1:8000
+```
+
+Until those land, `docs/TEST-INSTRUCTIONS.md` marks every such command as
+**planned**, so nobody is sent to run something that does not exist.
+
+Full judge instructions, demo accounts and a minute-by-minute test path:
+[`docs/TEST-INSTRUCTIONS.md`](docs/TEST-INSTRUCTIONS.md).
+
+---
 
 ## Repository layout
 
-| Path | Content |
+| Path | Content | Status |
+|---|---|---|
+| `src/jauge/models/` | Pydantic entities — the shared vocabulary of every module | Delivered |
+| `src/jauge/common/` | Error hierarchy, identifiers, seeds, fingerprints | Delivered |
+| `src/jauge/engine/` | Deterministic computation: request cost, aggregation, reconciliation, statistics | Delivered |
+| `src/jauge/store/` | Persistence contract + in-memory implementation | Delivered |
+| `src/jauge/attribution/` | Invocation-log ingestion, tagging, unattributed spend | Planned (M1) |
+| `src/jauge/levers/` | Savings-lever detection rules | Planned (M3) |
+| `src/jauge/replay/` | Stratified reproducible sampling, replay execution, Step Functions definition | Planned (M4) |
+| `src/jauge/evaluation/` | LLM-as-a-judge scoring, deterministic checks, decision rule | Planned (M5) |
+| `src/jauge/rollout/` | Gateway rules, staged rollout, automatic rollback, savings verification | Planned (M6) |
+| `src/jauge/agents/` | Strands agents: orchestrator + cost analyst + replay planner + results reader + writer | Planned (M7) |
+| `src/jauge/api/` | Control-plane REST API (FastAPI) | Planned (M8) |
+| `src/jauge/reports/` | Monthly report generation | Planned (M9) |
+| `infra/control-plane/` | AWS CDK app for the MSP account | Planned (M10) |
+| `infra/client-account/` | Single CloudFormation template deployed per customer | Planned (M11) |
+| `demo/` | Synthetic traffic generator and demo applications | Planned (M12) |
+| `portal/` | Static web portal, no build step | Planned (M13) |
+| `docs/` | HLD, architecture, demo script, submission checklist, test instructions | Delivered |
+| `tests/` | Unit, isolation (negative security) and end-to-end acceptance tests | Partly delivered |
+
+Work breakdown, module ownership and per-module "definition of done":
+[`docs/MODULES.md`](docs/MODULES.md).
+
+---
+
+## Documentation
+
+| Document | For |
 |---|---|
-| `src/jauge/models/` | Pydantic entities — the shared vocabulary of every module |
-| `src/jauge/engine/` | Deterministic computation: request cost, aggregation, bill reconciliation, statistics |
-| `src/jauge/store/` | Persistence contract + in-memory implementation (DynamoDB adapter alongside) |
-| `src/jauge/attribution/` | Invocation-log ingestion, tagging, unattributed spend |
-| `src/jauge/levers/` | Savings-lever detection rules |
-| `src/jauge/replay/` | Stratified reproducible sampling and replay execution |
-| `src/jauge/evaluation/` | LLM-as-a-judge scoring, deterministic checks, decision rule |
-| `src/jauge/rollout/` | Gateway rules, staged rollout, automatic rollback, savings verification |
-| `src/jauge/agents/` | Strands agents (orchestrator + cost analyst + replay planner + results reader + writer) |
-| `src/jauge/api/` | Control-plane REST API (FastAPI) |
-| `src/jauge/reports/` | Monthly report generation |
-| `infra/control-plane/` | AWS CDK app for the MSP account |
-| `infra/client-account/` | Single CloudFormation template onboarded per customer |
-| `demo/` | Synthetic traffic generator and demo applications |
-| `portal/` | Static web portal (no build step) |
-| `docs/` | HLD, architecture, demo script, submission checklist |
-| `tests/` | Unit, isolation (negative security tests) and end-to-end acceptance tests |
+| [`docs/HLD.md`](docs/HLD.md) | **High-Level Design** — context, scope, two planes, components, data model, campaign flow, attribution and reconciliation, quality method, rollout, security, observability, decisions and trade-offs, limits, glossary |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Component-by-component architecture, the gateway rule, data flows, API surface, deployment topology |
+| [`docs/architecture.mmd`](docs/architecture.mmd) / [`architecture.svg`](docs/architecture.svg) | The diagram, as source and as image |
+| [`docs/DEMO-SCRIPT.md`](docs/DEMO-SCRIPT.md) | The 3-minute video, timed, with the shooting checklist |
+| [`docs/SUBMISSION.md`](docs/SUBMISSION.md) | Submission checklist and the answer to the four judging criteria |
+| [`docs/TEST-INSTRUCTIONS.md`](docs/TEST-INSTRUCTIONS.md) | How to run it, demo accounts, guided test path |
+| [`docs/fr/cahier-des-charges-finops-ia.md`](docs/fr/cahier-des-charges-finops-ia.md) | Normative specification (French) — requirement ids `EF-*`, `ENF-*`, `R*` |
 
-Work breakdown and module contracts: [`docs/MODULES.md`](docs/MODULES.md).
-
-## Quickstart (local, no AWS account needed)
-
-```bash
-uv sync --all-groups          # install dependencies
-uv run pytest -q              # run the test suite
-uv run python -m demo.seed    # populate the in-memory store with demo data
-uv run uvicorn jauge.api.app:app --reload   # serve API + portal on :8000
-```
-
-The demo runs entirely on the in-memory store with synthetic traffic: no
-customer data, no AWS calls, no cost.
-
-## Deploying
-
-1. **Customer account** — deploy `infra/client-account/template.yaml`
-   (CloudFormation). It creates the cross-account role (with an external ID and
-   no read access to logs), the log bucket with KMS encryption, Glue/Athena
-   tables and the replay state machine. See `docs/deploy-client.md`.
-2. **MSP account** — `cdk deploy` from `infra/control-plane/`: API, Cognito,
-   DynamoDB, portal on CloudFront, agents on AgentCore Runtime.
-3. Enable Bedrock model invocation logging to S3 in the customer account,
-   activate cost-allocation tags, and connect the CUR 2.0 export.
-
-One customer = one template. Another MSP can install the whole solution by
-following this README.
+---
 
 ## Development and CI
 
@@ -122,29 +219,57 @@ Every pull request runs four jobs, each capped at **5 minutes**:
 |---|---|
 | `lint` | `ruff check` + `ruff format --check` |
 | `limits` | Files < 500 lines, functions < 50 lines |
-| `test` | pytest (unit, isolation, acceptance) |
+| `test` | `pytest` (unit, isolation, acceptance), offline |
 | `iac` | `cfn-lint` on CloudFormation templates + CDK assertion tests |
 
 Plus the repository baseline: `ci-budget` (no job may declare a timeout above
-5 minutes), `stale-base-guard` and the `hermes-lite` freshness gate. Merges go
-through the Mergify queue onto `main` — direct pushes are blocked by branch
+5 minutes), `stale-base-guard`, and the `hermes-lite` freshness gate. Merges go
+through a merge queue that requires all four jobs to be green (Mergify
+configuration in the repository); direct pushes to `main` are blocked by branch
 protection.
 
 ```bash
-bash scripts/ci-local.sh      # run the whole CI locally
+bash scripts/ci-local.sh      # the whole CI, locally
 ```
+
+House rules: no file above 500 lines, no function above 50 lines, one
+implementation per piece of logic, no network in tests, and no number computed by
+a language model.
+
+---
 
 ## Security and privacy
 
-- Cross-account access through a least-privilege role with an external ID.
-- Strict tenant isolation, enforced by negative tests (`tests/isolation/`).
-- Encryption at rest (KMS) and in transit everywhere.
-- No rollout without explicit human approval; automatic rollback if online
-  quality drops below the threshold.
-- Replay request content is **data**, never an instruction for Jauge's agents.
+- **Cross-account access** through a least-privilege role with an external ID,
+  created by the customer's own CloudFormation template.
+- **Request text stays in the customer account**: no read permission on the log
+  and replay-result buckets.
+- **Tenant isolation** enforced in code — every store and API read takes
+  `tenant_id` first — and verified by negative tests (customer B on customer A's
+  data → refusal).
+- **Encryption** at rest (KMS, customer-managed keys for logs) and in transit.
+- **No traffic change without human approval**; automatic rollback when online
+  quality falls below the alert threshold.
+- **Replayed request content is data, never an instruction** for Jauge's agents.
+- **Campaign spend** estimated before launch and capped per tenant.
+
+---
+
+## Deploying (planned)
+
+1. **Customer account** — deploy `infra/client-account/template.yaml`: cross-account
+   role with external ID and no log-read access, KMS-encrypted log bucket,
+   Glue/Athena tables, replay state machine, aggregate push, budget alarm. Then
+   enable Bedrock model invocation logging, activate cost-allocation tags and
+   connect the CUR 2.0 export.
+2. **MSP account** — `cdk deploy` from `infra/control-plane/`: API, Cognito,
+   DynamoDB, portal on CloudFront, agents on AgentCore Runtime, budget alarm.
+
+One customer = one template. Another MSP can install the whole solution by
+following this README (`ENF-REP-01`).
+
+---
 
 ## License
 
 Proprietary — all rights reserved.
-
-<!-- test de la file Mergify -->
