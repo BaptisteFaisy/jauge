@@ -5,7 +5,7 @@ name: Hermes résolveur (conflits)
 # modules Python séparés et testables :
 #   .github/hermes/resolver.py  orchestration (clone, validation, push, rapport)
 #   .github/hermes/rebase.py    primitives git (rebase, résolution, hunks)
-#   .github/hermes/resolve.py   décision pure + jambe LLM Fireworks
+#   .github/hermes/resolve.py   décision pure + jambe LLM InferHub
 #   .github/hermes/dispatch.py  anti-doublon, backoff, escalade
 #   .github/hermes/gh.py        accès API partagé (labels, checks, comments)
 #
@@ -14,7 +14,7 @@ name: Hermes résolveur (conflits)
 #   -f head_ref=feat/x -f base_ref=main -f head_sha=<sha>
 #
 # Ce qu'il fait : rebase de la branche sur sa base, résolution des conflits
-# (jambe Fireworks, puis repli déterministe), validation par la toolchain du
+# (jambe InferHub, puis repli déterministe), validation par la toolchain du
 # dépôt (`bash scripts/ci-local.sh`), `push --force-with-lease` sur la branche
 # de la PR seulement, puis rapport (commentaire marqué + check-run).
 #
@@ -69,7 +69,13 @@ jobs:
   resolver:
     name: resolver
     runs-on: [self-hosted, jauge-worker]
-    timeout-minutes: 5
+    # CI-BUDGET-EXEMPT: job de réparation lancé en workflow_dispatch (jamais un
+    # check de PR — il ne fait donc pas partie du verdict CI ≤ 5 min). Il rejoue
+    # toute la toolchain du dépôt sur l'arbre rebasé avant de pousser :
+    # `bash scripts/ci-local.sh` mesuré à 222 s le 2026-11-11, plus le clone,
+    # le rebase, le push et le rapport. Runbook labkit-hermes-prompt.md §2 :
+    # « le resolver tourne en workflow_dispatch : timeout explicite justifié ».
+    timeout-minutes: 10  # CI-BUDGET-EXEMPT: voir le bloc ci-dessus (validation 222 s mesurée)
     steps:
       - name: Checkout (superficiel — le travail se fait dans un clone jetable)
         uses: actions/checkout@v4
@@ -84,13 +90,15 @@ jobs:
           # un push fait avec le GITHUB_TOKEN ne déclenche AUCUN workflow
           # (anti-récursion GitHub) et laisserait la PR sans checks.
           HERMES_PUSH_TOKEN: ${{ secrets.HERMES_PUSH_TOKEN }}
-          # Jambe LLM directe : Fireworks. Absente => 100 % déterministe +
+          # Jambe LLM directe : InferHub. Absente => 100 % déterministe +
           # escalade humaine (jamais d'échec silencieux).
-          FIREWORKS_API_KEY: ${{ secrets.FIREWORKS_API_KEY }}
+          INFERHUB_API_KEY: ${{ secrets.INFERHUB_API_KEY }}
           # Toolchain du dépôt : Python (uv + ruff + pytest + cfn-lint).
           # Jamais npm/tsc/gradle sur ce dépôt.
           VALIDATION_CMD: "bash scripts/ci-local.sh"
-          VALIDATION_TIMEOUT: "200"
+          # Mesuré le 2026-11-11 : 222 s pour la toolchain complète (sync, ruff,
+          # limites, 1 078 tests, cfn-lint, tests CDK). Marge de ~20 %.
+          VALIDATION_TIMEOUT: "270"
           PR_NUMBER: ${{ inputs.pr_number }}
           HEAD_REF: ${{ inputs.head_ref }}
           BASE_REF: ${{ inputs.base_ref }}

@@ -44,7 +44,7 @@ class Bilan:
         parties = []
         if self.ia:
             parties.append(
-                "**résolus par IA (Fireworks)** : " + ", ".join("`%s`" % f for f in self.ia)
+                "**résolus par IA (InferHub)** : " + ", ".join("`%s`" % f for f in self.ia)
             )
         if self.heuristique:
             parties.append(

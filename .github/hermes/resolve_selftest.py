@@ -3,7 +3,7 @@
 
 Extraits de `resolve.py` pour que le module de décision reste court et lisible
 (< 500 lignes) : ici, uniquement des contrôles. Aucun réseau, aucun secret —
-la jambe Fireworks est pilotée par un transport factice.
+la jambe InferHub est pilotée par un transport factice.
 
 Usage : `python3 .github/hermes/resolve.py --selftest`
         (ou directement : `python3 .github/hermes/resolve_selftest.py`)
@@ -20,27 +20,27 @@ def _verifier(condition, libelle: str, echecs: list[str]) -> None:
 
 
 def _selftest_jambe(echecs: list[str]) -> None:
-    """La jambe directe doit être Fireworks, et la clé fw doit suffire."""
-    _verifier(resolve.JAMBE_DIRECTE == "fireworks", "jambe directe != fireworks", echecs)
+    """La jambe directe doit être InferHub, et la clé InferHub doit suffire."""
+    _verifier(resolve.JAMBE_DIRECTE == "inferhub", "jambe directe != inferhub", echecs)
     _verifier(
-        resolve.FIREWORKS_URL == "https://api.fireworks.ai/inference/v1/chat/completions",
-        "URL Fireworks inattendue",
+        resolve.INFERHUB_URL == "https://api.inferhub.dev/v1/chat/completions",
+        "URL InferHub inattendue",
         echecs,
     )
     _verifier(
-        resolve.FIREWORKS_MODEL == "accounts/fireworks/models/deepseek-v4p1-flash-1017",
-        "modèle Fireworks inattendu",
+        resolve.INFERHUB_MODEL == "combo/cheap",
+        "modèle InferHub inattendu",
         echecs,
     )
-    _verifier(resolve.FIREWORKS_KEY_ENV == "FIREWORKS_API_KEY", "nom de secret inattendu", echecs)
+    _verifier(resolve.INFERHUB_KEY_ENV == "INFERHUB_API_KEY", "nom de secret inattendu", echecs)
     _verifier(
-        resolve.jambe_llm_disponible({resolve.FIREWORKS_KEY_ENV: "cle-fictive"}) is True,
-        "clé Fireworks présente mais jambe jugée indisponible",
+        resolve.jambe_llm_disponible({resolve.INFERHUB_KEY_ENV: "cle-fictive"}) is True,
+        "clé InferHub présente mais jambe jugée indisponible",
         echecs,
     )
     _verifier(resolve.jambe_llm_disponible({}) is False, "absence de clé non détectée", echecs)
     _verifier(
-        resolve.jambe_llm_disponible({resolve.FIREWORKS_KEY_ENV: "   "}) is False,
+        resolve.jambe_llm_disponible({resolve.INFERHUB_KEY_ENV: "   "}) is False,
         "clé vide acceptée",
         echecs,
     )
@@ -163,18 +163,18 @@ def _selftest_heuristique(echecs: list[str]) -> None:
 
 
 def _selftest_llm(echecs: list[str]) -> None:
-    """Jambe Fireworks pilotée par un transport factice : aucun réseau, aucun secret."""
+    """Jambe InferHub pilotée par un transport factice : aucun réseau, aucun secret."""
     vus = {}
 
     def transport_factice(url, corps, cle, timeout):
         vus.update({"url": url, "corps": corps, "cle": cle, "timeout": timeout})
         return {"choices": [{"message": {"content": "```python\nprint(1)\n```"}}]}
 
-    sortie = resolve.appeler_fireworks("sys", "user", "cle-fictive", transport=transport_factice)
+    sortie = resolve.appeler_inferhub("sys", "user", "cle-fictive", transport=transport_factice)
     _verifier(sortie == "print(1)", "bloc de code mal dépouillé : %r" % (sortie,), echecs)
-    _verifier(vus.get("url") == resolve.FIREWORKS_URL, "transport appelé sur une autre URL", echecs)
+    _verifier(vus.get("url") == resolve.INFERHUB_URL, "transport appelé sur une autre URL", echecs)
     _verifier(
-        (vus.get("corps") or {}).get("model") == resolve.FIREWORKS_MODEL, "modèle du corps", echecs
+        (vus.get("corps") or {}).get("model") == resolve.INFERHUB_MODEL, "modèle du corps", echecs
     )
     _verifier((vus.get("corps") or {}).get("temperature") == 0.0, "température non nulle", echecs)
 
@@ -182,7 +182,7 @@ def _selftest_llm(echecs: list[str]) -> None:
         return {"choices": [{"message": {"content": "<<<<<<< a\nb"}}]}
 
     _verifier(
-        resolve.appeler_fireworks("s", "u", "k", transport=transport_marqueurs) is None,
+        resolve.appeler_inferhub("s", "u", "k", transport=transport_marqueurs) is None,
         "sortie à marqueurs acceptée",
         echecs,
     )
@@ -191,7 +191,7 @@ def _selftest_llm(echecs: list[str]) -> None:
         return {"_erreur": "HTTP 401"}
 
     _verifier(
-        resolve.appeler_fireworks("s", "u", "k", transport=transport_erreur) is None,
+        resolve.appeler_inferhub("s", "u", "k", transport=transport_erreur) is None,
         "erreur HTTP acceptée",
         echecs,
     )
