@@ -70,8 +70,8 @@ jobs:
         run: |
           set -euo pipefail
           command -v uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
-          uv sync --frozen --group dev --group agents
-          uv run --group dev --group agents pytest -q -m 'not infra and not slow'
+          uv sync --frozen --all-groups
+          uv run pytest -q -m 'not infra and not slow'
 
   iac:
     name: iac
@@ -86,7 +86,7 @@ jobs:
         run: |
           set -euo pipefail
           command -v uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
-          uv sync --frozen --group dev --group infra
+          uv sync --frozen --all-groups
           shopt -s nullglob globstar
           # *.asl.json = définitions Step Functions, pas des gabarits CloudFormation
           files=()
