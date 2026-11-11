@@ -18,9 +18,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  UV_LINK_MODE: copy
   # uv est installé dans ~/.local/bin sur les runners self-hosted (r630).
   PATH: /home/baptiste/.local/bin:/usr/local/bin:/usr/bin:/bin
+  UV_NO_PROGRESS: "1"
 
 jobs:
   lint:
@@ -63,8 +63,8 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: /home/baptiste/.cache/uv
-          key: uv-jauge-${{ hashFiles('uv.lock') }}
-          restore-keys: uv-jauge-
+          key: uv-jauge-${{ hashFiles('uv.lock') }}-dev-agents
+          restore-keys: uv-jauge-${{ hashFiles('uv.lock') }}-
       - name: Dépendances + tests
         run: |
           set -euo pipefail
@@ -84,8 +84,8 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: /home/baptiste/.cache/uv
-          key: uv-jauge-${{ hashFiles('uv.lock') }}
-          restore-keys: uv-jauge-
+          key: uv-jauge-${{ hashFiles('uv.lock') }}-dev-infra
+          restore-keys: uv-jauge-${{ hashFiles('uv.lock') }}-
       - name: CloudFormation (cfn-lint) + CDK (assertions)
         run: |
           set -euo pipefail
