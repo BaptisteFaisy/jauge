@@ -49,6 +49,10 @@ OPERATIONS_RUNTIME = (
 #: Marqueurs d'un appel passé par `bedrock-mantle` (projets et espaces de travail).
 MARQUEURS_MANTLE = ("mantle", "project", "workspace")
 
+#: Statuts d'appel reconnus comme réussis. Tout le reste (throttling, erreur
+#: interne, validation, statut vide) compte comme un échec.
+STATUTS_SUCCES = frozenset({"succes", "success", "ok", "completed", "done", "200"})
+
 #: Au-delà de cette valeur, un epoch est en millisecondes (≈ mars 5138 en secondes).
 SEUIL_MILLISECONDES = 1e11
 
