@@ -69,7 +69,7 @@ No pull. The control plane never reads the customer's S3.
 | Invocation logs | Bedrock model invocation logging → S3 (KMS) | Request, response, tokens, request metadata, tier | Template `infra/client-account/` *(planned, M11)* |
 | Analytics | Glue Data Catalog + Athena | Tables over logs and CUR 2.0 | Same template |
 | Replay machine | Step Functions + Lambda | Draw sample, replay, launch evaluation, store results | `src/jauge/replay/statemachine/` *(planned, M4)* |
-| Evaluation | Bedrock model-evaluation jobs | Judge verdict + explanation per pair | `src/jauge/evaluation/` *(planned, M5)* |
+| Evaluation | Bedrock model-evaluation jobs | Judge verdict + explanation per pair; deterministic checks; decision rule | `src/jauge/evaluation/` — **delivered** (decision, checks, judge prompt, human review); the Bedrock evaluation-job adapter is wired in M4/M15 |
 | Replay results | S3 (KMS) | Pairs, explanations, per-request measurements | Same |
 | Invoiced cost | CUR 2.0 + Cost Explorer | Dollars per tag, reconciliation source | Same |
 | Cross-account role | IAM role with external ID | Least privilege, no read on log/result buckets | Same template |
@@ -99,6 +99,7 @@ No pull. The control plane never reads the customer's S3.
 | `src/jauge/engine/stats.py` | Wilson interval, percentiles, minimum sample size, monthly saving, percentage drop | **Delivered** |
 | `src/jauge/store/protocol.py` | `Store` contract — every read takes `tenant_id` first | **Delivered** |
 | `src/jauge/store/memory.py` | `MemoryStore`, tenant-isolated, for tests and the local demo | **Delivered** |
+| `src/jauge/evaluation/` | Judge prompt and adapters, deterministic checks, decision rule, human review sub-sample | **Delivered** |
 
 The shared library is what every module codes against. Modules never import
 each other's internals; where a module needs a service that does not exist yet it
@@ -358,11 +359,12 @@ campaigns, decisions and rules.
 
 ## 14. What exists today
 
-`main` currently contains the shared library only: entities, deterministic
-engine, store contract and in-memory store, plus their tests. The modules that
-build the data plane, the control plane, the demo and the end-to-end acceptance
-are delivered through their own pull requests (see `docs/MODULES.md`, M1–M16).
-Every path marked *(planned)* above is one of those modules.
+`main` currently contains the shared library: entities, deterministic engine,
+store contract and in-memory store, and the evaluation module, plus their tests.
+The modules that build the data plane, the control plane, the demo and the
+end-to-end acceptance are delivered through their own pull requests —
+`docs/MODULES.md` is the authoritative status table. Every path marked
+*(planned)* above is one of those modules.
 
 The local demo (`uv run pytest -q`) runs entirely offline against `MemoryStore`
 with synthetic data and fake adapters: no AWS account, no network, no cost.

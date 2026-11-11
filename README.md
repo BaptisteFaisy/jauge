@@ -117,9 +117,12 @@ Status on `main`, stated plainly — this section is updated as modules land.
 | Daily aggregation per application/team/model, bill reconciliation with gap and unattributed share | **Delivered** — `src/jauge/engine/attribution.py` |
 | Wilson confidence interval, percentiles, minimum sample size, monthly saving, percentage drop | **Delivered** — `src/jauge/engine/stats.py` |
 | Store contract (tenant-scoped) + in-memory implementation | **Delivered** — `src/jauge/store/` |
-| Log ingestion, lever rules, replay, evaluation, rollout, agents, API, reports, portal, infrastructure, demo, end-to-end acceptance | **Planned** — one pull request per module, see [`docs/MODULES.md`](docs/MODULES.md) |
+| LLM-as-a-judge prompt and adapters, deterministic checks, decision rule with its three conditions, human review sub-sample | **Delivered** — `src/jauge/evaluation/` |
+| Log ingestion, lever rules, replay, rollout, agents, API, reports, portal, infrastructure, demo, end-to-end acceptance | **Planned** — one pull request per module; [`docs/MODULES.md`](docs/MODULES.md) is the authoritative status table |
 
-Test suite today: **22 tests, offline, ~0.1 s** — `uv run pytest -q`.
+The test suite runs entirely offline — no AWS account, no network, no
+credentials. `uv run pytest` prints the current count and duration on its last
+line; it grows with every module that lands.
 
 ### Results: measured vs target
 
@@ -145,9 +148,9 @@ language model computes one (`ENF-IA-01`).
 uv sync --all-groups
 
 # 2. Run the test suite — offline, no AWS account, no credentials
-uv run pytest -q
-#   ......................        [100%]
-#   22 passed in 0.04s
+uv run pytest
+#   ... [100%]
+#   93 passed in 0.67s        (count at the time of writing)
 
 # 3. Run the same gates as CI
 bash scripts/ci-local.sh
@@ -180,7 +183,7 @@ Full judge instructions, demo accounts and a minute-by-minute test path:
 | `src/jauge/attribution/` | Invocation-log ingestion, tagging, unattributed spend | Planned (M1) |
 | `src/jauge/levers/` | Savings-lever detection rules | Planned (M3) |
 | `src/jauge/replay/` | Stratified reproducible sampling, replay execution, Step Functions definition | Planned (M4) |
-| `src/jauge/evaluation/` | LLM-as-a-judge scoring, deterministic checks, decision rule | Planned (M5) |
+| `src/jauge/evaluation/` | LLM-as-a-judge scoring, deterministic checks, decision rule, human review | Delivered (M5) |
 | `src/jauge/rollout/` | Gateway rules, staged rollout, automatic rollback, savings verification | Planned (M6) |
 | `src/jauge/agents/` | Strands agents: orchestrator + cost analyst + replay planner + results reader + writer | Planned (M7) |
 | `src/jauge/api/` | Control-plane REST API (FastAPI) | Planned (M8) |
@@ -190,7 +193,7 @@ Full judge instructions, demo accounts and a minute-by-minute test path:
 | `demo/` | Synthetic traffic generator and demo applications | Planned (M12) |
 | `portal/` | Static web portal, no build step | Planned (M13) |
 | `docs/` | HLD, architecture, demo script, submission checklist, test instructions | Delivered |
-| `tests/` | Unit, isolation (negative security) and end-to-end acceptance tests | Partly delivered |
+| `tests/` | Unit and isolation (negative security) tests, end-to-end acceptance | Partly delivered — engine, store and evaluation today |
 
 Work breakdown, module ownership and per-module "definition of done":
 [`docs/MODULES.md`](docs/MODULES.md).
