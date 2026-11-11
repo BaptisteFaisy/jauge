@@ -20,6 +20,7 @@ décide s'il le signale (comptage de dérive) ou l'ignore.
 
 from __future__ import annotations
 
+import json
 import re
 from collections.abc import Mapping
 from functools import lru_cache
@@ -36,6 +37,41 @@ def normaliser_cle(cle: object) -> str:
     dizaines de noms de champs reviennent en boucle (ENF-PERF-01).
     """
     return re.sub(r"[^a-z0-9]", "", str(cle).lower())
+
+
+def decompresser_json(charge: Mapping[str, object]) -> dict[str, object]:
+    """Remplace les valeurs JSON en chaîne par leur objet décompressé.
+
+    Certains journaux d'invocation transportent les métadonnées de requête et
+    les métriques d'invocation sous forme de **chaîne JSON** (colonne texte d'un
+    export CSV, ou sérialisation du collecteur). Le parseur les accepte : la clé
+    devient un objet et l'aplatissement fait le reste. Une chaîne illisible est
+    laissée telle quelle : elle ne casse pas l'enregistrement.
+    """
+    decompresse = dict(charge)
+    for cle, brut in charge.items():
+        if isinstance(brut, str) and brut[:1] in ("{", "["):
+            try:
+                objet = json.loads(brut)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(objet, dict):
+                decompresse[cle] = objet
+    return decompresse
+
+
+def deballer_enveloppe(charge: Mapping[str, object]) -> dict[str, object]:
+    """Descend dans une enveloppe (`message`, `detail`, `record`, `invocation`).
+
+    Certains collecteurs enveloppent l'invocation dans un objet de transport ;
+    la charge utile est la première enveloppe qui contient un objet.
+    """
+    charge_mut = dict(charge)
+    for enveloppe in ("message", "detail", "record", "invocation"):
+        interieur = charge_mut.get(enveloppe)
+        if isinstance(interieur, dict):
+            return deballer_enveloppe(interieur)
+    return charge_mut
 
 
 def variantes(noms: tuple[str, ...]) -> tuple[str, ...]:

@@ -47,6 +47,8 @@ from typing import Any
 from jauge.attribution.champs import (
     aplatir,
     booleen,
+    deballer_enveloppe,
+    decompresser_json,
     entier,
     normaliser_cle,
     texte,
@@ -332,7 +334,7 @@ def analyser_enregistrement(
     comptage se fait ici, sur l'enregistrement déjà décodé, pour ne pas analyser
     deux fois la même ligne JSON.
     """
-    charge = _decompresser(_charger(brut))
+    charge = decompresser_json(_charger(brut))
     if rapport is not None:
         _compter_champs_inconnus(rapport, charge)
     plat = aplatir(charge)
@@ -420,30 +422,10 @@ def iterer_rejouables(
             yield enregistrement
 
 
-def _decompresser(charge: dict[str, Any]) -> dict[str, Any]:
-    """Remplace les valeurs JSON en chaîne par leur objet décompressé.
-
-    Certains journaux d'invocation transportent les métadonnées de requête et
-    les métriques d'invocation sous forme de **chaîne JSON** (colonne texte
-    d'un export CSV, ou sérialisation du collecteur). Le parseur les accepte :
-    la clé devient un objet et l'aplatissement fait le reste.
-    """
-    decompresse = dict(charge)
-    for cle, brut in charge.items():
-        if isinstance(brut, str) and brut[:1] in ("{", "["):
-            try:
-                objet = json.loads(brut)
-            except json.JSONDecodeError:
-                continue
-            if isinstance(objet, dict):
-                decompresse[cle] = objet
-    return decompresse
-
-
 def _charger(brut: object) -> dict[str, Any]:
     """Décode un enregistrement brut, ou lève `EnregistrementInexploitable`."""
     if isinstance(brut, dict):
-        return _deballer(brut)
+        return deballer_enveloppe(brut)
     if isinstance(brut, bytes):
         brut = brut.decode("utf-8", errors="replace")
     if isinstance(brut, str):
@@ -453,17 +435,8 @@ def _charger(brut: object) -> dict[str, Any]:
             raise EnregistrementInexploitable(f"JSON invalide ({erreur.msg})") from erreur
         if not isinstance(charge, dict):
             raise EnregistrementInexploitable("enregistrement JSON non objet")
-        return _deballer(charge)
+        return deballer_enveloppe(charge)
     raise EnregistrementInexploitable(f"type d'enregistrement inattendu ({type(brut).__name__})")
-
-
-def _deballer(charge: dict[str, Any]) -> dict[str, Any]:
-    """Descend dans une enveloppe (`message`, `detail`, `record`, `invocation`)."""
-    for enveloppe in ("message", "detail", "record", "invocation"):
-        interieur = charge.get(enveloppe)
-        if isinstance(interieur, dict):
-            return interieur
-    return charge
 
 
 def _lignes(flux: Iterable[str]) -> Iterator[str]:
