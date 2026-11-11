@@ -141,10 +141,13 @@ n'est **pas** utilisée : le modèle InferHub est fixé dans `resolve.py`.
    résolution, lui, porte `timeout-minutes: 10` avec le marqueur explicite
    `# CI-BUDGET-EXEMPT` — il n'est **jamais** un check de PR (lancement en
    `workflow_dispatch` seulement) et il rejoue toute la toolchain du dépôt sur
-   l'arbre rebasé avant de pousser. Mesure du 2026-11-11 : `scripts/ci-local.sh`
-   = **222 s** (1 078 tests + cfn-lint + tests CDK), d'où `VALIDATION_TIMEOUT`
-   à 270 s. Une validation qui dépasse fait échouer le run **sans push**
-   (escalade) : le budget ne s'allonge pas tout seul.
+   l'arbre rebasé avant de pousser. Mesures du 2026-11-11 : `scripts/ci-local.sh`
+   = **222 s** en local (cache uv chaud) et **> 270 s sur le runner** — le run
+   `43068197660` a échoué sur « Validation : timeout après 270s » alors que le
+   rebase et la résolution avaient réussi. D'où `timeout-minutes: 12` et
+   `VALIDATION_TIMEOUT: 480`. Un timeout de validation **bloque le push** (le
+   résolveur préfère escalader plutôt que pousser un arbre non validé) : le
+   budget ne s'allonge donc jamais au détriment de la sûreté.
    Le garde-fou `check_timeouts.py` accepte une exemption **seulement** si la
    ligne porte `CI-BUDGET-EXEMPT` avec sa raison ; sinon tout dépassement reste
    une erreur, et l'exemption est signalée en avertissement à chaque run.

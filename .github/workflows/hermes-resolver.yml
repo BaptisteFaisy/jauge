@@ -72,10 +72,11 @@ jobs:
     # CI-BUDGET-EXEMPT: job de réparation lancé en workflow_dispatch (jamais un
     # check de PR — il ne fait donc pas partie du verdict CI ≤ 5 min). Il rejoue
     # toute la toolchain du dépôt sur l'arbre rebasé avant de pousser :
-    # `bash scripts/ci-local.sh` mesuré à 222 s le 2026-11-11, plus le clone,
-    # le rebase, le push et le rapport. Runbook labkit-hermes-prompt.md §2 :
+    # `bash scripts/ci-local.sh` : 222 s en local, > 270 s sur le runner
+    # (mesure du 2026-11-11, run 43068197660) — d'où 480 s de validation, plus
+    # le clone, le rebase, le push et le rapport. Runbook labkit-hermes-prompt.md §2 :
     # « le resolver tourne en workflow_dispatch : timeout explicite justifié ».
-    timeout-minutes: 10  # CI-BUDGET-EXEMPT: voir le bloc ci-dessus (validation 222 s mesurée)
+    timeout-minutes: 12  # CI-BUDGET-EXEMPT: voir le bloc ci-dessus (validation 480 s + clone/rebase/push)
     steps:
       - name: Checkout (superficiel — le travail se fait dans un clone jetable)
         uses: actions/checkout@v4
@@ -96,9 +97,14 @@ jobs:
           # Toolchain du dépôt : Python (uv + ruff + pytest + cfn-lint).
           # Jamais npm/tsc/gradle sur ce dépôt.
           VALIDATION_CMD: "bash scripts/ci-local.sh"
-          # Mesuré le 2026-11-11 : 222 s pour la toolchain complète (sync, ruff,
-          # limites, 1 078 tests, cfn-lint, tests CDK). Marge de ~20 %.
-          VALIDATION_TIMEOUT: "270"
+          # Mesures du 2026-11-11 : 222 s en local (cache uv chaud), et
+          # **> 270 s sur le runner** — le run 43068197660 a échoué avec
+          # « Validation : timeout après 270s » alors que le rebase et la
+          # résolution avaient réussi. Le runner paie en plus la création du
+          # .venv et la contention des 4 workers. D'où 480 s : assez pour la
+          # toolchain complète, toujours sous le plafond du job (12 min).
+          # Un timeout de validation bloque le push (jamais de push non validé).
+          VALIDATION_TIMEOUT: "480"
           PR_NUMBER: ${{ inputs.pr_number }}
           HEAD_REF: ${{ inputs.head_ref }}
           BASE_REF: ${{ inputs.base_ref }}
