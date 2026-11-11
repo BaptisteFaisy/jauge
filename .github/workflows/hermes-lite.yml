@@ -25,9 +25,10 @@ concurrency:
 
 env:
   GH_TOKEN: ${{ secrets.HERMES_LITE_TOKEN || github.token }}
-  # IMPORTANT (runbook §3) : à renseigner PAR DÉPÔT — contexts de statut requis
-  # avant merge, séparés par des virgules. Vide = merge dès que la PR est fraîche.
-  HERMES_REQUIRED_CHECKS: ''
+  # IMPORTANT (runbook §3) : variable de dépôt HERMES_REQUIRED_CHECKS —
+  # noms de jobs CI requis avant merge, séparés par des virgules.
+  # Vide = merge dès que la PR est fraîche (à éviter en production).
+  HERMES_REQUIRED_CHECKS: ${{ vars.HERMES_REQUIRED_CHECKS || '' }}
   MERGE_METHOD: rebase
 
 jobs:

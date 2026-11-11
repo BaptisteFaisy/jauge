@@ -91,11 +91,34 @@ def create_check(repo, token, sha, ok, title, summary):
     )
 
 
+def check_runs_green(repo, token, sha, required):
+    """Check runs GitHub Actions verts pour le SHA donné.
+
+    Les jobs Actions sont des *check runs*, pas des statuts de commit : l'API
+    `/status` ne les voit pas. On interroge donc `/check-runs` en premier, et
+    l'on garde `/status` en repli (pilotage par services externes).
+    """
+    sc, data = api("GET", "/repos/%s/commits/%s/check-runs" % (repo, sha), token=token)
+    if sc != 200 or not data:
+        return False
+    etats = {
+        run.get("name"): (run.get("status"), run.get("conclusion"))
+        for run in data.get("check_runs", [])
+    }
+    for ctx in required:
+        statut, conclusion = etats.get(ctx, (None, None))
+        if statut != "completed" or conclusion != "success":
+            return False
+    return True
+
+
 def required_checks_green(repo, token, pr, required):
     """Statuts de commit requis verts. Liste vide => considéré vert."""
     if not required:
         return True
     sha = pr["head"]["sha"]
+    if check_runs_green(repo, token, sha, required):
+        return True
     sc, data = api("GET", "/repos/%s/commits/%s/status" % (repo, sha), token=token)
     if sc != 200 or not data:
         return False
@@ -106,7 +129,7 @@ def required_checks_green(repo, token, pr, required):
     return True
 
 
-def settle_after_refresh(repo, token, num, required, attempts=10, pause=6, dry=False):
+def settle_after_refresh(repo, token, num, required, attempts=20, pause=10, dry=False):
     """[HERMES-REFRESH] Ré-évalue la PR après le rebase serveur, DANS CE RUN.
 
     Le push effectué par `update-branch` est un push de bot : il ne déclenche

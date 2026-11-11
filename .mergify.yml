@@ -1,12 +1,14 @@
 # File de merge Mergify — socle CI self-hosted (R630).
 #
-# Le depot demarre sans gate IA ni batterie de tests : les queue_conditions
-# n'exigent donc aucun check inexistant (le socle CI est en dry-run —
-# variable de depot HERMES_LITE_DRY_RUN=1). Le seul check exige est
-# `ci-budget`, livre par le socle : aucune PR ne peut entrer dans la file
-# avec un job declare a plus de 5 minutes. Quand la CI reelle du depot
-# existera, ajouter dans queue_conditions :
-#   - check-success = "<check reel>"
+# Les queue_conditions exigent les quatre jobs de la CI réelle du dépôt
+# (`lint`, `limits`, `test`, `iac` — .github/workflows/ci.yml) plus le garde-fou
+# `ci-budget` et `stale-base-guard`. Noms de checks = noms de JOBS (vérifiés via
+# `gh pr view --json statusCheckRollup`), pas `Workflow / job`.
+#
+# ⚠ PILOTAGE : au 2026-11-11 le produit Merge Queue n'est pas encore activé pour
+# ce dépôt (geste humain sur dashboard.mergify.com). En attendant, le pilote de
+# merge est le gate `hermes-lite` (variable HERMES_LITE_DRY_RUN=0). Dès que
+# Mergify est actif, remettre HERMES_LITE_DRY_RUN=1 : un seul pilote à la fois.
 # Structure copiée du .mergify.yml de BaptisteFaisy/duello (décision
 # user 2026-10-10) : inline labels urgent / priority-low identiques.
 queue_rules:
@@ -14,6 +16,12 @@ queue_rules:
     queue_conditions:
       # Budget CI 5 min (règle user 2026-10-24) : le garde-fou du socle.
       - check-success = ci-budget
+      # CI réelle du dépôt (ajoutée le 2026-11-11).
+      - check-success = lint
+      - check-success = limits
+      - check-success = test
+      - check-success = iac
+      - check-success = stale-base-guard
       - -conflict
       - -draft
       - base = main
