@@ -237,12 +237,40 @@ def try_merge(repo, token, pr, required):
     return "error"
 
 
+def etat_fusion(repo, token, pr, tentatives=3, pause=4):
+    """(mergeable, mergeable_state) fiables pour cette PR.
+
+    Piège GitHub : `GET /repos/{o}/{r}/pulls` (la **liste**) ne renvoie PAS
+    `mergeable` ni `mergeable_state` — seuls `GET /pulls/{n}` (détail) et
+    l'événement `pull_request` les portent, et parfois à `null` le temps du
+    calcul. Sans ce rappel, un VRAI conflit passait pour un simple retard et le
+    résolveur n'était jamais dispatché (constaté le 2026-11-11 sur la PR #28 :
+    « en retard de 1 commit » alors que `mergeable_state` valait `dirty`).
+    """
+    mergeable = pr.get("mergeable")
+    etat = pr.get("mergeable_state") or ""
+    if mergeable is not None:
+        return mergeable, etat
+    num = pr["number"]
+    for i in range(tentatives):
+        if i:
+            time.sleep(pause)
+        sc, detail = api("GET", "/repos/%s/pulls/%d" % (repo, num), token=token)
+        if sc != 200 or not isinstance(detail, dict):
+            continue
+        mergeable = detail.get("mergeable")
+        etat = detail.get("mergeable_state") or etat
+        if mergeable is not None:
+            return mergeable, etat
+    return mergeable, etat
+
+
 def handle_pr(pr, repo, token, required, dry=False, auto_rebase=True, dispatch_resolveur=True):
     num = pr["number"]
     sha = pr["head"]["sha"]
     base_ref = pr["base"]["ref"]
-    mergeable = pr.get("mergeable")  # None = calcul en cours
-    mergeable_state = pr.get("mergeable_state") or ""
+    # None = calcul en cours, ou absent car la PR vient de la liste (voir helper).
+    mergeable, mergeable_state = etat_fusion(repo, token, pr)
 
     sc, cmp_ = api("GET", "/repos/%s/compare/%s...%s" % (repo, base_ref, sha), token=token)
     behind = cmp_.get("behind_by") if sc == 200 else -1
