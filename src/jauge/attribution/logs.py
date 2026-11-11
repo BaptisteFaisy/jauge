@@ -55,6 +55,7 @@ from jauge.attribution.champs import (
 )
 from jauge.attribution.tags import Etiquettes, PointAcces, extraire_etiquettes
 from jauge.attribution.valeurs import (
+    STATUTS_SUCCES,
     determiner_niveau_service,
     determiner_point_acces,
     lire_horodatage,
@@ -136,8 +137,17 @@ CHAMPS_ACCEPTES: dict[str, tuple[str, ...]] = {
         "tier",
         "serviceLevel",
     ),
-    "latence": ("latencyMs", "latency", "durationMs", "duration", "latency_ms", "totalLatencyMs"),
-    "statut": ("status", "statut", "outcome", "result", "responseStatus"),
+    "latence": (
+        "latencyMs",
+        "latency",
+        "durationMs",
+        "duration",
+        "latency_ms",
+        "totalLatencyMs",
+        "invocationLatency",
+        "firstByteLatency",
+    ),
+    "statut": ("status", "statut", "outcome", "result", "responseStatus", "errorCode"),
     "point_acces": (
         "accessPoint",
         "access_point",
@@ -294,8 +304,13 @@ class EnregistrementInvocation:
 
     @property
     def reussie(self) -> bool:
-        """Vrai si le statut journalisé n'évoque pas une erreur."""
-        return not any(marque in self.statut for marque in ("error", "echec", "échec", "fail"))
+        """Vrai si l'appel est un succès.
+
+        Statut inconnu = échec : un `throttlingException` ou un `internalError`
+        ne ressemble pas à « succès ». On ne devine pas l'absence d'erreur, on
+        exige un statut de succès explicite.
+        """
+        return self.statut in STATUTS_SUCCES
 
 
 class EnregistrementInexploitable(Exception):
@@ -317,7 +332,7 @@ def analyser_enregistrement(
     comptage se fait ici, sur l'enregistrement déjà décodé, pour ne pas analyser
     deux fois la même ligne JSON.
     """
-    charge = _charger(brut)
+    charge = _decompresser(_charger(brut))
     if rapport is not None:
         _compter_champs_inconnus(rapport, charge)
     plat = aplatir(charge)
@@ -403,6 +418,26 @@ def iterer_rejouables(
     for enregistrement in enregistrements:
         if not enregistrement.sensible:
             yield enregistrement
+
+
+def _decompresser(charge: dict[str, Any]) -> dict[str, Any]:
+    """Remplace les valeurs JSON en chaîne par leur objet décompressé.
+
+    Certains journaux d'invocation transportent les métadonnées de requête et
+    les métriques d'invocation sous forme de **chaîne JSON** (colonne texte
+    d'un export CSV, ou sérialisation du collecteur). Le parseur les accepte :
+    la clé devient un objet et l'aplatissement fait le reste.
+    """
+    decompresse = dict(charge)
+    for cle, brut in charge.items():
+        if isinstance(brut, str) and brut[:1] in ("{", "["):
+            try:
+                objet = json.loads(brut)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(objet, dict):
+                decompresse[cle] = objet
+    return decompresse
 
 
 def _charger(brut: object) -> dict[str, Any]:
