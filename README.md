@@ -107,7 +107,10 @@ design rationale: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## What is in this repository today
 
-Status on `main`, stated plainly — this section is updated as modules land.
+Status on `main`, stated plainly: **every module of the build plan is merged** —
+M1 to M16 of [`docs/MODULES.md`](docs/MODULES.md). What is left is not code but
+gestures: a real AWS deployment, the video shoot, and the Devpost submission
+(see [`docs/SUBMISSION.md`](docs/SUBMISSION.md)).
 
 | Area | Status |
 |---|---|
@@ -117,15 +120,24 @@ Status on `main`, stated plainly — this section is updated as modules land.
 | Daily aggregation per application/team/model, bill reconciliation with gap and unattributed share | **Delivered** — `src/jauge/engine/attribution.py` |
 | Wilson confidence interval, percentiles, minimum sample size, monthly saving, percentage drop | **Delivered** — `src/jauge/engine/stats.py` |
 | Store contract (tenant-scoped) + in-memory implementation | **Delivered** — `src/jauge/store/` |
-| LLM-as-a-judge prompt and adapters, deterministic checks, decision rule with its three conditions, human review sub-sample | **Delivered** — `src/jauge/evaluation/` |
-| Stratified reproducible sample, replay executor (Flex tier), campaign cost cap, Step Functions definition | **Delivered** — `src/jauge/replay/` |
-| Dated price table loader with validation, demo price file | **Delivered** — `src/jauge/pricing_data/`, `data/pricing/` |
-| Strands agents: orchestrator + four specialists used as tools, guardrails, schemas, traces, sessions | **Delivered** — `src/jauge/agents/` |
-| Log ingestion, lever rules, rollout, API, reports, portal, infrastructure, demo, end-to-end acceptance | **Planned** — one pull request per module; [`docs/MODULES.md`](docs/MODULES.md) is the authoritative status table |
+| Log ingestion, tagging, unattributed spend, CUR 2.0 reconciliation (M1) | **Delivered** — `src/jauge/attribution/` |
+| Dated price-table loader with validation, demo price file (M2) | **Delivered** — `src/jauge/pricing_data/`, `data/pricing/` |
+| Savings-lever detection: 4 model rules + 3 service rules, ranked by estimated saving (M3) | **Delivered** — `src/jauge/levers/` |
+| Stratified reproducible sample, replay executor (Flex tier), campaign cost cap, Step Functions definition (M4) | **Delivered** — `src/jauge/replay/` |
+| LLM-as-a-judge prompt and adapters, deterministic checks, decision rule with its three conditions, human review sub-sample (M5) | **Delivered** — `src/jauge/evaluation/` |
+| Gateway rules, staged rollout 10/50/100, automatic rollback, savings verification (M6) | **Delivered** — `src/jauge/rollout/` |
+| Strands agents: orchestrator + four specialists used as tools, guardrails, schemas, traces, sessions (M7) | **Delivered** — `src/jauge/agents/` |
+| Control-plane REST API: authentication, roles, tenant isolation, audit, settings (M8) | **Delivered** — `src/jauge/api/` |
+| Monthly report: computed figures + written synthesis, Markdown/JSON, S3 adapter (M9) | **Delivered** — `src/jauge/reports/` |
+| CDK control plane (M10) + single per-customer CloudFormation template (M11) | **Delivered** — `infra/control-plane/`, `infra/client-account/` |
+| Synthetic-traffic demo and offline seed (M12), static no-build portal (M13) | **Delivered** — `demo/`, `portal/` |
+| End-to-end acceptance R1–R13, including negative security tests (M15) | **Delivered** — `tests/recette/` |
 
-The test suite runs entirely offline — no AWS account, no network, no
-credentials. `uv run pytest` prints the current count and duration on its last
-line; it grows with every module that lands.
+The whole test suite runs offline — no AWS account, no network, no credentials.
+The real boto3/Bedrock adapters are written but exercised only through their
+interface with fake clients, so the suite never reaches AWS. On `main` today
+`uv run pytest` reports **1021 passed, 2 xfailed** (the duration depends on the
+machine).
 
 ### Results: measured vs target
 
@@ -153,25 +165,56 @@ uv sync --all-groups
 # 2. Run the test suite — offline, no AWS account, no credentials
 uv run pytest
 #   ...                                              [100%]
-#   348 passed in 1:41        (count at the time of writing; it grows)
+#   1021 passed, 2 xfailed in 2:11    (count on `main` at the time of writing)
 
 # 3. Run the same gates as CI
 bash scripts/ci-local.sh
 ```
 
-**Planned, not yet in the repository** (modules M12 and M8): the seeded local demo
-and the API/portal.
+### Run the offline demo
 
 ```bash
-uv run python -m demo.seed                  # populate the in-memory store
-uv run uvicorn jauge.api.app:app --reload   # API + portal on http://127.0.0.1:8000
+uv run python -m demo.seed     # seeds an in-memory store, prints the summary
 ```
 
-Until those land, `docs/TEST-INSTRUCTIONS.md` marks every such command as
-**planned**, so nobody is sent to run something that does not exist.
+`demo.seed` generates the §18.1 scenario — three applications at customer A, one
+at customer B — and prints the figures the code computed. These are **demo
+output, not a customer result**: a mean reconciliation gap of **0.57 %** (14/14
+days inside the 3 % target), an estimated **853.52 $/month** of savings across
+six detected levers, a `ticket-classifier` recommendation pending approval, a
+`support-assistant` campaign rejected with evidence, and a `doc-summarizer`
+rollout at stage 50 % with online quality 0.995.
 
-Full judge instructions, demo accounts and a minute-by-minute test path:
-[`docs/TEST-INSTRUCTIONS.md`](docs/TEST-INSTRUCTIONS.md).
+### See it in the portal
+
+The static portal (`portal/`, no build step) is served by the control-plane API.
+The one-line form is **blocked**: `src/jauge/api/app.py` exposes only the
+`creer_app()` factory, not a module-level `app`, so
+
+```bash
+uv run uvicorn jauge.api.app:app --reload   # blocked: needs `app = creer_app()` in src/jauge/api/app.py
+```
+
+fails with `Attribute "app" not found in module "jauge.api.app"`. To browse the
+**seeded** portal today, run this small launcher from the repository root (it
+seeds a store, then serves the API + portal on http://127.0.0.1:8000):
+
+```bash
+cat > _serve.py <<'PY'
+import uvicorn
+from demo.seed import peupler_store
+from jauge.store.memory import MemoryStore
+from jauge.api.app import creer_app
+store = MemoryStore(); peupler_store(store)
+uvicorn.run(creer_app(store=store, mode_demo=True), host="127.0.0.1", port=8000)
+PY
+uv run python _serve.py        # then open http://127.0.0.1:8000
+```
+
+In demo mode the API trusts two headers instead of Cognito: `X-Jauge-Tenant`
+(`t-demo-a` / `t-demo-b`) and `X-Jauge-Role`. Demo mode is refused when
+`JAUGE_ENV=production`. Full judge instructions, demo accounts and a
+minute-by-minute test path: [`docs/TEST-INSTRUCTIONS.md`](docs/TEST-INSTRUCTIONS.md).
 
 ---
 
@@ -183,21 +226,21 @@ Full judge instructions, demo accounts and a minute-by-minute test path:
 | `src/jauge/common/` | Error hierarchy, identifiers, seeds, fingerprints | Delivered |
 | `src/jauge/engine/` | Deterministic computation: request cost, aggregation, reconciliation, statistics | Delivered |
 | `src/jauge/store/` | Persistence contract + in-memory implementation | Delivered |
-| `src/jauge/attribution/` | Invocation-log ingestion, tagging, unattributed spend | Planned (M1) |
-| `src/jauge/levers/` | Savings-lever detection rules | Planned (M3) |
+| `src/jauge/attribution/` | Invocation-log ingestion, tagging, unattributed spend | Delivered (M1) |
+| `src/jauge/levers/` | Savings-lever detection rules | Delivered (M3) |
 | `src/jauge/replay/` | Stratified reproducible sampling, replay execution, Step Functions definition | Delivered (M4) |
 | `src/jauge/evaluation/` | LLM-as-a-judge scoring, deterministic checks, decision rule, human review | Delivered (M5) |
-| `src/jauge/rollout/` | Gateway rules, staged rollout, automatic rollback, savings verification | Planned (M6) |
+| `src/jauge/rollout/` | Gateway rules, staged rollout, automatic rollback, savings verification | Delivered (M6) |
 | `src/jauge/agents/` | Strands agents: orchestrator + cost analyst + replay planner + results reader + writer | Delivered (M7) |
 | `src/jauge/pricing_data/` + `data/pricing/` | Dated price table loader, validation, demo price file | Delivered (M2) |
-| `src/jauge/api/` | Control-plane REST API (FastAPI) | Planned (M8) |
-| `src/jauge/reports/` | Monthly report generation | Planned (M9) |
-| `infra/control-plane/` | AWS CDK app for the MSP account | Planned (M10) |
-| `infra/client-account/` | Single CloudFormation template deployed per customer | Planned (M11) |
-| `demo/` | Synthetic traffic generator and demo applications | Planned (M12) |
-| `portal/` | Static web portal, no build step | Planned (M13) |
+| `src/jauge/api/` | Control-plane REST API (FastAPI) | Delivered (M8) |
+| `src/jauge/reports/` | Monthly report generation | Delivered (M9) |
+| `infra/control-plane/` | AWS CDK app for the MSP account | Delivered (M10) |
+| `infra/client-account/` | Single CloudFormation template deployed per customer | Delivered (M11) |
+| `demo/` | Synthetic traffic generator and demo applications | Delivered (M12) |
+| `portal/` | Static web portal, no build step | Delivered (M13) |
 | `docs/` | HLD, architecture, demo script, submission checklist, test instructions | Delivered |
-| `tests/` | Unit and isolation (negative security) tests, end-to-end acceptance | Partly delivered — engine, store, evaluation, replay, pricing data and agents today |
+| `tests/` | Unit and isolation (negative security) tests, end-to-end acceptance | Delivered — 1021 passed, 2 xfailed on `main`, offline |
 
 Work breakdown, module ownership and per-module "definition of done":
 [`docs/MODULES.md`](docs/MODULES.md).
@@ -262,7 +305,13 @@ a language model.
 
 ---
 
-## Deploying (planned)
+## Deploying
+
+The infrastructure is delivered as code and verified offline (CDK assertion tests
+for the control plane, `cfn-lint` for the customer template). **No real AWS
+deployment has been run yet** — it needs AWS accounts, credits and Bedrock model
+access enabled, and it is the main remaining gesture before submission. The steps
+are:
 
 1. **Customer account** — deploy `infra/client-account/template.yaml`: cross-account
    role with external ID and no log-read access, KMS-encrypted log bucket,

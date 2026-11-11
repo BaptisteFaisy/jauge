@@ -221,7 +221,7 @@ adding sentences. If a segment overruns, cut from 2:30 (fleet view), never from
 - [ ] Deterministic seed confirmed: the same sample on every take
 - [ ] Portal served from the public URL judges will use
 - [ ] Demo credentials verified against
-      [`TEST-INSTRUCTIONS.md`](TEST-INSTRUCTIONS.md#3-demo-accounts-planned)
+      [`TEST-INSTRUCTIONS.md`](TEST-INSTRUCTIONS.md#3-demo-accounts)
 - [ ] No real account id, no key, no personal data visible in any frame
 - [ ] Audio level checked; no third-party music, no third-party brand visible
 - [ ] Recording at 1080p minimum; text legible when the video is played at
