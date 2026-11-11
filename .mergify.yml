@@ -18,10 +18,14 @@ queue_rules:
     queue_conditions:
       # Budget CI 5 min (règle user 2026-10-24) : le garde-fou du socle.
       - check-success = ci-budget
-      # CI réelle du dépôt (ajoutée le 2026-11-11).
+      # CI réelle du dépôt (ajoutée le 2026-11-11). La suite de tests est
+      # découpée en trois jobs depuis la PR #33 (budget de 5 min par job) :
+      # les trois sont exigés, aucun ne peut manquer à la file.
       - check-success = lint
       - check-success = limits
       - check-success = test
+      - check-success = test-2
+      - check-success = test-3
       - check-success = iac
       - check-success = stale-base-guard
       - -conflict
