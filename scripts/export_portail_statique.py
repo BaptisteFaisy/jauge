@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import argparse
 import json
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -28,6 +28,16 @@ SORTIE_PAR_DEFAUT = RACINE / "portal" / "data" / "demo.json"
 #: Graine des identifiants de l'export (campagnes, recommandations, bascules) :
 #: à graine constante, l'instantané est reproductible d'un commit à l'autre.
 GRAINE_IDENTIFIANTS = 20261111
+
+#: Date de fin **figée** de la fenêtre de démonstration publiée.
+#:
+#: `demo.seed` utilise la date du jour quand on le lance à la main (fenêtre
+#: glissante, plus parlant en démo live). L'instantané publié, lui, doit être
+#: reproductible : sans date figée, le même code régénéré le lendemain décale
+#: toute la fenêtre (`periode_debut`/`periode_fin`, clés d'agrégats) et le test
+#: de fraîcheur échoue pour une raison purement calendaire. La date figure dans
+#: `meta.genere_le` et dans l'en-tête du portail (« snapshot <date> »).
+DATE_FIN_INSTANTANE = date(2026, 11, 11)
 
 #: Points d'API consultés par le portail, résolus depuis les données de démo.
 #: `{tenant}` / `{app}` / `{campagne}` / `{reco}` / `{bascule}` sont substitués.
@@ -53,7 +63,7 @@ def _entetes(tenant: str, role: str) -> dict[str, str]:
 
 
 def _construire_client() -> tuple[Any, Any]:
-    """Démarre l'application réelle sur un store amorcé par la démo."""
+    """Démarre l'application réelle sur un store amorcé par la démo (date figée)."""
     import sys
 
     sys.path.insert(0, str(RACINE))
@@ -63,7 +73,7 @@ def _construire_client() -> tuple[Any, Any]:
     from jauge.store.memory import MemoryStore
 
     store = MemoryStore()
-    plan = peupler_store(store)
+    plan = peupler_store(store, date_fin=DATE_FIN_INSTANTANE)
     return creer_app(mode_demo=True, store=store, plan=plan), store
 
 
@@ -118,6 +128,7 @@ def exporter(sortie: Path) -> dict[str, Any]:
     document = {
         "meta": {
             "genere_le": datetime.now(UTC).isoformat(timespec="seconds"),
+            "fenetre_demo": DATE_FIN_INSTANTANE.isoformat(),
             "source": "scripts/export_portail_statique.py",
             "avertissement": (
                 "Instantané de démonstration, données synthétiques. Aucun client réel. "
