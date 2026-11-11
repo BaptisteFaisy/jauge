@@ -1,0 +1,125 @@
+"""Application FastAPI du plan de contrôle Jauge (§15, EF-POR-01).
+
+`creer_app` est une **factory** : le store, le journal d'audit, les réglages et
+les ports sont injectés, ce qui permet aux tests d'utiliser `MemoryStore` sans
+aucun service externe. Le mode démo (`JAUGE_MODE_DEMO=1`, actif par défaut)
+lit les en-têtes `X-Jauge-*` et sert le compte de démonstration des juges
+(EF-POR-02) ; hors démo, les appels exigent un jeton Cognito `Bearer`.
+"""
+
+from __future__ import annotations
+
+import logging
+from pathlib import Path
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+
+from jauge.api.audit import AuditSink, MemoryAuditStore
+from jauge.api.auth import CognitoJwksVerifier, mode_demo_actif
+from jauge.api.errors import enregistrer_gestionnaires_erreurs
+from jauge.api.ports import (
+    CampagnePort,
+    ChatPort,
+    PortCampagnesDemo,
+    PortCampagnesIndisponible,
+    PortChatDemo,
+    PortChatIndisponible,
+    PortRapportsDemo,
+    PortRapportsIndisponible,
+    RapportPort,
+)
+from jauge.api.reglages import MemoryReglagesStore, ParametresAdmin, ReglagesStore
+from jauge.api.routes import ROUTEURS
+from jauge.store.memory import MemoryStore
+from jauge.store.protocol import Store
+
+logger = logging.getLogger(__name__)
+
+RACINE = Path(__file__).resolve().parents[3]
+DOSSIER_PORTAIL = RACINE / "portal"
+
+DESCRIPTION = """
+Plan de contrôle Jauge : attribution des coûts d'inférence Bedrock, leviers
+d'économie, campagnes de rejeu, recommandations, bascule progressive et rapports.
+
+Cloisonnement strict par client (ENF-SEC-02) : toute route qui expose des données
+filtre sur le client de l'appelant et refuse (403) l'accès aux données d'un autre
+client. Les refus sont journalisés dans l'audit (EF-ADM-02).
+"""
+
+
+class Ports:
+    """Regroupe les trois ports métier injectés dans l'application."""
+
+    def __init__(
+        self,
+        campagnes: CampagnePort,
+        rapports: RapportPort,
+        chat: ChatPort,
+    ) -> None:
+        self.campagnes = campagnes
+        self.rapports = rapports
+        self.chat = chat
+
+
+def ports_par_defaut(store: Store, mode_demo: bool) -> Ports:
+    """Ports par défaut : implémentations de démo, ou refus explicite (502)."""
+    if mode_demo:
+        return Ports(PortCampagnesDemo(store), PortRapportsDemo(store), PortChatDemo(store))
+    return Ports(PortCampagnesIndisponible(), PortRapportsIndisponible(), PortChatIndisponible())
+
+
+def creer_app(
+    store: Store | None = None,
+    mode_demo: bool | None = None,
+    audit: AuditSink | None = None,
+    reglages: ReglagesStore | None = None,
+    ports: Ports | None = None,
+) -> FastAPI:
+    """Construit l'application FastAPI du plan de contrôle."""
+    store = store or MemoryStore()
+    demo = mode_demo_actif() if mode_demo is None else mode_demo
+    if demo:
+        # Le mode démo fait confiance aux en-têtes X-Jauge-* : jamais en production.
+        logger.warning(
+            "Jauge démarre en MODE DÉMO : les en-têtes X-Jauge-Tenant / X-Jauge-Role "
+            "sont acceptés sans jeton. Mettre JAUGE_MODE_DEMO=0 hors démonstration."
+        )
+    app = FastAPI(
+        title="Jauge — plan de contrôle FinOps IA",
+        version="0.1.0",
+        description=DESCRIPTION,
+        docs_url="/v1/docs",
+        redoc_url="/v1/redoc",
+        openapi_url="/v1/openapi.json",
+    )
+    app.state.store = store
+    app.state.mode_demo = demo
+    app.state.audit = audit or MemoryAuditStore()
+    app.state.reglages = reglages or MemoryReglagesStore(ParametresAdmin())
+    app.state.verificateur = CognitoJwksVerifier()
+    ports_choisis = ports or ports_par_defaut(store, demo)
+    app.state.port_campagnes = ports_choisis.campagnes
+    app.state.port_rapports = ports_choisis.rapports
+    app.state.port_chat = ports_choisis.chat
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    enregistrer_gestionnaires_erreurs(app)
+    for routeur in ROUTEURS:
+        app.include_router(routeur)
+    _monter_portail(app)
+    return app
+
+
+def _monter_portail(app: FastAPI) -> None:
+    """Monte le portail statique s'il existe (module M13), sans le rendre obligatoire."""
+    if DOSSIER_PORTAIL.is_dir() and (DOSSIER_PORTAIL / "index.html").is_file():
+        app.mount("/", StaticFiles(directory=str(DOSSIER_PORTAIL), html=True), name="portal")
