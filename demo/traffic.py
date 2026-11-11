@@ -12,6 +12,7 @@ Une ligne JSON par invocation :
     {
       "requestId": "<uuid v5 déterministe>",
       "eventTime": "<ISO-8601 UTC, ex. 2026-11-03T08:12:33Z>",
+      "modelId": "<identifiant du modèle, ex. anthropic.claude-...-v1:0>",
       "input": "<corps JSON de la requête Converse, sous forme de chaîne>",
       "output": "<corps JSON de la réponse Converse, ou null si erreur>",
       "inputTokenCount": 1533,
@@ -167,6 +168,8 @@ class JournalInvocation:
         return {
             "requestId": self.request_id,
             "eventTime": self.event_time.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            # Champ des journaux Bedrock réels, exigé par le parseur M1 (É1 corrigé).
+            "modelId": self.modele_id,
             "input": self.corps_entree,
             "output": self.corps_sortie,
             "inputTokenCount": self.jetons_entree,

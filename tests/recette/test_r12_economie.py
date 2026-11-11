@@ -148,7 +148,7 @@ def test_r12_economie_coherente_avec_la_facture_cur() -> None:
             sum(
                 ligne.line_item_unblended_cost
                 for ligne in lignes
-                if ligne.tag_application == APP_CLASSEMENT
+                if ligne.resource_tags_user_application == APP_CLASSEMENT
             ),
             4,
         )

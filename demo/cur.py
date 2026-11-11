@@ -11,12 +11,16 @@ COLONNES (noms de la spécification CUR 2.0, en `snake_case`)
     line_item_usage_end_date, product_code, product_family,
     line_item_usage_type, line_item_operation, resource_id,
     line_item_usage_amount, line_item_unblended_cost, region,
-    service_tier, model_id, tag_application, tag_team, tag_environment
+    service_tier, model_id, resource_tags_user_application,
+    resource_tags_user_team, resource_tags_user_environment
 
-Les trois dernières colonnes `tag_*` correspondent aux étiquettes d'allocation
-des coûts (application, équipe, environnement) ; dans un compte réel, elles
-proviennent du profil d'inférence d'application et des étiquettes de la
-requête, pas du CUR lui-même.
+Les trois dernières colonnes `resource_tags_user_*` correspondent aux
+étiquettes utilisateur d'allocation des coûts (application, équipe,
+environnement) : dans un export CUR 2.0 réel, une étiquette `user:<clé>` est
+normalisée en colonne `resource_tags/user:<clé>`, d'où ce nommage — c'est celui
+que reconnaît le parseur CUR de M1 (`CHAMPS_CUR`, `jauge/attribution/reconcile.py`).
+Dans un compte réel, ces valeurs proviennent du profil d'inférence d'application
+et des étiquettes de la requête, pas du CUR lui-même.
 
 Le montant facturé d'une journée est le recalcul du trafic **majoré d'un
 écart déterministe de moins de 1,2 %** : le rapprochement sort « conforme »
@@ -70,9 +74,9 @@ class LigneCur:
     region: str
     service_tier: str
     model_id: str
-    tag_application: str
-    tag_team: str
-    tag_environment: str
+    resource_tags_user_application: str
+    resource_tags_user_team: str
+    resource_tags_user_environment: str
 
     def vers_dictionnaire(self) -> dict[str, Any]:
         """Ligne sous forme de dictionnaire (colonnes du CUR 2.0)."""
@@ -91,9 +95,9 @@ class LigneCur:
             "region": self.region,
             "service_tier": self.service_tier,
             "model_id": self.model_id,
-            "tag_application": self.tag_application,
-            "tag_team": self.tag_team,
-            "tag_environment": self.tag_environment,
+            "resource_tags_user_application": self.resource_tags_user_application,
+            "resource_tags_user_team": self.resource_tags_user_team,
+            "resource_tags_user_environment": self.resource_tags_user_environment,
         }
 
 
@@ -112,7 +116,12 @@ def generer_lignes_cur(
     lignes: list[LigneCur] = []
     for cle, groupe in _grouper(records).items():
         lignes.extend(_lignes_du_groupe(cle, groupe, table_tarifs, graine, comptes))
-    lignes.sort(key=lambda ligne: (ligne.line_item_usage_start_date, ligne.tag_application))
+    lignes.sort(
+        key=lambda ligne: (
+            ligne.line_item_usage_start_date,
+            ligne.resource_tags_user_application,
+        )
+    )
     return lignes
 
 
@@ -261,9 +270,9 @@ def _ligne(
         region=REGION,
         service_tier=niveau.value.capitalize(),
         model_id=modele_id,
-        tag_application=application_id,
-        tag_team=equipe,
-        tag_environment=environnement,
+        resource_tags_user_application=application_id,
+        resource_tags_user_team=equipe,
+        resource_tags_user_environment=environnement,
     )
 
 

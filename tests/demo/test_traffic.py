@@ -64,6 +64,7 @@ def test_format_journal_invocation(records: list) -> None:
     attendus = {
         "requestId",
         "eventTime",
+        "modelId",
         "input",
         "output",
         "inputTokenCount",
@@ -75,6 +76,7 @@ def test_format_journal_invocation(records: list) -> None:
         "errorMessage",
     }
     assert attendus <= set(ligne)
+    assert ligne["modelId"] == records[0].modele_id
     assert ligne["totalTokenCount"] == ligne["inputTokenCount"] + ligne["outputTokenCount"]
     assert ligne["eventTime"].endswith("Z")
     entree = json.loads(ligne["input"])
