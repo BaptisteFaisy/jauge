@@ -9,6 +9,7 @@ des implémentations locales, déterministes et sans réseau.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import date, timedelta
 from typing import Protocol
 
@@ -17,6 +18,7 @@ from pydantic import BaseModel, Field
 from jauge.common.errors import PlafondDepasseError, ServiceIndisponibleError, ValidationError
 from jauge.common.ids import aleatoire
 from jauge.models.campaign import Campagne, StatutCampagne
+from jauge.models.recommendation import BasculeProgressive, Recommandation
 from jauge.models.tenant import Application, Tenant
 from jauge.store.protocol import Store
 
@@ -61,6 +63,29 @@ class ChatPort(Protocol):
 
     def repondre(self, tenant_id: str, question: str) -> dict[str, object]:
         """Répond à une question sur les coûts du client."""
+        ...
+
+
+class BasculePort(Protocol):
+    """Bascule progressive par règle de passerelle (M6, EF-BAS-01..03).
+
+    L'API ne construit jamais elle-même l'état d'une bascule quand ce port est
+    câblé : c'est le `ControlleurBascule` de M6 qui crée la règle de passerelle,
+    tient les paliers et retire la règle en cas de dérive.
+    """
+
+    def demarrer(
+        self, recommandation: Recommandation, paliers: Sequence[int] | None = None
+    ) -> BasculeProgressive:
+        """Crée la règle de passerelle au premier palier."""
+        ...
+
+    def annuler(self, bascule: BasculeProgressive, motif: str) -> BasculeProgressive:
+        """Retire la règle de passerelle (retour arrière demandé par un humain)."""
+        ...
+
+    def avancer(self, bascule: BasculeProgressive) -> BasculeProgressive:
+        """Rejuge le palier courant puis monte d'un palier, ou annule."""
         ...
 
 

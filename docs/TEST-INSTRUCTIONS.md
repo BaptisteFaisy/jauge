@@ -2,9 +2,7 @@
 
 **Everything here runs today, offline.** Section 1 needs no AWS account, no
 network access and no credentials. Sections 2 to 4 run the seeded demo (console
-summary, API and portal) on your machine; they are delivered, with one caveat: the
-single-command `uvicorn jauge.api.app:app` form is blocked (no module-level `app`
-object), so section 2 gives a verified launcher instead.
+summary, API and portal) directly on your machine with a single command.
 
 What is **not** done yet is a real AWS deployment (a public portal URL), the video
 and the Devpost submission — see [`SUBMISSION.md`](SUBMISSION.md). Every step below
@@ -13,7 +11,6 @@ carries a status line so nothing is presented as working before it is.
 | Status | Meaning |
 |---|---|
 | **Available** | In the repository on `main`, runs as written |
-| **Blocked** | In the repository, but a known code gap stops one command; the workaround is given |
 | **Pending gesture** | Needs a human action outside the repository (AWS deployment, video, submission) |
 
 ---
@@ -41,7 +38,7 @@ Expected output — the last line is the summary (`-q` is already set in
 
 ```
 ...                                                                      [100%]
-1021 passed, 2 xfailed in 2:11
+1078 passed in 2:43
 ```
 
 That is the state of `main` at the time of writing; the summary line pytest prints
@@ -101,9 +98,9 @@ file/function size limits (`scripts/check_limits.py`), `pytest`, and
 
 ## 2. Local demo (available)
 
-> **Status: available.** `demo/` (M12) and `src/jauge/api/` (M8) are merged. The
-> console demo runs as written; the portal needs the launcher below because the
-> one-line `uvicorn` form is blocked.
+> **Status: available.** `demo/` (M12), `src/jauge/api/` (M8) and the ASGI
+> entry point `jauge.api.app:app` are merged. Both the console demo and the
+> single-command portal run as written.
 
 ```bash
 uv sync --all-groups
@@ -113,7 +110,7 @@ uv run python -m demo.seed     # seeds an in-memory store, prints the summary
 `demo.seed` creates the demonstration environment of specification §18.1 and
 prints the figures the code computed. **Demo output, not a customer result** — on
 `main` today it reports a mean reconciliation gap of **0.57 %** (14/14 days inside
-the 3 % target), an estimated **853.52 $/month** of savings across six detected
+the 3 % target), an estimated **628.58 $/month** of savings across eight detected
 levers, a `ticket-classifier` recommendation `PENDING_APPROVAL`, a
 `support-assistant` campaign `REJECTED` with evidence, and a `doc-summarizer`
 rollout at stage 50 % with online quality 0.995:
@@ -127,30 +124,18 @@ rollout at stage 50 % with online quality 0.995:
 
 All requests are generated. No real customer data is used at any point.
 
-### 2.1 The portal and API (blocked one-liner, verified launcher)
+### 2.1 The portal and API (single command)
 
-> **Status: blocked for the one-line form.** `src/jauge/api/app.py` exposes only
-> the `creer_app()` factory, not a module-level `app`, so
-> `uv run uvicorn jauge.api.app:app --reload` fails with `Attribute "app" not
-> found in module "jauge.api.app"`. It would work once `app = creer_app()` is added
-> to that file. Until then, use this launcher from the repository root — it seeds a
-> store, then serves the API + portal on http://127.0.0.1:8000:
+> **Status: available.** `jauge.api.app:app` seeds the demo scenario on first
+> access and wires the API ports (campaigns, reports, chat, staged rollout) onto
+> the real modules, then serves both the API and the static portal:
 
 ```bash
-cat > _serve.py <<'PY'
-import uvicorn
-from demo.seed import peupler_store
-from jauge.store.memory import MemoryStore
-from jauge.api.app import creer_app
-store = MemoryStore(); peupler_store(store)
-uvicorn.run(creer_app(store=store, mode_demo=True), host="127.0.0.1", port=8000)
-PY
-uv run python _serve.py        # then open http://127.0.0.1:8000
+uv run uvicorn jauge.api.app:app --reload   # then open http://127.0.0.1:8000
 ```
 
-A bare `uv run uvicorn --factory jauge.api.app:creer_app` also starts the server,
-but on an **empty** store (no demo data), because the factory does not seed. The
-launcher above is the way to see the portal populated.
+With `JAUGE_MODE_DEMO=0`, the same entry point starts an **empty**,
+Cognito-protected application without demo data.
 
 ---
 
@@ -240,8 +225,7 @@ account by following the README) are console/deployment checks, not UI checks.
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `Attribute "app" not found in module "jauge.api.app"` | `src/jauge/api/app.py` exposes only the `creer_app()` factory, no module-level `app` | Use the launcher of section 2.1 (or `uvicorn --factory jauge.api.app:creer_app` for an empty store); the clean fix is `app = creer_app()` in that file |
-| `ModuleNotFoundError: demo` when running the launcher | The launcher was not run from the repository root, so `demo`/`jauge` are not importable | `cd` to the repository root, then `uv run python _serve.py` |
+| `ModuleNotFoundError: demo` when starting `uvicorn` | Not run from the repository root, or demo package absent | `cd` to the repository root and run `uv run uvicorn jauge.api.app:app` |
 | `uv run pytest -q` prints dots but no summary | `-q` is already set in `pyproject.toml`; a second `-q` silences the summary | Run `uv run pytest` |
 | `uv: command not found` | `uv` not installed or not on `PATH` | `curl -LsSf https://astral.sh/uv/install.sh \| sh`, then `export PATH="$HOME/.local/bin:$PATH"` |
 | `ModuleNotFoundError: jauge` | Running `pytest` from outside the project or without `uv run` | Use `uv run pytest` from the repository root |

@@ -14,8 +14,8 @@ Aucune formule de coût n'est réécrite ici (ENF-IA-01). Deux adaptations de
 1. les colonnes de l'export CUR du client sont renommées vers les variantes que
    M1 accepte déjà ;
 2. une ligne de journal qui ne porte pas d'identifiant de modèle est complétée
-   depuis la fiche de l'application : le générateur de trafic de la démo (M12)
-   n'écrit pas `modelId` dans ses journaux — besoin signalé dans la PR.
+   depuis la fiche de l'application (filet de sécurité pour d'éventuels
+   journaux incomplets : depuis la PR #21, la démo émet directement `modelId`).
 
 Exigences visées : EF-ATT-05..07, §8.2, ENF-SEC-02.
 """

@@ -469,7 +469,7 @@ per-customer CloudFormation template (M10/M11, `infra/`), the demo and the stati
 portal (M12/M13, `demo/`, `portal/`), and the acceptance scenarios R1–R13 with
 their negative security tests (M15, `tests/recette/`).
 
-The suite is covered by offline tests — **1021 passed, 2 xfailed** on `main` — with
+The suite is covered by offline tests — **1078 passed** on `main` — with
 no AWS call: the real boto3/Bedrock adapters are written but exercised only through
 their interface with fake clients. What is **not** done is not code but gestures: a
 real AWS deployment (accounts, credits, Bedrock enabled — the adapters have never

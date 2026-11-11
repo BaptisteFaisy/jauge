@@ -18,7 +18,7 @@ from jauge.api.auth import (
     Utilisateur,
     extraire_utilisateur_demo,
 )
-from jauge.api.ports import CampagnePort, ChatPort, RapportPort
+from jauge.api.ports import BasculePort, CampagnePort, ChatPort, RapportPort
 from jauge.api.reglages import ReglagesStore
 from jauge.store.protocol import Store
 
@@ -57,6 +57,11 @@ def obtenir_port_chat(request: Request) -> ChatPort:
     return request.app.state.port_chat
 
 
+def obtenir_port_bascules(request: Request) -> BasculePort | None:
+    """Rend le contrôleur de bascule (M6) s'il est câblé, sinon `None`."""
+    return getattr(request.app.state, "port_bascules", None)
+
+
 def obtenir_utilisateur(request: Request) -> Utilisateur:
     """Résout l'utilisateur appelant : en-têtes de démo ou jeton Bearer Cognito."""
     if request.app.state.mode_demo:
@@ -79,3 +84,4 @@ DepReglages = Annotated[ReglagesStore, Depends(obtenir_reglages)]
 DepPortCampagnes = Annotated[CampagnePort, Depends(obtenir_port_campagnes)]
 DepPortRapports = Annotated[RapportPort, Depends(obtenir_port_rapports)]
 DepPortChat = Annotated[ChatPort, Depends(obtenir_port_chat)]
+DepPortBascules = Annotated[BasculePort | None, Depends(obtenir_port_bascules)]

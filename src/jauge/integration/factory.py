@@ -40,6 +40,7 @@ from jauge.api.audit import AuditSink, MemoryAuditStore
 from jauge.engine.calculator import TableTarifs
 from jauge.evaluation.judge import JugeClient
 from jauge.integration.api_ports import AdaptateurCampagnes, AdaptateurRapports
+from jauge.integration.bascules import AdaptateurBascules
 from jauge.integration.candidats import AdaptateurCandidats
 from jauge.integration.chat import AdaptateurChat
 from jauge.integration.client_demo import ClientModeleDemo, juge_demonstration
@@ -70,6 +71,7 @@ class Clients:
     juge: JugeClient | None = None
     modele_agent: Any | None = None
     audit: AuditSink | None = None
+    passerelle: Any | None = None
 
 
 def table_tarifs_demo() -> TableTarifs:
@@ -145,6 +147,7 @@ def creer_app(
         campagnes=AdaptateurCampagnes(magasin, services.rejeu),  # type: ignore[arg-type]
         rapports=AdaptateurRapports(magasin, table),
         chat=AdaptateurChat(services, magasin, modele=clients.modele_agent, mode_demo=mode_demo),
+        bascules=AdaptateurBascules(magasin, passerelle=clients.passerelle),
     )
     app = creer_app_api(store=magasin, mode_demo=mode_demo, audit=journal, ports=ports)
     app.state.services = services

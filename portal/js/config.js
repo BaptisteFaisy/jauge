@@ -49,7 +49,7 @@ export const ROLES_RELECTURE = ["relecteur", "administrateur_plateforme"];
  */
 export const APPLICATIONS_SECOURS = {
   "t-demo-a": ["ticket-classifier", "support-assistant", "doc-summarizer"],
-  "t-demo-b": ["b-chatbot"],
+  "t-demo-b": ["kb-search"],
 };
 
 /** Paliers de bascule proposés par défaut (Annexe C, EF-BAS-01). */

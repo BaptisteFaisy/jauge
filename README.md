@@ -136,8 +136,7 @@ gestures: a real AWS deployment, the video shoot, and the Devpost submission
 The whole test suite runs offline — no AWS account, no network, no credentials.
 The real boto3/Bedrock adapters are written but exercised only through their
 interface with fake clients, so the suite never reaches AWS. On `main` today
-`uv run pytest` reports **1021 passed, 2 xfailed** (the duration depends on the
-machine).
+`uv run pytest` reports **1078 passed** (the duration depends on the machine).
 
 ### Results: measured vs target
 
@@ -165,7 +164,7 @@ uv sync --all-groups
 # 2. Run the test suite — offline, no AWS account, no credentials
 uv run pytest
 #   ...                                              [100%]
-#   1021 passed, 2 xfailed in 2:11    (count on `main` at the time of writing)
+#   1078 passed in 2:43    (count on `main` at the time of writing)
 
 # 3. Run the same gates as CI
 bash scripts/ci-local.sh
@@ -180,36 +179,26 @@ uv run python -m demo.seed     # seeds an in-memory store, prints the summary
 `demo.seed` generates the §18.1 scenario — three applications at customer A, one
 at customer B — and prints the figures the code computed. These are **demo
 output, not a customer result**: a mean reconciliation gap of **0.57 %** (14/14
-days inside the 3 % target), an estimated **853.52 $/month** of savings across
-six detected levers, a `ticket-classifier` recommendation pending approval, a
+days inside the 3 % target), an estimated **628.58 $/month** of savings across
+eight detected levers, a `ticket-classifier` recommendation pending approval, a
 `support-assistant` campaign rejected with evidence, and a `doc-summarizer`
 rollout at stage 50 % with online quality 0.995.
 
 ### See it in the portal
 
 The static portal (`portal/`, no build step) is served by the control-plane API.
-The one-line form is **blocked**: `src/jauge/api/app.py` exposes only the
-`creer_app()` factory, not a module-level `app`, so
+One command starts everything — the ASGI entry point `jauge.api.app:app` seeds
+the demo scenario and wires the API ports (campaigns, reports, chat, **staged
+rollout**) onto the real modules:
 
 ```bash
-uv run uvicorn jauge.api.app:app --reload   # blocked: needs `app = creer_app()` in src/jauge/api/app.py
+uv run uvicorn jauge.api.app:app --reload   # then open http://127.0.0.1:8000
 ```
 
-fails with `Attribute "app" not found in module "jauge.api.app"`. To browse the
-**seeded** portal today, run this small launcher from the repository root (it
-seeds a store, then serves the API + portal on http://127.0.0.1:8000):
-
-```bash
-cat > _serve.py <<'PY'
-import uvicorn
-from demo.seed import peupler_store
-from jauge.store.memory import MemoryStore
-from jauge.api.app import creer_app
-store = MemoryStore(); peupler_store(store)
-uvicorn.run(creer_app(store=store, mode_demo=True), host="127.0.0.1", port=8000)
-PY
-uv run python _serve.py        # then open http://127.0.0.1:8000
-```
+The seeding runs on first access to `app` (a few seconds), not at import time, so
+tests that only import `creer_app` do not pay for it. With
+`JAUGE_MODE_DEMO=0` the same entry point serves an **empty**, Cognito-protected
+application: no seeding, and the un-wired ports answer `502` explicitly.
 
 In demo mode the API trusts two headers instead of Cognito: `X-Jauge-Tenant`
 (`t-demo-a` / `t-demo-b`) and `X-Jauge-Role`. Demo mode is refused when
@@ -240,7 +229,7 @@ minute-by-minute test path: [`docs/TEST-INSTRUCTIONS.md`](docs/TEST-INSTRUCTIONS
 | `demo/` | Synthetic traffic generator and demo applications | Delivered (M12) |
 | `portal/` | Static web portal, no build step | Delivered (M13) |
 | `docs/` | HLD, architecture, demo script, submission checklist, test instructions | Delivered |
-| `tests/` | Unit and isolation (negative security) tests, end-to-end acceptance | Delivered — 1021 passed, 2 xfailed on `main`, offline |
+| `tests/` | Unit and isolation (negative security) tests, end-to-end acceptance | Delivered — 1078 passed on `main`, offline |
 
 Work breakdown, module ownership and per-module "definition of done":
 [`docs/MODULES.md`](docs/MODULES.md).

@@ -66,6 +66,8 @@ Référence normative : [`docs/fr/cahier-des-charges-finops-ia.md`](fr/cahier-de
 | M14 | Documentation & soumission | `feat/docs` | `docs/HLD.md`, `docs/ARCHITECTURE.md`, `docs/DEMO-SCRIPT.md`, `docs/SUBMISSION.md`, `README.md` | §19, §18.2 | En **anglais** : HLD, schéma d'architecture (mermaid + SVG), script vidéo 3 min, instructions de test pour les juges, checklist de soumission |
 | M15 | Recette bout-en-bout | `feat/recette` | `tests/recette/**` | §22 | Scénarios R1–R13 en pytest sur `MemoryStore` + adaptateurs fictifs, y compris les tests négatifs de sécurité R10/R11 |
 | M16 | Résolveur Hermes | `feat/hermes-resolver` | `.github/hermes/**`, `.github/workflows/hermes-*.yml` | runbook interne | Portage du résolveur de conflits (rebase + résolution + validation par la toolchain du dépôt) ; PR **draft** ; selftests sans secrets |
+| M17 | Câblage / intégration | `feat/integration` | `src/jauge/integration/**`, `tests/integration/**`, `demo/seed.py` | §12, §15 | Adaptateurs réels des 12 ports des agents et des ports API, fabrique, démo bout en bout hors ligne (PR #19, fusionnée) |
+| M18 | Finitions pré-soumission | `fix/finitions` | `src/jauge/api/{app,deps,ports,routes/{health,tenants,rollouts}}.py`, `src/jauge/integration/{bascules,factory,attribution}.py`, `portal/js/config.js` | EF-ATT-03, EF-BAS-01..03, É3/É5/É7 | Point d'entrée ASGI amorcé, bascule API via le contrôleur M6, schéma d'attribution à la création de client, sonde `/health`, portail aligné sur `kb-search` |
 
 ## Dépendances entre modules
 
