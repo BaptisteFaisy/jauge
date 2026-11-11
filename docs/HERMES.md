@@ -157,8 +157,9 @@ n'est **pas** utilisée : le modèle InferHub est fixé dans `resolve.py`.
    clone dépasse ~30 s.
 4. **Pas de coordination multi-agents** ([HERMES-COORD] de `duello`) : inutile
    avec un seul gate sérialisé.
-5. **Le résolveur ne merge jamais** : il pousse, puis le gate ré-évalue. Le
-   merge reste la décision du gate/Mergify.
+5. **Le résolveur ne merge jamais** : il pousse, ré-arme la CI, puis Mergify
+   (le pilote) ré-évalue et fusionne. Le merge n'est jamais la décision du
+   résolveur ni du gate.
 6. **`workflow_run` du chien de garde** cible le workflow nommé `CI` : renommer
    `ci.yml` casserait le réveil (le `workflow_dispatch` manuel reste possible).
 7. Un échec du résolveur n'est **pas** un état terminal : la PR reste ouverte et
@@ -173,9 +174,15 @@ n'est **pas** utilisée : le modèle InferHub est fixé dans `resolve.py`.
    CI verte.
 3. Secret `INFERHUB_API_KEY` posé ; `HERMES_PUSH_TOKEN` volontairement absent
    (le ré-armement par dispatch déclenche la CI et le gate).
-4. Gate hors dry-run (`HERMES_LITE_DRY_RUN=0`) : c'est lui qui merge, avec
-   `HERMES_REQUIRED_CHECKS=lint,limits,test,iac,ci-budget`.
-5. Essai sur un conflit réel : voir §11.
+4. **Mergify est le pilote de merge** (vérifié le 2026-11-11 : la PR #25 a été
+   fusionnée par la file Mergify). Le gate repasse en dry-run
+   (`HERMES_LITE_DRY_RUN=1`) : un seul pilote à la fois.
+5. Le gate garde deux rôles en dry-run : poser les labels d'état, et
+   **dispatcher le résolveur sur un vrai conflit** — Mergify signale le conflit
+   mais ne le résout pas. Variable `HERMES_DISPATCH_RESOLVEUR=1` (défaut) :
+   le dispatch survit au dry-run ; à `0`, le résolveur n'est lancé que par
+   `workflow_dispatch` manuel.
+6. Essai sur un conflit réel : voir §11.
 
 ## 10. Écarts au runbook
 

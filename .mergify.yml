@@ -5,10 +5,12 @@
 # `ci-budget` et `stale-base-guard`. Noms de checks = noms de JOBS (vérifiés via
 # `gh pr view --json statusCheckRollup`), pas `Workflow / job`.
 #
-# ⚠ PILOTAGE : au 2026-11-11 le produit Merge Queue n'est pas encore activé pour
-# ce dépôt (geste humain sur dashboard.mergify.com). En attendant, le pilote de
-# merge est le gate `hermes-lite` (variable HERMES_LITE_DRY_RUN=0). Dès que
-# Mergify est actif, remettre HERMES_LITE_DRY_RUN=1 : un seul pilote à la fois.
+# ⚠ PILOTAGE (vérifié le 2026-11-11, PR #25 fusionnée par la file Mergify) :
+# **Mergify est le seul pilote de merge** — le gate `hermes-lite` est en
+# dry-run (`HERMES_LITE_DRY_RUN=1`). Le gate garde deux rôles : détecter les
+# vrais conflits et dispatcher le résolveur Hermes (`HERMES_DISPATCH_RESOLVEUR=1`,
+# Mergify ne résout pas les conflits), et poser les labels d'état.
+# Ne jamais remettre les deux pilotes en marche simultanément.
 # Structure copiée du .mergify.yml de BaptisteFaisy/duello (décision
 # user 2026-10-10) : inline labels urgent / priority-low identiques.
 queue_rules:
