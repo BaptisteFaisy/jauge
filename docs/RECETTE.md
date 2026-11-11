@@ -84,11 +84,11 @@ Ces écarts ont été constatés **pendant la recette**. Aucun module métier n'
 l'écart est de nature à interdire le test, porte un `xfail` documenté.
 
 Les écarts d'interopérabilité **É1** et **É2** ont été **corrigés le
-2026-11-11** (PR « Interop démo ↔ attribution : modelId dans les journaux,
-colonnes CUR 2.0 réelles », branche `fix/demo-attribution-interop`) : c'est le
-générateur de démonstration (M12) qui émet désormais les vrais noms de champs
-AWS, le parseur M1 restant inchangé. Les deux tests `xfail` sont devenus des
-tests verts ; la recette ne compte plus aucun `xfail`.
+2026-11-11** (PR [#21](https://github.com/BaptisteFaisy/jauge/pull/21)
+« Interop démo ↔ attribution : modelId dans les journaux, colonnes CUR 2.0
+réelles ») : c'est le générateur de démonstration (M12) qui émet désormais les
+vrais noms de champs AWS, le parseur M1 restant inchangé. Les deux tests
+`xfail` sont devenus des tests verts ; la recette ne compte plus aucun `xfail`.
 
 | N° | Écart | Impact | Test |
 |---|---|---|---|
