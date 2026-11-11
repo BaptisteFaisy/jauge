@@ -146,3 +146,5 @@ bash scripts/ci-local.sh      # run the whole CI locally
 ## License
 
 Proprietary — all rights reserved.
+
+<!-- test de la file Mergify -->
