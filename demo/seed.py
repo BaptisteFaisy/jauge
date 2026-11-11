@@ -1,19 +1,30 @@
-"""Amorçage du store de démonstration (§18.1).
+"""Amorçage du store de démonstration (§18.1) — alimenté par les modules réels.
 
-`peupler_store` remplit un `jauge.store.memory.MemoryStore` **via l'API
-publique du socle uniquement** : deux clients, quatre applications, les
-agrégats quotidiens sur 14 jours, les rapprochements quotidiens, les leviers
-détectés, une campagne de rejeu par application prouvée, les recommandations,
-une bascule en cours et sa vérification d'économie.
+`peupler_store` remplit un `jauge.store.memory.MemoryStore` **par le chemin de
+production** : plus rien n'est figé dans la démonstration.
 
-Les deux clients, deux des applications et la table des tarifs viennent des
-fixtures du socle (`tests/conftest.py`, rechargées sans être modifiées) ; les
-deux autres applications de démonstration sont définies dans `demo.socle`.
+1. le trafic synthétique est converti en journaux d'invocation Bedrock ;
+2. le module d'attribution (M1) en lit les agrégats et le rapprochement avec
+   l'export CUR 2.0 ;
+3. le plan de données (textes, requêtes rejouables, profil agrégé) est rempli
+   à partir des mêmes journaux ;
+4. le détecteur de leviers (M3, les sept règles de l'Annexe A) tourne sur ce
+   profil et sur les agrégats ;
+5. les campagnes de rejeu (M4) sont exécutées avec le client de modèle hors
+   ligne, puis notées par le module d'évaluation (M5) ;
+6. les recommandations sont composées par le schéma de l'Annexe B (M7) et
+   enregistrées dans le store.
 
 `python -m demo.seed` remplit un store en mémoire et affiche un résumé console
 (dépense par application, leviers, économie attendue).
 
-Aucune donnée réelle : tout est généré par `demo.traffic` et `demo.cur`.
+**Aucun appel AWS, aucun modèle de langage** : le parcours est 100 % hors
+ligne.
+
+Écart documenté : le scénario « passage au niveau de service Flex » du résumé
+nocturne (même modèle, niveau différent) reste décrit par `demo.scenario` :
+aucun module ne couvre une campagne multi-niveaux, la campagne de rejeu (M4)
+travaillant à un seul niveau (Flex).
 """
 
 from __future__ import annotations
@@ -21,14 +32,13 @@ from __future__ import annotations
 from datetime import date
 from functools import cache
 
-from demo.analyse import analyser_trafic, construire_leviers
-from demo.cur import facture_par_jour, generer_lignes_cur
+from demo.analyse import analyser_trafic
+from demo.cur import generer_lignes_cur
 from demo.profils import (
     DATE_FIN_DEFAUT,
     GRAINE_DEFAUT,
     JOURS_DEFAUT,
     PROFILS,
-    TENANT_A,
 )
 from demo.scenario import (
     construire_bascules,
@@ -37,11 +47,27 @@ from demo.scenario import (
     construire_verifications,
 )
 from demo.socle import SocleDemo, charger_socle_demo
-from demo.traffic import JournalInvocation, generer_trafic
-from jauge.engine.attribution import agreger_requetes, rapprocher_facture
-from jauge.engine.calculator import TableTarifs, calculer_cout_requete
+from demo.traffic import JournalInvocation, generer_trafic, lignes_cloudwatch
+from jauge.agents.schemas import (
+    RedactionRecommandation,
+    composer_recommandation,
+    valider_recommandation,
+)
+from jauge.integration import (
+    Clients,
+    PlanDeDonnees,
+    ServiceAttribution,
+    ServiceDetectionLeviers,
+    construire_contexte_levier,
+    creer_services,
+    remplir_plan_de_donnees,
+)
+from jauge.integration.leviers import RATIO_SORTIE_MEDIANE_DEMO, parametres_demonstration
+from jauge.models.campaign import Campagne, ResultatCandidat
 from jauge.models.cost import AgregatQuotidien
-from jauge.models.tenant import Application, Tenant
+from jauge.models.recommendation import StatutRecommandation
+from jauge.models.tenant import Application, FormuleOffre, Tenant
+from jauge.pricing_data.seed import table_demo
 from jauge.store.memory import MemoryStore
 from jauge.store.protocol import Store
 
@@ -54,6 +80,21 @@ __all__ = [
     "peupler_store",
     "resume",
 ]
+
+#: Applications dont la campagne de rejeu est exécutée par les modules (M4/M5).
+APPLICATIONS_REJEU = ("ticket-classifier", "support-assistant")
+
+#: Application du scénario « niveau de service Flex » (écart documenté).
+APPLICATION_FLEX = "doc-summarizer"
+
+#: Taille d'échantillon des campagnes de la démonstration (§13.1).
+TAILLE_ECHEANTILLON = 200
+
+#: Graine des campagnes de rejeu (§13.1 : même graine ⇒ même échantillon).
+GRAINE_CAMPAGNE = 42
+
+#: Ratio qui définit une sortie longue dans le profil de la démonstration.
+RATIO_SORTIE_LONGUE_DEMO = RATIO_SORTIE_MEDIANE_DEMO
 
 
 @cache
@@ -71,28 +112,37 @@ def peupler_store(
     graine: int = GRAINE_DEFAUT,
     jours: int = JOURS_DEFAUT,
     date_fin: date = DATE_FIN_DEFAUT,
-) -> None:
-    """Remplit le store de démonstration (API publique du socle seulement)."""
+) -> PlanDeDonnees:
+    """Remplit le store de démonstration par le chemin de production.
+
+    Rend le **plan de données** rempli (textes et requêtes rejouables) : c'est
+    lui qu'il faut passer à `jauge.integration.creer_app` pour que l'API puisse
+    lancer une campagne de rejeu sur les données de la démonstration.
+    """
     socle = charger_socle_demo()
     _enregistrer_referentiel(store, socle)
+    table = table_demo()
+    plan = PlanDeDonnees()
+    services = creer_services(store, mode_demo=True, clients=Clients(), tarifs=table, plan=plan)
     records = generer_trafic(graine=graine, jours=jours, date_fin=date_fin)
-    table = TableTarifs(socle.tarifs)
-    agregats = construire_agregats(records, socle, table)
-    store.enregistrer_agregats(agregats)
-    _enregistrer_rapprochements(store, socle, records, agregats, table, graine)
-    stats = analyser_trafic(records, table, PROFILS, jours, date_fin)
-    for levier in construire_leviers(stats, table, date_fin):
-        store.enregistrer_levier(levier)
-    campagnes = construire_campagnes(stats, table, date_fin)
-    for campagne in campagnes:
-        store.enregistrer_campagne(campagne)
-    recos = construire_recommandations(stats, campagnes)
-    for reco in recos:
-        store.enregistrer_recommandation(reco)
-    for bascule in construire_bascules(recos):
-        store.enregistrer_bascule(bascule)
-    for verif in construire_verifications(recos):
-        store.enregistrer_verification(verif)
+    lignes = lignes_cloudwatch(records)
+    attribution = ServiceAttribution(store, table)
+    lignes_cur = [
+        ligne.vers_dictionnaire()
+        for ligne in generer_lignes_cur(records, table, graine, comptes_demo())
+    ]
+    for tenant_id, lignes_tenant in attribution.lignes_par_tenant(lignes).items():
+        _attribuer(attribution, tenant_id, lignes_tenant, lignes_cur)
+        remplir_plan_de_donnees(
+            attribution.enrichir(tenant_id, lignes_tenant),
+            tenant_id,
+            plan,
+            ratio_sortie_longue=RATIO_SORTIE_LONGUE_DEMO,
+        )
+        _detecter_leviers(store, plan, tenant_id, table, date_fin)
+    _campagnes_et_recommandations(store, services, socle)
+    _scenario_flex(store, socle, records, table, date_fin, jours)
+    return plan
 
 
 def _enregistrer_referentiel(store: Store, socle: SocleDemo) -> None:
@@ -103,66 +153,151 @@ def _enregistrer_referentiel(store: Store, socle: SocleDemo) -> None:
         store.enregistrer_application(application)
 
 
-def construire_agregats(
-    records: list[JournalInvocation], socle: SocleDemo, table: TableTarifs
-) -> list[AgregatQuotidien]:
-    """Agrège le trafic par application et par jour (§8.2, EF-ATT-05)."""
-    agregats: list[AgregatQuotidien] = []
-    for application in socle.applications.values():
-        tenant = socle.tenant_a if application.tenant_id == TENANT_A else socle.tenant_b
-        agregats.extend(_agregats_application(records, tenant, application, table))
-    return agregats
+def _attribuer(
+    attribution: ServiceAttribution,
+    tenant_id: str,
+    lignes: list,
+    lignes_cur: list,
+) -> None:
+    """Agrège les journaux du client et rapproche le recalcul de la facture."""
+    resultat = attribution.enregistrer_agregats(tenant_id, lignes)
+    attribution.rapprocher(tenant_id, resultat, lignes_cur)
 
 
-def _agregats_application(
-    records: list[JournalInvocation],
-    tenant: Tenant,
-    application: Application,
-    table: TableTarifs,
-) -> list[AgregatQuotidien]:
-    """Agrégats quotidiens d'une application."""
-    par_jour: dict[date, list[JournalInvocation]] = {}
-    for record in records:
-        if record.application_id != application.id:
+def _detecter_leviers(
+    store: Store, plan: PlanDeDonnees, tenant_id: str, table, date_fin: date
+) -> None:
+    """Fait tourner le détecteur réel (M3) sur chaque application du client.
+
+    Seuls les clients souscrits à une offre d'**optimisation** (§7.1) sont
+    analysés : l'offre « visibilité » s'arrête à l'attribution des coûts.
+    """
+    tenant = store.obtenir_tenant(tenant_id)
+    if tenant is None or tenant.formule == FormuleOffre.VISIBILITE:
+        return
+    detection = ServiceDetectionLeviers(store)
+    for application in store.lister_applications(tenant_id):
+        profil = plan.profil(tenant_id, application.id)
+        if profil is None:
             continue
-        par_jour.setdefault(record.event_time.date(), []).append(record)
-    agregats: list[AgregatQuotidien] = []
-    for jour in sorted(par_jour):
-        lignes = par_jour[jour]
-        tarif = table.trouver(
-            application.modele_actuel, tenant.region_principale, lignes[0].niveau, jour
+        contexte = construire_contexte_levier(
+            store,
+            tenant_id,
+            application.id,
+            profil,
+            parametres_demonstration(date_fin, tenant.region_principale),
+            table,
         )
-        couples = [(r.metriques(), calculer_cout_requete(tarif, r.metriques())) for r in lignes]
-        agregats.append(agreger_requetes(tenant, application, jour, couples))
-    return agregats
+        detection.detecter(contexte)
 
 
-def _enregistrer_rapprochements(
+def _campagnes_et_recommandations(store: Store, services, socle: SocleDemo) -> None:
+    """Rejoue les campagnes puis compose les recommandations (M4 → M5 → M7)."""
+    for application_id in APPLICATIONS_REJEU:
+        application = socle.applications[application_id]
+        candidats = [
+            candidat.modele_id
+            for candidat in services.candidats.modeles_candidats(
+                application.tenant_id, application.id
+            )
+        ]
+        services.rejeu.lancer_campagne(
+            application.tenant_id,
+            application.id,
+            candidats,
+            TAILLE_ECHEANTILLON,
+            GRAINE_CAMPAGNE,
+        )
+    for application_id in APPLICATIONS_REJEU:
+        _recommander(store, services, socle, application_id)
+
+
+def _recommander(store: Store, services, socle: SocleDemo, application_id: str) -> None:
+    """Compose et enregistre la recommandation d'une application (Annexe B)."""
+    application = socle.applications[application_id]
+    campagne = _campagne_de(store, application)
+    entrees = services.entrees.valeurs(application.tenant_id, campagne.id)
+    resultat = _resultat_de(campagne, entrees.modele_cible)
+    statut = (
+        StatutRecommandation.EN_ATTENTE_APPROBATION
+        if resultat.conforme_seuils
+        else StatutRecommandation.REFUSEE
+    )
+    redaction = RedactionRecommandation(risks=_risques(resultat), status=statut)
+    recommandation = composer_recommandation(entrees, redaction)
+    tenant = store.obtenir_tenant(application.tenant_id)
+    valider_recommandation(recommandation, tenant.modeles_autorises if tenant else None)
+    services.enregistrement.enregistrer(application.tenant_id, recommandation)
+
+
+def _campagne_de(store: Store, application: Application) -> Campagne:
+    """Campagne terminée d'une application."""
+    campagnes = store.lister_campagnes(application.tenant_id, app_id=application.id)
+    if not campagnes:
+        raise ValueError(f"Aucune campagne pour l'application {application.id}")
+    return campagnes[-1]
+
+
+def _resultat_de(campagne: Campagne, modele_id: str) -> ResultatCandidat:
+    """Résultat d'un candidat dans une campagne."""
+    for resultat in campagne.resultats:
+        if resultat.modele_id == modele_id:
+            return resultat
+    raise ValueError(f"Aucun résultat pour le modèle {modele_id}")
+
+
+def _risques(resultat: ResultatCandidat) -> list[str]:
+    """Risques rédigés pour la recommandation (textes, sans chiffre calculé)."""
+    if resultat.echecs_deterministes > 0:
+        return [
+            "Le candidat échoue aux contrôles déterministes : il ne peut pas être "
+            "proposé en l'état.",
+            "Surveillance de la qualité en ligne à chaque palier de la bascule.",
+        ]
+    return [
+        "Le taux d'équivalence mesuré reste proche de celui du modèle actuel.",
+        "Surveillance de la qualité en ligne à chaque palier de la bascule.",
+    ]
+
+
+def _scenario_flex(
     store: Store,
     socle: SocleDemo,
     records: list[JournalInvocation],
-    agregats: list[AgregatQuotidien],
-    table: TableTarifs,
-    graine: int,
+    table,
+    date_fin: date,
+    jours: int,
 ) -> None:
-    """Compare, jour par jour, le recalcul des journaux et la facture CUR."""
-    lignes_cur = generer_lignes_cur(records, table, graine, comptes_demo())
-    for tenant in (socle.tenant_a, socle.tenant_b):
-        facture = facture_par_jour(lignes_cur, tenant.compte_aws)
-        recalcul: dict[date, float] = {}
-        for agregat in agregats:
-            if agregat.tenant_id != tenant.id:
-                continue
-            recalcul[agregat.jour] = recalcul.get(agregat.jour, 0.0) + agregat.cout_recalcule_usd
-        for jour in sorted(recalcul):
-            store.enregistrer_rapprochement(
-                rapprocher_facture(
-                    tenant_id=tenant.id,
-                    jour=jour,
-                    cout_recalcule=recalcul[jour],
-                    cout_facture=facture.get(jour, 0.0),
-                )
-            )
+    """Scénario « niveau Flex » du résumé nocturne (écart documenté)."""
+    stats = analyser_trafic(records, table, PROFILS, jours, date_fin)
+    campagnes = [
+        campagne
+        for campagne in construire_campagnes(stats, table, date_fin)
+        if campagne.application_id == APPLICATION_FLEX
+    ]
+    for campagne in campagnes:
+        store.enregistrer_campagne(campagne)
+    recommandations = construire_recommandations(stats, campagnes)
+    for recommandation in recommandations:
+        store.enregistrer_recommandation(recommandation)
+    for bascule in construire_bascules(recommandations):
+        store.enregistrer_bascule(bascule)
+    for verification in construire_verifications(recommandations):
+        store.enregistrer_verification(verification)
+
+
+def construire_agregats(
+    records: list[JournalInvocation], socle: SocleDemo, table
+) -> list[AgregatQuotidien]:
+    """Agrégats quotidiens du trafic, produits par le module d'attribution (M1)."""
+    store = MemoryStore()
+    _enregistrer_referentiel(store, socle)
+    attribution = ServiceAttribution(store, table)
+    lignes = lignes_cloudwatch(records)
+    agregats: list[AgregatQuotidien] = []
+    for tenant_id, lignes_tenant in attribution.lignes_par_tenant(lignes).items():
+        agregats.extend(attribution.agreger(tenant_id, lignes_tenant).agregats)
+    return agregats
 
 
 # --- Résumé console -----------------------------------------------------------
@@ -182,7 +317,7 @@ def resume(store: Store, jours: int = JOURS_DEFAUT) -> str:
 def _resume_client(store: Store, tenant: Tenant, jours: int) -> list[str]:
     """Tableau de la dépense d'un client, application par application."""
     agregats = store.lister_agregats(tenant.id)
-    lignes = [f"{tenant.nom} (compte {tenant.compte_aws})"]
+    lignes: list[str] = [f"{tenant.nom} (compte {tenant.compte_aws})"]
     lignes.append(
         f"  {'application':<20} {'requêtes':>9} {'dépense période':>16} "
         f"{'projection/mois':>16} {'leviers':>8}"
