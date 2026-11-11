@@ -178,4 +178,4 @@ n'est **pas** utilisée : le modèle Fireworks est fixé dans `resolve.py`.
 | Var `HERMES_LLM_MODEL=combo/cheap` | non posée | la jambe est Fireworks, modèle fixé dans le code |
 | `hermes-worker.yml` (ré-armement générique) | non porté | un seul point d'entrée suffit ; le ré-armement est fait par le résolveur |
 | Résolution par hunk | non portée | voir limites §8.2 |
-| Watchdog en cron `*/5` | déclenchement événementiel (`workflow_run`) + manuel | un cron coûte sur un dépôt privé et le planificateur GitHub est peu fiable (leçon [WD-EVENT]) |
+| Watchdog en cron `*/5` | déclenchement événementiel (`workflow_run`) + manuel | le planificateur GitHub est peu fiable (leçon [WD-EVENT]) et un cron réveille le gate sans événement à traiter |
