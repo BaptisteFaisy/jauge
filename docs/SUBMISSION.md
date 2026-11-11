@@ -118,9 +118,9 @@ deterministic core of the claim.
 | `EF-REJ-02`, `EF-REJ-03`, `EF-REJ-04` replay, Flex tier, measurements | `src/jauge/replay/executor.py` (+ `client.py` boto3 adapter, `cost.py`, `statemachine.py`), `tests/replay/` |
 | `EF-EVA-01`, `EF-EVA-02` judge and deterministic checks | `src/jauge/evaluation/judge.py`, `checks.py`, `tests/evaluation/test_judge.py`, `test_checks.py` |
 | `EF-EVA-03` rate and confidence interval | `src/jauge/engine/stats.py` (`intervalle_wilson`), `ResultatCandidat.intervalle_confiance_*`, `tests/evaluation/test_scoring.py` |
+| `EF-EVA-04` natural variability of the current model | `src/jauge/replay/executor.py` (the current model is replayed twice), `ResultatCandidat.auto_accord_modele_actuel` |
 | `EF-EVA-05` human review and judge/human agreement | `src/jauge/evaluation/human_review.py`, `tests/evaluation/test_human_review.py` |
-| §12 agents as tools, guardrails, traces | `src/jauge/agents/`, `tests/agents/` |
-| `EF-EVA-04` natural variability of the current model | `ResultatCandidat.auto_accord_modele_actuel`, §13.2 (two runs of the current model) |
+| §12 agents as tools, guardrails, traces | `src/jauge/agents/` (`orchestrator.py`, `tools*.py`, `guardrails.py`, `schemas.py`, `traces.py`), `tests/agents/` |
 | `EF-REC-01` recommendation format (Annexe B) | `src/jauge/models/recommendation.py` (`Recommandation`, `MetriquesQualite`, `MetriquesCout`, `MetriquesLatence`) |
 | `EF-REC-02` human approval required | `StatutRecommandation`, `approvedBy`, `ApprobationRequiseError` |
 | `EF-BAS-01..03` staged rollout and rollback | `BasculeProgressive` (`palier_actuel_pourcentage`, `seuil_alerte`, `annule_automatiquement`) |
@@ -129,7 +129,8 @@ deterministic core of the claim.
 | `ENF-IA-03` replayed content is data, not instruction | `src/jauge/agents/guardrails.py`, `tests/agents/test_guardrails.py` |
 | `ENF-SEC-02` tenant isolation | `src/jauge/store/protocol.py` (`tenant_id` first), `CloisonnementError`, `tests/store/test_memory_store.py` |
 | `ENF-IA-01` no number computed by a model | `HLD.md` §12 (D6), `engine/**` docstrings |
-| `ENF-COUT-01` campaign cost capped | `Tenant.plafond_campagne_usd`, `PlafondDepasseError`, `Campagne.cout_estime_usd` |
+| `ENF-COUT-01` campaign cost capped | `src/jauge/replay/cost.py` (`EstimationCampagne`, `verifier_plafond`), `Tenant.plafond_campagne_usd`, `PlafondDepasseError` |
+| `ENF-IA-02` no rollout without approval | `src/jauge/agents/guardrails.py` (`exiger_validation_humaine`, `interdire_action_agent`), `ApprobationRequiseError` |
 | `ENF-REP-01` infrastructure as code | `infra/control-plane/` (M10), `infra/client-account/` (M11), README deployment section |
 | `ENF-OBS-01` traces and alarms | [`ARCHITECTURE.md`](ARCHITECTURE.md#12-observability) |
 | `R10` MSP role denied on the log bucket | M15 acceptance test; IAM screenshot in the video |
