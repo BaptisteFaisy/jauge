@@ -105,7 +105,22 @@ def valider(work: str, commande: str, timeout: int = 200):
     except subprocess.TimeoutExpired:
         return False, "Validation : timeout après %ss (`%s`)." % (timeout, commande)
     sortie = ((resultat.stdout or "") + (resultat.stderr or "")).strip()
-    return resultat.returncode == 0, sortie[-3000:]
+    return resultat.returncode == 0, extraire_sortie(sortie)
+
+
+def extraire_sortie(sortie: str, caracteres: int = 3000, ligne: int = 200) -> str:
+    """Extrait lisible de la fin d'une sortie de validation.
+
+    Double troncature : la fin de la sortie (là où se trouve l'erreur) **et**
+    chaque ligne. Sans la troncature par ligne, une seule ligne de JS minifié
+    (jsii déverse son runtime quand Node manque) noyait le rapport sur 3 000
+    caractères illisibles — constaté sur la PR #28, run 43071083197.
+    """
+    lignes = [
+        element if len(element) <= ligne else element[:ligne] + " …[ligne tronquée]"
+        for element in sortie.splitlines()
+    ]
+    return "\n".join(lignes)[-caracteres:]
 
 
 # ------------------------------------------------------------------ rapport
@@ -282,8 +297,23 @@ def _selftest_validation(echecs: list[str]) -> None:
         ok4, _ = valider(racine, "", timeout=5)
         if not ok4:
             echecs.append("validation vide non traitée comme neutre")
+        _selftest_extrait(echecs)
     finally:
         shutil.rmtree(racine, ignore_errors=True)
+
+
+def _selftest_extrait(echecs: list[str]) -> None:
+    """L'extrait de validation reste lisible : lignes tronquées, fin conservée."""
+    longue = "x" * 5000
+    extrait = extraire_sortie("\n".join([longue, "ERROR: la vraie cause"]), ligne=200)
+    if "ERROR: la vraie cause" not in extrait:
+        echecs.append("extrait : la fin de la sortie (l'erreur) a disparu")
+    if "x" * 201 in extrait:
+        echecs.append("extrait : ligne non tronquée")
+    if len(extrait) > 3000:
+        echecs.append("extrait : plus long que la limite de 3 000 caractères")
+    if extraire_sortie("court") != "court":
+        echecs.append("extrait : sortie courte modifiée")
 
 
 def _selftest_rapport(echecs: list[str]) -> None:
@@ -337,7 +367,7 @@ def analyser(argv=None):
         "--validation", default=os.environ.get("VALIDATION_CMD", VALIDATION_DEFAUT)
     )
     analyseur.add_argument(
-        "--validation-timeout", type=int, default=int(os.environ.get("VALIDATION_TIMEOUT", "200"))
+        "--validation-timeout", type=int, default=int(os.environ.get("VALIDATION_TIMEOUT", "480"))
     )
     return analyseur.parse_args(argv)
 

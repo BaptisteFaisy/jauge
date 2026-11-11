@@ -59,11 +59,22 @@ permissions:
 env:
   # uv est installé dans ~/.local/bin sur les runners self-hosted (r630) ;
   # le cache y est déjà chaud (voir ci.yml).
-  PATH: /home/baptiste/.local/bin:/usr/local/bin:/usr/bin:/bin
+  #
+  # node est indispensable : la validation rejoue `scripts/ci-local.sh`, qui
+  # exécute les tests CDK ; or `aws-cdk-lib` est un paquet **jsii** qui lance un
+  # processus Node. Sans node dans le PATH, la validation échoue avec
+  # `BrokenPipeError` dans `jsii/_kernel/providers/process.py` — exactement ce
+  # qu'a produit le run 43071083197 sur la PR #28.
+  PATH: /home/baptiste/.local/node/bin:/home/baptiste/.local/bin:/usr/local/bin:/usr/bin:/bin
   UV_CACHE_DIR: /home/baptiste/.cache/uv
   UV_NO_PROGRESS: "1"
   PYTHONUTF8: "1"
   PYTHONIOENCODING: utf-8
+  # TMPDIR hors de /tmp : un `package.json` tiers y déclare `"type": "module"`,
+  # ce qui casse le runtime jsii (`require is not defined in ES module scope`).
+  # Même correctif que dans ci.yml — ne pas supprimer ce fichier, il appartient
+  # à un autre projet.
+  TMPDIR: /home/baptiste/.cache/jauge-tmp
 
 jobs:
   resolver:
@@ -109,4 +120,8 @@ jobs:
           HEAD_REF: ${{ inputs.head_ref }}
           BASE_REF: ${{ inputs.base_ref }}
           HEAD_SHA: ${{ inputs.head_sha }}
-        run: python3 .github/hermes/resolver.py
+        run: |
+          set -euo pipefail
+          mkdir -p "$TMPDIR"
+          command -v node >/dev/null || { echo "::error::Node.js absent : la validation CDK (jsii) en a besoin"; exit 1; }
+          python3 .github/hermes/resolver.py
