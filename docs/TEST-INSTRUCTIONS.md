@@ -30,15 +30,18 @@ git clone https://github.com/BaptisteFaisy/jauge.git
 cd jauge
 
 uv sync --all-groups      # dependencies: runtime + dev + infra + agents
-uv run pytest -q          # 22 tests, ~0.1 s, fully offline
+uv run pytest             # fully offline, no AWS account, no credentials
 ```
 
-Expected output:
+Expected output — the last line is the summary (`-q` is already set in
+`pyproject.toml`, so do not add a second `-q` or the summary is suppressed):
 
 ```
-......................                                                   [100%]
-22 passed in 0.04s
+...                                                                      [100%]
+93 passed in 0.67s
 ```
+
+The count grows as modules land; the summary line is the source of truth.
 
 The suite covers what is delivered today:
 
@@ -47,6 +50,10 @@ The suite covers what is delivered today:
 | `tests/engine/test_calculator.py` | Request cost from the dated price table (Annexe D), tier fallback to Standard, unknown price raises `TarifInconnuError` |
 | `tests/engine/test_attribution.py` | Daily aggregation per application/team/model, reconciliation gap and unattributed share |
 | `tests/engine/test_stats.py` | Wilson confidence interval, percentiles, minimum sample size, monthly saving, percentage drop |
+| `tests/evaluation/test_scoring.py`, `test_decision.py` | Equivalence rate with its Wilson interval; the three conditions of the decision rule tested separately; rejection carries its reasons; the "excellent at 95 %" case when the current model agrees with itself only 96 % |
+| `tests/evaluation/test_checks.py` | Deterministic checks: valid JSON, schema respected, identical label, bounded length |
+| `tests/evaluation/test_judge.py`, `test_human_review.py` | Judge selection and capability registry; 30-pair human sub-sample and judge/human agreement |
+| `tests/evaluation/test_confidentialite.py` | No request or response text ever appears in a decision, a candidate result or a review sub-sample |
 | `tests/store/test_memory_store.py` | The store contract and tenant isolation (customer B on customer A's data → refusal) |
 
 ### 1.3 The same checks the CI runs
@@ -71,6 +78,8 @@ file/function size limits (`scripts/check_limits.py`), `pytest`, and
 4. `src/jauge/models/campaign.py` — `PaireRejoueeDataPlane`, the only type that
    carries text, and its data-plane-only contract.
 5. `src/jauge/store/protocol.py` — every read takes `tenant_id` first.
+6. `src/jauge/evaluation/decision.py` — the decision rule, with the relative
+   reading of the current model's self-agreement.
 
 ---
 
@@ -179,8 +188,9 @@ account by following the README) are console/deployment checks, not UI checks.
 | Symptom | Cause | Fix |
 |---|---|---|
 | `No module named 'demo'` / `'jauge.api'` | Those modules are not delivered yet (M12 / M8) | Use section 1: the test suite is the runnable part today |
+| `uv run pytest -q` prints dots but no summary | `-q` is already set in `pyproject.toml`; a second `-q` silences the summary | Run `uv run pytest` |
 | `uv: command not found` | `uv` not installed or not on `PATH` | `curl -LsSf https://astral.sh/uv/install.sh \| sh`, then `export PATH="$HOME/.local/bin:$PATH"` |
-| `ModuleNotFoundError: jauge` | Running `pytest` from outside the project or without `uv run` | Use `uv run pytest -q` from the repository root |
+| `ModuleNotFoundError: jauge` | Running `pytest` from outside the project or without `uv run` | Use `uv run pytest` from the repository root |
 | `ruff format --check` fails after an edit | Formatting drift | `uv run ruff format .` |
 | `check_limits.py` fails | A file exceeded 500 lines or a function 50 lines | Split the file; the rule is non-negotiable (`docs/MODULES.md`) |
 | Tests try to reach the network | A fake adapter was replaced by a real client | Tests must stay offline; report it |
