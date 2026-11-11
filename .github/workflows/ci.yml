@@ -78,7 +78,7 @@ jobs:
         with:
           fetch-depth: 1
           persist-credentials: false
-      - name: Dépendances + tests (lot 1 : API, attribution)
+      - name: "Dépendances + tests (lot 1 : API, attribution)"
         run: |
           set -euo pipefail
           command -v uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -94,7 +94,7 @@ jobs:
         with:
           fetch-depth: 1
           persist-credentials: false
-      - name: Dépendances + tests (lot 2 : démo, recette)
+      - name: "Dépendances + tests (lot 2 : démo, recette)"
         run: |
           set -euo pipefail
           command -v uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -110,7 +110,7 @@ jobs:
         with:
           fetch-depth: 1
           persist-credentials: false
-      - name: Dépendances + tests (lot 3 : tout le reste)
+      - name: "Dépendances + tests (lot 3 : tout le reste)"
         run: |
           set -euo pipefail
           command -v uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
