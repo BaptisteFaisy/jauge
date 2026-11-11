@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Jauge — FinOps for generative AI on Amazon Bedrock</title>
+    <meta
+      name="description"
+      content="Jauge portal: cost attribution, replay-proven model changes and staged rollout for generative AI on Amazon Bedrock."
+    />
+    <link rel="stylesheet" href="assets/app.css" />
+  </head>
+  <body>
+    <a class="lien-evitement" href="#vue">Skip to main content</a>
+
+    <header class="entete" role="banner">
+      <div class="entete-marque">
+        <span class="marque">Jauge</span>
+        <span class="marque-sous-titre">FinOps for generative AI</span>
+      </div>
+
+      <!-- Compte de démonstration pour les juges (EF-POR-02) : le sélecteur pose
+           les en-têtes X-Jauge-Tenant et X-Jauge-Role lus par l'API. -->
+      <form class="demo" id="demo" aria-label="Demo account">
+        <div class="champ">
+          <label for="demo-client">Client</label>
+          <select id="demo-client" name="client"></select>
+        </div>
+        <div class="champ">
+          <label for="demo-role">Role</label>
+          <select id="demo-role" name="role"></select>
+        </div>
+        <button type="submit" class="bouton">Apply</button>
+        <span class="demo-note" id="demo-note" role="status"></span>
+      </form>
+    </header>
+
+    <nav class="onglets" aria-label="Main sections">
+      <a class="onglet" href="#/client">Client dashboard</a>
+      <a class="onglet" href="#/fleet">Fleet dashboard</a>
+      <a class="onglet" href="#/about">About &amp; demo accounts</a>
+    </nav>
+
+    <div id="bandeau" class="bandeau" role="alert" hidden></div>
+
+    <main id="vue" class="vue" tabindex="-1">
+      <p class="chargement" role="status">Loading…</p>
+    </main>
+
+    <footer class="pied" role="contentinfo">
+      <p>
+        Jauge — demo portal served by the control-plane API. Every figure on this page comes
+        from the API; no client-side business computation.
+      </p>
+    </footer>
+
+    <noscript>
+      <p class="bandeau bandeau-erreur">
+        This portal needs JavaScript. It is served as static files by the Jauge control-plane API.
+      </p>
+    </noscript>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>
