@@ -195,7 +195,9 @@ infra/control-plane/
 │       └── operations.py        # AWS Budgets and CloudWatch alarms
 └── lambda/
     ├── handler.py               # ASGI → Lambda adapter (delegates to jauge.api)
-    └── tools.py                 # gateway tools (delegates to jauge.api.tools)
+    └── tools.py                 # gateway tools: delegates to an application-layer
+                                 # `execute_tool` (`jauge.api.tools` / `jauge.agents.tools`);
+                                 # answers an explicit 501 while neither is exposed
 ```
 
 The `lambda/` modules are **packaging only**: no business rule, no computation.

@@ -32,9 +32,9 @@ demo/
 
 | Application | Model | Profile | Cost lever it triggers |
 |---|---|---|---|
-| `support-assistant` | large | Long prompts (~1 960 input tokens), prose answers (~730 output tokens), high latency (~2.5 s p50), business hours | **Missing prompt cache**: one 619-token system prefix repeated on every call, zero cache-read tokens |
-| `ticket-classifier` | large (a small one would do) | Short prompts (~146 input tokens), short structured JSON answers (~17 output tokens), high volume | **Oversized model** (plus repeated identical requests and throttling retries) |
-| `doc-summarizer` | large | Nightly batch, 01:00–04:00, **Standard** service tier, very long answers (~2 470 output tokens, p95 3 674 against a 4 096 limit) | **Deferrable workload** and **answers too long** |
+| `support-assistant` | large | Long prompts (~1 960 input tokens), prose answers (~730 output tokens), high latency (~2.5 s p50), business hours | **Repeated requests**, **missing prompt cache** (one 620-token system prefix repeated on every call, zero cache-read tokens) and **errors/retries** |
+| `ticket-classifier` | large (a smaller one would do) | Short prompts (~145 input tokens), short structured JSON answers (~17 output tokens), high volume | **Oversized model** (plus repeated identical requests and throttling retries) |
+| `doc-summarizer` | large | Nightly batch, 01:00–04:00, **Standard** service tier, very long answers (~2 450 output tokens, p95 3 674 against a 4 096 limit) | **Deferrable workload** and **answers too long** |
 
 ### Customer B — `t-demo-b` (account `210987654321`)
 
@@ -59,25 +59,28 @@ date (`demo.profils.DATE_FIN_DEFAUT`).
    - customer B (`kb-search`) ≈ $8.59 for the period, ≈ $18.41 / month;
    - reconciliation gap **< 1.2 % every day** (target is under 3 %), so every
      daily reconciliation reads *compliant* — 14/14 days, mean gap 0.57 %.
-2. **Lever list** — six levers detected, ≈ **$853.52 / month** of estimated
-   savings in total: missing prompt cache ($63.53), repeated requests ($76.32),
-   oversized model ($63.22), throttling retries ($1.34), deferrable workload
-   ($369.82), answers too long ($279.29).
-3. **Replay campaign on `ticket-classifier`** — 200 requests sampled, replayed
-   on the current model (reference, 99.5 % self-agreement) and two candidates.
-   The small model reaches **97.0 %** equivalence with a 95 % confidence lower
-   bound of 93.6 % and zero deterministic failures: it clears the 95 %
-   threshold. The medium model reaches 98.0 % but costs 3.8× more.
-4. **Recommendation pending approval** — the cheapest passing candidate (small
-   model), ≈ **$62.79 / month** of expected savings, cost per request falling
-   from $0.003495 to $0.000186, latency p50 from 723 ms to 253 ms. Status
+2. **Lever list** — eight levers detected, ≈ **$628.58 / month** of estimated
+   savings in total: repeated requests ($76.32 + $11.68), missing prompt cache
+   ($64.00), oversized model ($63.20), errors and retries ($4.88 + $1.34),
+   deferrable workload ($369.72), answers too long ($37.44).
+3. **Replay campaign on `ticket-classifier`** — 200 requests sampled (seed 42),
+   replayed on the current model (reference, 100 % self-agreement) and two
+   candidates. The medium model reaches **100 %** equivalence with a 95 %
+   confidence lower bound of 98.1 % and zero deterministic failures: it clears
+   the 95 % threshold at a 5× lower cost per request ($0.001100 → $0.000220).
+   The small model reaches only 90.5 % (lower bound 85.6 %) with 19
+   deterministic failures: rejected.
+4. **Recommendation pending approval** — the passing candidate (medium model),
+   ≈ **$17.04 / month** of expected savings, cost per request falling from
+   $0.001100 to $0.000220, latency p50 from 387 ms to 424 ms. Status
    `PENDING_APPROVAL`, `approvedBy` empty: a human must approve.
-5. **Rejected candidate on `support-assistant`** — the small model only reaches
-   **86.0 %** equivalence (lower bound 80.5 %) with 9 deterministic failures,
-   below the 97 % threshold of this application. The recommendation is stored
-   as `REJECTED` **with its evidence**, which is the point: the tool says no,
-   and shows why — 609.77 $/month left on the table rather than traded for a
-   quality regression.
+5. **Rejected candidates on `support-assistant`** — no candidate reaches the
+   application's 97 % threshold: the medium model stops at **94.0 %** (lower
+   bound 89.8 %), the small one at **93.5 %** (lower bound 89.2 %) with 9
+   deterministic failures. The recommendation is stored as `REJECTED` **with
+   its evidence**, which is the point: the tool says no, and shows why —
+   75.41 $/month left on the table rather than traded for a quality
+   regression.
 6. **Staged rollout in progress on `doc-summarizer`** — Standard → Flex on the
    same model, currently at the **50 %** step, online quality 0.995 against an
    alert threshold of 0.90, with the 30-day savings verification attached
@@ -103,8 +106,8 @@ Jauge — démonstration hors ligne
 
 Client A — Démo (compte 123456789012)
   application           requêtes  dépense période  projection/mois  leviers
-  support-assistant         3575          300.85 $          644.67 $        2
-  ticket-classifier         9037           31.16 $           66.76 $        2
+  support-assistant         3575          300.85 $          644.67 $        3
+  ticket-classifier         9037           31.16 $           66.76 $        3
   doc-summarizer            1439          345.02 $          739.33 $        2
   total                    14051          677.02 $         1450.77 $
   rapprochement : écart moyen 0.57 % — 14/14 jours conformes (< 3 %)
@@ -112,27 +115,29 @@ Client A — Démo (compte 123456789012)
 Client B — Démo (compte 210987654321)
   application           requêtes  dépense période  projection/mois  leviers
   kb-search                 1405            8.59 $           18.41 $        0
-  total                    1405            8.59 $           18.41 $
+  total                     1405            8.59 $           18.41 $
   rapprochement : écart moyen 0.57 % — 14/14 jours conformes (< 3 %)
 
 Leviers détectés
-  support-assistant    cache_prompts_absent        63.53 $/mois  [detecte]
   support-assistant    requetes_repetees           76.32 $/mois  [detecte]
-  ticket-classifier    modele_surdimensionne       63.22 $/mois  [en_cours_de_preuve]
+  support-assistant    cache_prompts_absent        64.00 $/mois  [detecte]
+  support-assistant    erreurs_et_relances          4.88 $/mois  [detecte]
+  ticket-classifier    modele_surdimensionne       63.20 $/mois  [detecte]
+  ticket-classifier    requetes_repetees           11.68 $/mois  [detecte]
   ticket-classifier    erreurs_et_relances          1.34 $/mois  [detecte]
-  doc-summarizer       traitement_differable      369.82 $/mois  [detecte]
-  doc-summarizer       sorties_trop_longues       279.29 $/mois  [detecte]
-  économie mensuelle estimée                       853.52 $/mois
+  doc-summarizer       traitement_differable      369.72 $/mois  [detecte]
+  doc-summarizer       sorties_trop_longues        37.44 $/mois  [detecte]
+  économie mensuelle estimée                       628.58 $/mois
 
 Décisions
-  ticket-classifier    PENDING_APPROVAL     cible <petit modèle>   économie    62.79 $/mois
-  support-assistant    REJECTED             cible <petit modèle>   économie   609.77 $/mois
-  doc-summarizer       ROLLING_OUT          cible <grand modèle>   économie   369.62 $/mois
+  ticket-classifier    PENDING_APPROVAL     économie    17.04 $/mois (cible anthropic.claude-3-5-sonnet-20241022-v2:0)
+  support-assistant    REJECTED             économie    75.41 $/mois (cible anthropic.claude-3-5-haiku-20241022-v1:0)
+  doc-summarizer       ROLLING_OUT          économie   369.62 $/mois (cible anthropic.claude-opus-4-20250514-v1:0)
   doc-summarizer       bascule en cours   palier 50 % — qualité en ligne 0.995
 ```
 
-The model identifiers are the fictional ones from the shared fixtures
-(`tests/conftest.py`); they are shown shortened above.
+The model identifiers are the Bedrock model ids of the shared fixtures
+(`tests/conftest.py`), used here as demo data only.
 
 ### Using the seed from Python
 

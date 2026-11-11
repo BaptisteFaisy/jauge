@@ -67,6 +67,7 @@ The suite covers every delivered module:
 | `tests/infra/`, `tests/infra-client/` | CDK assertions on the control plane and Lambda packaging; the per-customer CloudFormation template, its least-privilege cross-account role and explicit denials |
 | `tests/portal/` | The static portal is served by the API, its structure, and the endpoints it calls |
 | `tests/demo/` | The synthetic applications, traffic generator, CUR lines, scenario and seed summary — deterministic, no real data |
+| `tests/integration/` | The wiring of the agent and API ports onto the real modules (M17): factories, the offline end-to-end journey, chat, tenant isolation through the integrated API |
 | `tests/recette/` | The end-to-end acceptance scenarios R1–R13, including the R10/R11 negative security tests and the R13 documentation-consistency checks |
 
 ### 1.3 The same checks the CI runs
@@ -118,7 +119,7 @@ rollout at stage 50 % with online quality 0.995:
 | Tenant | Application | Current model | Scenario (as seeded) |
 |---|---|---|---|
 | `t-demo-a` | `support-assistant` | large model | Cheaper candidate **rejected** with evidence — "keep your model" |
-| `t-demo-a` | `ticket-classifier` | large model (oversized) | Smaller candidate accepted → recommendation **pending approval** |
+| `t-demo-a` | `ticket-classifier` | large model (oversized) | Cheaper (medium) candidate accepted → recommendation **pending approval** |
 | `t-demo-a` | `doc-summarizer` | large model, Standard tier (nightly) | Deferrable-processing lever → rollout **in progress** at stage 50 % |
 | `t-demo-b` | `kb-search` | medium model | Fleet view, second tenant |
 
@@ -197,15 +198,15 @@ credentials published in the submission form and nowhere else.
 | 0:00 | Sign in as **customer A application owner** | Customer A overview only — no customer B data anywhere in the navigation | `EF-POR-01`, `ENF-SEC-02` |
 | 0:30 | Open **Overview** | Spend per application and per team for the last 14 days, plus a reconciliation line with its gap percentage | `EF-RAP-01`, `EF-ATT-06` |
 | 1:30 | Open **Levers** | At least three levers ranked by estimated monthly saving (oversized model, missing prompt cache, deferrable processing) | `EF-LEV-01..06` |
-| 2:30 | Open **`ticket-classifier` → campaign** | Sample size 200, seed 42, three candidates, estimated campaign cost shown **before** launch | `EF-REJ-01`, `ENF-COUT-01` |
+| 2:30 | Open **`ticket-classifier` → campaign** | Sample size 200, seed 42, two candidates plus the current model as reference, estimated campaign cost shown **before** launch | `EF-REJ-01`, `ENF-COUT-01` |
 | 3:30 | Inspect the results table | Per candidate: equivalence rate, confidence interval, self-agreement of the current model, deterministic failures, p50/p95 latency, cost per request | `EF-EVA-03`, `EF-EVA-04` |
-| 5:00 | Compare candidate vs threshold | The accepted candidate clears 95 % with a lower bound above 90 %; the rejected one is below, with its failing request families listed | §13.4, `R5` |
+| 5:00 | Compare candidate vs threshold | The accepted candidate clears 95 % with a lower bound above 90 %; the rejected one is below, with its deterministic failures listed | §13.4, `R5` |
 | 6:00 | Open the **recommendation** | Target model, quality block, cost block (before/after, monthly volume, expected saving), latency block, risks, rollout plan `[10, 50, 100]`, status `PENDING_APPROVAL` | `EF-REC-01` |
 | 7:00 | Try **rollout** without approving | Refused (`ApprobationRequiseError`) — a rollout is impossible without approval | `EF-REC-02`, `ENF-IA-02`, `R6` |
 | 7:30 | **Approve**, then start the rollout | Gateway rule created, stage 10 %, online quality re-judged and displayed at the stage | `EF-BAS-01..02`, `R7` |
 | 9:00 | Advance to 50 %, then 100 % | Stage indicator moves, each stage shows its own online quality | `EF-BAS-02` |
 | 10:00 | Open **savings verification** | Cost per request before vs after at constant volume, observed vs expected saving | `EF-VER-01`, `R12` |
-| 11:00 | Open the **rejected** candidate (support assistant) | Rejected with its failing families — "keep your model" is a valid, proven outcome | `R5` |
+| 11:00 | Open the **rejected** candidate (support assistant) | Rejected with its evidence — equivalence below the application's 97 % threshold and deterministic failures; "keep your model" is a valid, proven outcome | `R5` |
 | 12:00 | Trigger the **degraded quality** scenario | Rule removed automatically, alert visible, rollout marked `annule_automatiquement` | `EF-BAS-03`, `R8` |
 | 13:00 | Switch to **customer B** | Customer B sees only its own application; the fleet view is visible to MSP roles only | `EF-RAP-02`, `R11` |
 | 14:00 | Launch a campaign above the tenant cap | Refused with `PlafondDepasseError` | `ENF-COUT-01`, `R9` |

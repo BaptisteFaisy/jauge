@@ -64,12 +64,12 @@ No pull. The control plane never reads the customer's S3.
 | Component | AWS service | Responsibility | Code / template |
 |---|---|---|---|
 | Applications | Customer's own code | Call Bedrock through the gateway | Not Jauge's |
-| Inference gateway | AgentCore Gateway (inference target + routing rules) | Single entry point; rule-based model substitution and weighted split | Rule creation from `src/jauge/rollout/` *(planned)* |
+| Inference gateway | AgentCore Gateway (inference target + routing rules) | Single entry point; rule-based model substitution and weighted split | Rule creation from `src/jauge/rollout/` — **delivered** (M6, `tests/rollout/`) |
 | Models | Amazon Bedrock | Inference, Standard / Flex tiers | — |
-| Invocation logs | Bedrock model invocation logging → S3 (KMS) | Request, response, tokens, request metadata, tier | Template `infra/client-account/` *(planned, M11)* |
+| Invocation logs | Bedrock model invocation logging → S3 (KMS) | Request, response, tokens, request metadata, tier | Template `infra/client-account/` — **delivered** (M11, `tests/infra-client/`) |
 | Analytics | Glue Data Catalog + Athena | Tables over logs and CUR 2.0 | Same template |
 | Replay machine | Step Functions + Lambda | Draw sample, replay, launch evaluation, store results | `src/jauge/replay/` — **delivered** (sampling, executor, cost cap, state-machine definition) |
-| Evaluation | Bedrock model-evaluation jobs | Judge verdict + explanation per pair; deterministic checks; decision rule | `src/jauge/evaluation/` — **delivered** (decision, checks, judge prompt, human review); the Bedrock evaluation-job adapter is wired in M4/M15 |
+| Evaluation | Bedrock model-evaluation jobs | Judge verdict + explanation per pair; deterministic checks; decision rule | `src/jauge/evaluation/` — **delivered** (decision, checks, judge prompt, human review); the Bedrock evaluation-job adapter (`judge.py`) is wired through `src/jauge/integration/` (M17) and exercised offline — it has never run against real AWS |
 | Replay results | S3 (KMS) | Pairs, explanations, per-request measurements | Same |
 | Invoiced cost | CUR 2.0 + Cost Explorer | Dollars per tag, reconciliation source | Same |
 | Cross-account role | IAM role with external ID | Least privilege, no read on log/result buckets | Same template |
@@ -79,14 +79,14 @@ No pull. The control plane never reads the customer's S3.
 
 | Component | AWS service | Responsibility | Code |
 |---|---|---|---|
-| Portal | CloudFront + S3 (static SPA, no build step) | Customer dashboard, fleet dashboard, approval, rollout tracking, human review link | `portal/` *(planned, M13)* |
-| Identity | Cognito | Users, roles (`EF-POR-01`), demo account for judges (`EF-POR-02`) | `src/jauge/api/auth.py` *(planned, M8)* |
-| API | API Gateway + Lambda running the FastAPI app | Every endpoint of specification §15 | `src/jauge/api/` *(planned, M8)* |
-| Agents | Strands agents on AgentCore Runtime | Orchestrator + cost analyst + replay planner + results reader + writer | `src/jauge/agents/` — **delivered** (the Runtime deployment is M10) |
+| Portal | CloudFront + S3 (static SPA, no build step) | Customer dashboard, fleet dashboard, approval, rollout tracking, human review link | `portal/` — **delivered** (M13, `tests/portal/`) |
+| Identity | Cognito | Users, roles (`EF-POR-01`), demo account for judges (`EF-POR-02`) | `src/jauge/api/auth.py` — **delivered** (M8, `tests/api/`) |
+| API | API Gateway + Lambda running the FastAPI app | Every endpoint of specification §15 | `src/jauge/api/` — **delivered** (M8, `tests/api/`) |
+| Agents | Strands agents on AgentCore Runtime | Orchestrator + cost analyst + replay planner + results reader + writer | `src/jauge/agents/` — **delivered** (M7); the Runtime deployment is delivered as code (`infra/control-plane/`, M10) — a live AWS deployment has not been run yet |
 | Agent tools | AgentCore Gateway + Lambda | `query_cost_aggregates`, `list_levers`, `estimate_campaign_cost`, `start_replay`, `get_replay_results`, `save_recommendation` | `src/jauge/agents/ports.py` + `tools*.py` — **delivered** behind a port protocol |
-| State | DynamoDB | Tenants, applications, aggregates, reconciliation, levers, campaigns, recommendations, rollouts, verifications, audit | `src/jauge/store/` — protocol + memory **delivered**, DynamoDB adapter *(planned)* |
-| Reports | S3 | Monthly report (Markdown + JSON) | `src/jauge/reports/` *(planned, M9)* |
-| Infrastructure | AWS CDK (Python) | API, Cognito, DynamoDB, CloudFront/S3, AgentCore, Budgets | `infra/control-plane/` *(planned, M10)* |
+| State | DynamoDB | Tenants, applications, aggregates, reconciliation, levers, campaigns, recommendations, rollouts, verifications, audit | `src/jauge/store/` — protocol + `MemoryStore` **delivered**; the persistent adapter is not on `main` yet (in progress) |
+| Reports | S3 | Monthly report (Markdown + JSON) | `src/jauge/reports/` — **delivered** (M9, `tests/reports/`) |
+| Infrastructure | AWS CDK (Python) | API, Cognito, DynamoDB, CloudFront/S3, AgentCore, Budgets | `infra/control-plane/` — **delivered** (M10, `tests/infra/`) |
 
 ### 3.3 Shared library (this repository, delivered)
 
@@ -226,7 +226,8 @@ self-agreement column) is in [`HLD.md` §8](HLD.md#8-quality-measurement-method)
 ## 7. Control-plane API
 
 Every endpoint of specification §15 is served by the FastAPI application in
-`src/jauge/api/` *(planned, M8)*. Grouping by concern:
+`src/jauge/api/` — **delivered** (M8), covered by `tests/api/` including one
+tenant-isolation negative test per endpoint. Grouping by concern:
 
 | Group | Endpoints | Requirement |
 |---|---|---|
@@ -362,14 +363,27 @@ campaigns, decisions and rules.
 
 ## 14. What exists today
 
-`main` currently contains the shared library (entities, deterministic engine,
-store contract and in-memory store) plus three feature modules: evaluation,
-replay and Strands agents, and the dated price-table loader — all covered by
-offline tests. The modules that build the data plane (log ingestion, levers,
-rollout), the control plane (API, portal, infrastructure), the demo and the
-end-to-end acceptance are delivered through their own pull requests —
-`docs/MODULES.md` is the authoritative status table. Every path marked
-*(planned)* above is one of those modules.
+`main` contains the **whole build plan**: every module M1–M18 of
+[`docs/MODULES.md`](MODULES.md) is merged — the shared library (entities,
+deterministic engine, store contract and in-memory store), attribution and
+CUR 2.0 reconciliation (M1), the dated price table (M2), the lever rules (M3),
+replay (M4), evaluation (M5), staged rollout (M6), the Strands agents (M7),
+the control-plane API (M8), the monthly reports (M9), both infrastructures —
+CDK control plane and per-customer CloudFormation template (M10/M11), the
+synthetic demo (M12), the static portal (M13), the end-to-end acceptance
+R1–R13 (M15), the wiring of the agent and API ports onto the real modules
+(M17, `src/jauge/integration/`) and the pre-submission finishes (M18: seeded
+ASGI entry point, `/health` probe, rollout driven through the API).
+The offline suite reports **1078 passed** (`uv run pytest`), plus **50**
+infrastructure tests under `uv run pytest -m infra`.
 
-The local demo (`uv run pytest -q`) runs entirely offline against `MemoryStore`
-with synthetic data and fake adapters: no AWS account, no network, no cost.
+Not on `main` yet: the persistent store adapter (in progress — the delivered
+`Store` protocol and `MemoryStore` are what every module codes against). What
+else remains is not code but gestures: a real AWS deployment (accounts,
+credits, Bedrock enabled — the boto3 adapters have never run live), the
+3-minute video and the Devpost submission
+([`docs/SUBMISSION.md`](SUBMISSION.md)).
+
+The local demo (`uv run python -m demo.seed`) runs entirely offline against
+`MemoryStore` with synthetic data and fake adapters: no AWS account, no
+network, no cost.
