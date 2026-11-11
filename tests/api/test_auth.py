@@ -17,6 +17,7 @@ from jauge.api.auth import (
     extraire_utilisateur_demo,
     mode_demo_actif,
 )
+from jauge.common.errors import ValidationError
 
 
 def _jeton(claims: dict[str, object]) -> str:
@@ -47,10 +48,26 @@ def test_sans_entete_le_compte_de_demonstration_est_servi(client: TestClient) ->
     assert "responsable_application" in corps["roles_disponibles"]
 
 
-def test_role_inconnu_retombe_sur_le_role_par_defaut() -> None:
-    """Un rôle inventé ne casse pas la requête : le défaut s'applique."""
-    utilisateur = extraire_utilisateur_demo("t-demo-a", "pirate")
-    assert utilisateur.role == RoleUtilisateur.ADMINISTRATEUR_PLATEFORME
+def test_role_inconnu_est_refuse() -> None:
+    """Un rôle inventé est refusé : pas de repli silencieux sur administrateur.
+
+    Un repli sur le compte de démonstration (administrateur de plateforme, tous
+    clients) transformerait une faute de frappe en escalade de privilèges.
+    """
+    with pytest.raises(ValidationError) as erreur:
+        extraire_utilisateur_demo("t-demo-a", "pirate")
+    assert erreur.value.code == "validation_error"
+    assert (
+        "pirate" in str(erreur.value.details.get("role_fourni", ""))
+        or erreur.value.details.get("role_fourni") == "pirate"
+    )
+
+
+def test_role_inconnu_refuse_par_l_api(client: TestClient) -> None:
+    """L'API répond 422 (et pas 200 administrateur) sur un rôle inventé."""
+    reponse = client.get("/v1/demo/identity", headers=entetes("t-demo-b", "pirate", "alice"))
+    assert reponse.status_code == 422
+    assert reponse.json()["error"]["code"] == "validation_error"
 
 
 def test_compte_de_demonstration_est_une_copie() -> None:

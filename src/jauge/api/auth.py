@@ -15,7 +15,7 @@ from typing import Protocol
 
 from pydantic import BaseModel, Field
 
-from jauge.common.errors import JaugeError
+from jauge.common.errors import JaugeError, ValidationError
 
 
 class AuthentificationRequiseError(JaugeError):
@@ -174,8 +174,16 @@ def extraire_utilisateur_demo(
     if role_header:
         try:
             role = RoleUtilisateur(role_header)
-        except ValueError:
-            role = defaut.role
+        except ValueError as erreur:
+            # Fail-closed : un rôle inconnu ne retombe PAS sur le compte de
+            # démonstration (administrateur de plateforme, tous clients). Un
+            # repli silencieux transformerait une faute de frappe en escalade
+            # de privilèges (ENF-SEC-02).
+            raise ValidationError(
+                "Rôle inconnu en mode démonstration",
+                role_fourni=role_header,
+                roles_valides=[r.value for r in RoleUtilisateur],
+            ) from erreur
     tenant_final = tenant_header if tenant_header is not None else defaut.tenant_id
     return Utilisateur(
         id=user_header or defaut.id,
