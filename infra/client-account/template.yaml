@@ -1,0 +1,482 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: >
+  Jauge - client account data plane. One template onboards one client: a least-privilege
+  cross-account role for the MSP (external ID required, no read access to the log or
+  replay-result buckets), a KMS-encrypted invocation-log bucket, Glue tables and an Athena
+  workgroup for aggregates, a Step Functions replay machine, CloudWatch alarms and an AWS
+  Budgets alert. Deploy in the client's data region. Requirements: EF-ATT-01, ENF-SEC-01,
+  ENF-SEC-03, ENF-REP-01, ENF-OBS-01; spec sections 8.1, 11.2, 16, 17.3.
+
+Metadata:
+  JaugeModule: M11
+  JaugeSpec: [EF-ATT-01, ENF-SEC-01, ENF-SEC-03, ENF-REP-01, ENF-OBS-01]
+  SecurityNote: >
+    The MSP role never reads request or response text. It can only start the
+    replay state machine and read aggregate tables through Athena. Explicit Deny
+    statements block every S3 action on the log and replay-result buckets.
+
+Parameters:
+  MspAccountId: {Type: String, AllowedPattern: '^\d{12}$',
+                 Description: "AWS account ID of the MSP control plane, the only allowed principal."}
+  ExternalId: {Type: String, MinLength: 16, MaxLength: 256, AllowedPattern: '^[A-Za-z0-9_+=/@:.-]+$',
+               Description: "Secret external ID required by sts:AssumeRole. Update it to rotate."}
+  EnvironmentName: {Type: String, Default: demo, AllowedPattern: '^[a-z0-9-]{2,20}$',
+                    Description: "Environment suffix for every resource name."}
+  DataRegion: {Type: String, Default: eu-west-1, AllowedPattern: '^[a-z]{2}(-[a-z]+)+-\d$',
+               Description: "Region of the data plane; must equal the deployment region (deploy.sh keeps both in sync)."}
+  LogsBucketName: {Type: String, MinLength: 3, MaxLength: 63, AllowedPattern: '^[a-z0-9][a-z0-9.-]*[a-z0-9]$',
+                   Description: "Invocation-log bucket that Bedrock logging points at; <name>-replay-results and <name>-athena-results are created beside it."}
+  RetentionDays: {Type: Number, Default: 90, AllowedValues: [7, 14, 30, 60, 90, 180, 365, 400, 731],
+                  Description: "Retention of logs, replay results and CloudWatch logs in days (ENF-CONF-03)."}
+  AthenaBytesScannedCutoff: {Type: Number, Default: 10737418240, MinValue: 10485760,
+                             Description: "Per-query data scanned ceiling in bytes (default 10 GiB)."}
+  MonthlyBudgetUsd: {Type: Number, Default: 200, MinValue: 1,
+                     Description: "Monthly cost budget for the data plane, in USD (spec 17.3)."}
+  AlertEmail: {Type: String, Default: "", AllowedPattern: '^$|^[^@\s]+@[^@\s]+\.[^@\s]+$',
+               Description: "Optional address subscribed to the alert topic."}
+
+Conditions:
+  HasAlertEmail: !Not [!Equals [!Ref AlertEmail, ""]]
+
+Resources:
+  # --- Encryption at rest (ENF-SEC-03) --------------------------------------
+  DataKey:
+    Type: AWS::KMS::Key
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      Description: !Sub "Jauge ${EnvironmentName} data plane - logs, replay results, query output"
+      EnableKeyRotation: true
+      PendingWindowInDays: 7
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - {Sid: EnableAccountAdministration, Effect: Allow, Resource: "*", Action: "kms:*",
+             Principal: {AWS: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:root"}}
+          - {Sid: AllowS3ThroughService, Effect: Allow, Resource: "*", Principal: {AWS: "*"},
+             Action: [kms:Decrypt, kms:GenerateDataKey, kms:DescribeKey],
+             Condition: {StringEquals: {kms:ViaService: !Sub "s3.${DataRegion}.amazonaws.com",
+                                        kms:CallerAccount: !Ref AWS::AccountId}}}
+  DataKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties: {AliasName: !Sub "alias/jauge-${EnvironmentName}-data", TargetKeyId: !Ref DataKey}
+  # --- Buckets: invocation logs, replay results, query output ---------------
+  LogsBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Ref LogsBucketName
+      VersioningConfiguration: {Status: Enabled}
+      BucketEncryption:
+        ServerSideEncryptionConfiguration: [{ServerSideEncryptionByDefault:
+          {SSEAlgorithm: aws:kms, KMSMasterKeyID: !GetAtt DataKey.Arn}, BucketKeyEnabled: true}]
+      PublicAccessBlockConfiguration:
+        {BlockPublicAcls: true, BlockPublicPolicy: true, IgnorePublicAcls: true, RestrictPublicBuckets: true}
+      OwnershipControls: {Rules: [{ObjectOwnership: BucketOwnerEnforced}]}
+      LifecycleConfiguration:
+        Rules: [{Id: expire-invocation-logs, Status: Enabled, ExpirationInDays: !Ref RetentionDays,
+                 NoncurrentVersionExpiration: {NoncurrentDays: 7}, AbortIncompleteMultipartUpload: {DaysAfterInitiation: 7}}]
+  LogsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref LogsBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: {AWS: "*"}
+            Action: "s3:*"
+            Resource: [!Sub "arn:${AWS::Partition}:s3:::${LogsBucketName}", !Sub "arn:${AWS::Partition}:s3:::${LogsBucketName}/*"]
+            Condition: {Bool: {aws:SecureTransport: "false"}}
+          - Sid: AllowBedrockInvocationLogging
+            Effect: Allow
+            Principal: {Service: bedrock.amazonaws.com}
+            Action: s3:PutObject
+            Resource: !Sub "arn:${AWS::Partition}:s3:::${LogsBucketName}/*"
+            Condition: {StringEquals: {aws:SourceAccount: !Ref AWS::AccountId}}
+  ReplayResultsBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Sub "${LogsBucketName}-replay-results"
+      VersioningConfiguration: {Status: Enabled}
+      BucketEncryption:
+        ServerSideEncryptionConfiguration: [{ServerSideEncryptionByDefault:
+          {SSEAlgorithm: aws:kms, KMSMasterKeyID: !GetAtt DataKey.Arn}, BucketKeyEnabled: true}]
+      PublicAccessBlockConfiguration:
+        {BlockPublicAcls: true, BlockPublicPolicy: true, IgnorePublicAcls: true, RestrictPublicBuckets: true}
+      OwnershipControls: {Rules: [{ObjectOwnership: BucketOwnerEnforced}]}
+      LifecycleConfiguration:
+        Rules: [{Id: expire-replay-results, Status: Enabled, ExpirationInDays: !Ref RetentionDays,
+                 AbortIncompleteMultipartUpload: {DaysAfterInitiation: 7}}]
+  ReplayResultsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ReplayResultsBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: {AWS: "*"}
+            Action: "s3:*"
+            Resource: [!Sub "arn:${AWS::Partition}:s3:::${LogsBucketName}-replay-results", !Sub "arn:${AWS::Partition}:s3:::${LogsBucketName}-replay-results/*"]
+            Condition: {Bool: {aws:SecureTransport: "false"}}
+  # Query output holds aggregates only (ENF-CONF-01): the one bucket the MSP role
+  # may read, and it never receives request or response text.
+  AthenaResultsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${LogsBucketName}-athena-results"
+      BucketEncryption:
+        ServerSideEncryptionConfiguration: [{ServerSideEncryptionByDefault:
+          {SSEAlgorithm: aws:kms, KMSMasterKeyID: !GetAtt DataKey.Arn}, BucketKeyEnabled: true}]
+      PublicAccessBlockConfiguration:
+        {BlockPublicAcls: true, BlockPublicPolicy: true, IgnorePublicAcls: true, RestrictPublicBuckets: true}
+      OwnershipControls: {Rules: [{ObjectOwnership: BucketOwnerEnforced}]}
+      LifecycleConfiguration:
+        Rules: [{Id: expire-query-output, Status: Enabled, ExpirationInDays: 30}]
+  AthenaResultsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref AthenaResultsBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: {AWS: "*"}
+            Action: "s3:*"
+            Resource: [!Sub "arn:${AWS::Partition}:s3:::${LogsBucketName}-athena-results", !Sub "arn:${AWS::Partition}:s3:::${LogsBucketName}-athena-results/*"]
+            Condition: {Bool: {aws:SecureTransport: "false"}}
+  # --- Glue catalog: invocation logs (JSON) and CUR 2.0 (Parquet) -----------
+  CatalogDatabase:
+    Type: AWS::Glue::Database
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      DatabaseInput:
+        {Name: !Sub "jauge_${EnvironmentName}", Description: Jauge FinOps tables - invocation logs and CUR 2.0}
+  InvocationLogsTable:
+    Type: AWS::Glue::Table
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      DatabaseName: !Ref CatalogDatabase
+      TableInput:
+        Name: invocation_logs
+        Description: Bedrock model invocation logs, one row per call, with the attribution labels carried in request metadata; readable inside the client account only.
+        TableType: EXTERNAL_TABLE
+        Parameters: {classification: json, EXTERNAL: "TRUE"}
+        PartitionKeys: [{Name: dt, Type: string}]
+        StorageDescriptor:
+          Location: !Sub "s3://${LogsBucketName}/AWSLogs/${AWS::AccountId}/BedrockModelInvocationLogs/"
+          InputFormat: org.apache.hadoop.mapred.TextInputFormat
+          OutputFormat: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
+          SerdeInfo: {SerializationLibrary: org.openx.data.jsonserde.JsonSerDe,
+                      Parameters: {ignore.malformed.json: "true"}}
+          Columns:
+            [{Name: schema_type, Type: string}, {Name: timestamp, Type: string},
+             {Name: request_id, Type: string}, {Name: model_id, Type: string},
+             {Name: operation, Type: string}, {Name: input_tokens, Type: bigint},
+             {Name: output_tokens, Type: bigint}, {Name: cache_read_input_tokens, Type: bigint},
+             {Name: cache_write_input_tokens, Type: bigint}, {Name: inference_region, Type: string},
+             {Name: application, Type: string}, {Name: team, Type: string},
+             {Name: environment, Type: string}]
+  CurTable:
+    Type: AWS::Glue::Table
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      DatabaseName: !Ref CatalogDatabase
+      TableInput:
+        Name: cur2
+        Description: AWS Cost and Usage Report 2.0 export, queried for invoiced dollars.
+        TableType: EXTERNAL_TABLE
+        Parameters: {classification: parquet, EXTERNAL: "TRUE"}
+        PartitionKeys: [{Name: billing_period, Type: string}]
+        StorageDescriptor:
+          Location: !Sub "s3://${LogsBucketName}/cur2/"
+          InputFormat: org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat
+          OutputFormat: org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat
+          SerdeInfo: {SerializationLibrary: org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe,
+                      Parameters: {parquet.compression: SNAPPY}}
+          Columns:
+            [{Name: line_item_usage_account_id, Type: string}, {Name: line_item_usage_start_date, Type: string},
+             {Name: line_item_usage_end_date, Type: string}, {Name: line_item_product_code, Type: string},
+             {Name: line_item_usage_type, Type: string}, {Name: line_item_operation, Type: string},
+             {Name: line_item_unblended_cost, Type: double}, {Name: line_item_usage_amount, Type: double},
+             {Name: product_region_code, Type: string}, {Name: resource_tags, Type: "map<string,string>"}]
+  # Aggregates only (ENF-CONF-01): the table the MSP actually queries. Written by
+  # the replay/attribution job, never by the MSP role.
+  AggregatesTable:
+    Type: AWS::Glue::Table
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      DatabaseName: !Ref CatalogDatabase
+      TableInput:
+        Name: aggregates
+        Description: Daily cost and quality aggregates per application, team, model and day.
+        TableType: EXTERNAL_TABLE
+        Parameters: {classification: parquet, EXTERNAL: "TRUE"}
+        PartitionKeys: [{Name: dt, Type: string}]
+        StorageDescriptor:
+          Location: !Sub "s3://${LogsBucketName}-athena-results/aggregates/"
+          InputFormat: org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat
+          OutputFormat: org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat
+          SerdeInfo: {SerializationLibrary: org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe}
+          Columns:
+            [{Name: dt, Type: string}, {Name: application, Type: string}, {Name: team, Type: string},
+             {Name: environment, Type: string}, {Name: model_id, Type: string}, {Name: requests, Type: bigint},
+             {Name: input_tokens, Type: bigint}, {Name: output_tokens, Type: bigint},
+             {Name: cost_usd, Type: double}, {Name: invoiced_usd, Type: double}]
+  # --- Athena: the aggregate read path -------------------------------------
+  AthenaWorkGroup:
+    Type: AWS::Athena::WorkGroup
+    Properties:
+      Name: !Sub "jauge-${EnvironmentName}"
+      Description: Jauge aggregate queries - output goes to the aggregates-only bucket.
+      State: ENABLED
+      WorkGroupConfiguration:
+        {EnforceWorkGroupConfiguration: true, PublishCloudWatchMetricsEnabled: true,
+         RequesterPaysEnabled: false, BytesScannedCutoffPerQuery: !Ref AthenaBytesScannedCutoff,
+         ResultConfiguration: {OutputLocation: !Sub "s3://${LogsBucketName}-athena-results/queries/",
+           EncryptionConfiguration: {EncryptionOption: SSE_KMS, KmsKey: !GetAtt DataKey.Arn}}}
+  # --- Cross-account role assumed by the MSP (ENF-SEC-01) -------------------
+  MspCrossAccountRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "jauge-dataplane-${EnvironmentName}"
+      Description: Assumed by the Jauge MSP control plane with an external ID; starts replays, reads aggregates, never logs.
+      MaxSessionDuration: 3600
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: OnlyMspWithExternalId
+            Effect: Allow
+            Principal: {AWS: !Sub "arn:${AWS::Partition}:iam::${MspAccountId}:root"}
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals: {sts:ExternalId: !Ref ExternalId}
+              Bool: {aws:SecureTransport: "true"}
+      Policies:
+        - PolicyName: jauge-least-privilege
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: AthenaQueryAggregates
+                Effect: Allow
+                Action:
+                  [athena:StartQueryExecution, athena:GetQueryExecution, athena:GetQueryResults,
+                   athena:StopQueryExecution, athena:ListQueryExecutions, athena:GetWorkGroup,
+                   athena:ListDatabases, athena:GetDataCatalog]
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:athena:${DataRegion}:${AWS::AccountId}:workgroup/${AthenaWorkGroup}"
+                  - !Sub "arn:${AWS::Partition}:athena:${DataRegion}:${AWS::AccountId}:datacatalog/*"
+              - Sid: GlueCatalogReadOnly
+                Effect: Allow
+                Action:
+                  [glue:GetDatabase, glue:GetDatabases, glue:GetTable, glue:GetTables,
+                   glue:GetPartition, glue:GetPartitions, glue:BatchGetPartition]
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:glue:${DataRegion}:${AWS::AccountId}:catalog"
+                  - !Sub "arn:${AWS::Partition}:glue:${DataRegion}:${AWS::AccountId}:database/*"
+                  - !Sub "arn:${AWS::Partition}:glue:${DataRegion}:${AWS::AccountId}:table/*/*"
+              # Aggregates only: the sole S3 path the MSP can read.
+              - Sid: AthenaQueryOutputAggregatesOnly
+                Effect: Allow
+                Action:
+                  [s3:GetObject, s3:PutObject, s3:ListBucket, s3:GetBucketLocation,
+                   s3:AbortMultipartUpload, s3:ListMultipartUploadParts]
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:s3:::${LogsBucketName}-athena-results"
+                  - !Sub "arn:${AWS::Partition}:s3:::${LogsBucketName}-athena-results/*"
+              - Sid: StartReplayExecutions
+                Effect: Allow
+                Action:
+                  [states:StartExecution, states:DescribeExecution, states:ListExecutions,
+                   states:GetExecutionHistory, states:StopExecution]
+                Resource:
+                  - !Ref ReplayStateMachine
+                  - !Sub "arn:${AWS::Partition}:states:${DataRegion}:${AWS::AccountId}:execution:jauge-replay-${EnvironmentName}:*"
+              - Sid: CostExplorerReadOnly
+                Effect: Allow
+                Action: [ce:GetCostAndUsage, ce:GetCostForecast, ce:GetDimensionValues, ce:GetTags]
+                Resource: "*"
+              # Belt and braces: no future policy edit can silently widen this.
+              - Sid: DenyAnyReadOfInvocationLogsAndReplayResults
+                Effect: Deny
+                Action: "s3:*"
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:s3:::${LogsBucketName}"
+                  - !Sub "arn:${AWS::Partition}:s3:::${LogsBucketName}/*"
+                  - !Sub "arn:${AWS::Partition}:s3:::${LogsBucketName}-replay-results"
+                  - !Sub "arn:${AWS::Partition}:s3:::${LogsBucketName}-replay-results/*"
+  # --- Replay worker and state machine (inside the client account) ---------
+  ReplayLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/vendedlogs/states/jauge-replay-${EnvironmentName}"
+      RetentionInDays: !Ref RetentionDays
+  ReplayWorkerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "jauge-replay-${EnvironmentName}"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement: [{Effect: Allow, Action: sts:AssumeRole, Principal: {Service: lambda.amazonaws.com}}]
+      Policies:
+        - PolicyName: jauge-replay-runtime
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - {Sid: WriteOwnLogs, Effect: Allow, Resource: !GetAtt ReplayLogGroup.Arn,
+                 Action: [logs:CreateLogStream, logs:PutLogEvents]}
+              # Request text is read here, inside the client account, and nowhere else.
+              - Sid: ReadInvocationLogsInsideClientAccount
+                Effect: Allow
+                Action: [s3:GetObject, s3:ListBucket]
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:s3:::${LogsBucketName}"
+                  - !Sub "arn:${AWS::Partition}:s3:::${LogsBucketName}/*"
+              - {Sid: WriteReplayResults, Effect: Allow, Action: [s3:PutObject, s3:AbortMultipartUpload],
+                 Resource: !Sub "arn:${AWS::Partition}:s3:::${LogsBucketName}-replay-results/*"}
+              - {Sid: InvokeCandidateModels, Effect: Allow,
+                 Action: [bedrock:InvokeModel, bedrock:InvokeModelWithResponseStream],
+                 Resource: !Sub "arn:${AWS::Partition}:bedrock:${DataRegion}::foundation-model/*"}
+              - {Sid: UseDataKey, Effect: Allow, Action: [kms:Decrypt, kms:GenerateDataKey],
+                 Resource: !GetAtt DataKey.Arn}
+  ReplayWorkerFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "jauge-replay-worker-${EnvironmentName}"
+      Description: Replay step adapter; the packaged src/jauge/replay module replaces this placeholder.
+      Runtime: python3.12
+      Handler: index.handler
+      Timeout: 300
+      MemorySize: 512
+      Role: !GetAtt ReplayWorkerRole.Arn
+      Code:
+        ZipFile: |
+          """Jauge replay worker - deployment seam: module M4 packages the real code here."""
+          def handler(event, context):
+              return {"etape": event.get("etape", "inconnue"), "statut": "non_implemente"}
+  ReplayStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: !Sub "jauge-replay-${EnvironmentName}"
+      StateMachineType: STANDARD
+      RoleArn: !GetAtt ReplayExecutionRole.Arn
+      TracingConfiguration: {Enabled: true}
+      LoggingConfiguration: {Level: ALL, IncludeExecutionData: false,
+                             Destinations: [{CloudWatchLogsLogGroup: {LogGroupArn: !GetAtt ReplayLogGroup.Arn}}]}
+      DefinitionString: !Sub |
+        {"Comment": "Jauge replay: sample, replay each candidate, publish results.",
+         "StartAt": "PreparerEchantillon",
+         "States": {
+           "PreparerEchantillon": {
+             "Type": "Task", "Resource": "${ReplayWorkerFunction.Arn}",
+             "Parameters": {"etape": "echantillon", "campagne": "$.campagne"},
+             "Retry": [{"ErrorEquals": ["States.TaskFailed"], "IntervalSeconds": 5, "MaxAttempts": 2, "BackoffRate": 2}],
+             "Catch": [{"ErrorEquals": ["States.ALL"], "Next": "Echec", "ResultPath": "$.erreur"}],
+             "Next": "RejouerModeles"},
+           "RejouerModeles": {
+             "Type": "Map", "ItemsPath": "$.modeles", "MaxConcurrency": 2,
+             "Iterator": {"StartAt": "Rejouer", "States": {
+               "Rejouer": {"Type": "Task", "Resource": "${ReplayWorkerFunction.Arn}",
+                 "Parameters": {"etape": "rejeu", "campagne": "$.campagne", "modele": "$.modele"},
+                 "Retry": [{"ErrorEquals": ["States.TaskFailed"], "IntervalSeconds": 10, "MaxAttempts": 2, "BackoffRate": 2}],
+                 "Catch": [{"ErrorEquals": ["States.ALL"], "Next": "EchecModele", "ResultPath": "$.erreur"}],
+                 "End": true},
+               "EchecModele": {"Type": "Fail", "Error": "ReplayCandidateFailed"}}},
+             "Catch": [{"ErrorEquals": ["States.ALL"], "Next": "Echec", "ResultPath": "$.erreur"}],
+             "Next": "PublierResultats"},
+           "PublierResultats": {"Type": "Task", "Resource": "${ReplayWorkerFunction.Arn}",
+             "Parameters": {"etape": "publication", "campagne": "$.campagne"},
+             "Retry": [{"ErrorEquals": ["States.TaskFailed"], "IntervalSeconds": 5, "MaxAttempts": 2, "BackoffRate": 2}],
+             "Catch": [{"ErrorEquals": ["States.ALL"], "Next": "Echec", "ResultPath": "$.erreur"}],
+             "Next": "Termine"},
+           "Termine": {"Type": "Succeed"},
+           "Echec": {"Type": "Fail", "Error": "ReplayFailed",
+                     "Cause": "A replay step failed; see the execution history."}}}
+  ReplayExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "jauge-replay-orchestrator-${EnvironmentName}"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement: [{Effect: Allow, Action: sts:AssumeRole, Principal: {Service: states.amazonaws.com}}]
+      Policies:
+        - PolicyName: jauge-replay-orchestration
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - {Sid: InvokeReplayWorker, Effect: Allow, Action: lambda:InvokeFunction,
+                 Resource: !GetAtt ReplayWorkerFunction.Arn}
+              - {Sid: WriteExecutionLogs, Effect: Allow, Resource: "*",
+                 Action: [logs:CreateLogDelivery, logs:GetLogDelivery, logs:UpdateLogDelivery,
+                          logs:DeleteLogDelivery, logs:ListLogDeliveries, logs:PutResourcePolicy,
+                          logs:DescribeResourcePolicies, logs:DescribeLogGroups]}
+              - Sid: TraceExecutions
+                Effect: Allow
+                Action: [xray:PutTraceSegments, xray:PutTelemetryRecords,
+                         xray:GetSamplingRules, xray:GetSamplingTargets]
+                Resource: "*"
+  # --- Budget and alarms (spec 17.3, ENF-OBS-01) ---------------------------
+  AlertTopic:
+    Type: AWS::SNS::Topic
+    Properties: {TopicName: !Sub "jauge-${EnvironmentName}-alerts", KmsMasterKeyId: !Ref DataKey}
+  AlertTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics: [!Ref AlertTopic]
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowBudgetsAndAlarmsToPublish
+            Effect: Allow
+            Principal: {Service: [budgets.amazonaws.com, cloudwatch.amazonaws.com]}
+            Action: sns:Publish
+            Resource: !Ref AlertTopic
+            Condition: {StringEquals: {aws:SourceAccount: !Ref AWS::AccountId}}
+  AlertSubscription:
+    Type: AWS::SNS::Subscription
+    Condition: HasAlertEmail
+    Properties: {TopicArn: !Ref AlertTopic, Protocol: email, Endpoint: !Ref AlertEmail}
+  AccountBudget:
+    Type: AWS::Budgets::Budget
+    Properties:
+      Budget:
+        BudgetName: !Sub "jauge-${EnvironmentName}-monthly"
+        BudgetType: COST
+        TimeUnit: MONTHLY
+        BudgetLimit: {Amount: !Ref MonthlyBudgetUsd, Unit: USD}
+      NotificationsWithSubscribers:
+        - Notification: {NotificationType: ACTUAL, ComparisonOperator: GREATER_THAN, Threshold: 80, ThresholdType: PERCENTAGE}
+          Subscribers: [{SubscriptionType: SNS, Address: !Ref AlertTopic}]
+        - Notification: {NotificationType: FORECASTED, ComparisonOperator: GREATER_THAN, Threshold: 100, ThresholdType: PERCENTAGE}
+          Subscribers: [{SubscriptionType: SNS, Address: !Ref AlertTopic}]
+  ReplayFailuresAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties: {AlarmDescription: "Jauge replay executions are failing in the client account.", Namespace: AWS/States, MetricName: ExecutionsFailed,
+      Dimensions: [{Name: StateMachineArn, Value: !Ref ReplayStateMachine}], Statistic: Sum, Period: 300,
+      EvaluationPeriods: 1, Threshold: 1, TreatMissingData: notBreaching,
+      ComparisonOperator: GreaterThanOrEqualToThreshold, AlarmActions: [!Ref AlertTopic]}
+  ReplayWorkerErrorsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties: {AlarmDescription: "Jauge replay worker is raising errors.", Namespace: AWS/Lambda, MetricName: Errors,
+      Dimensions: [{Name: FunctionName, Value: !Ref ReplayWorkerFunction}], Statistic: Sum, Period: 300,
+      EvaluationPeriods: 1, Threshold: 1, TreatMissingData: notBreaching,
+      ComparisonOperator: GreaterThanOrEqualToThreshold, AlarmActions: [!Ref AlertTopic]}
+
+Outputs:
+  RoleArn: {Description: Role ARN the MSP assumes (external ID required)., Value: !GetAtt MspCrossAccountRole.Arn}
+  ExternalIdParameter: {Description: Stack parameter holding the external ID., Value: ExternalId}
+  LogsBucketName: {Description: Bucket to point Bedrock invocation logging at., Value: !Ref LogsBucket}
+  AthenaResultsBucketName: {Description: Aggregate query output - the only readable bucket., Value: !Ref AthenaResultsBucket}
+  AthenaWorkGroupName: {Description: Athena workgroup used for aggregate queries., Value: !Ref AthenaWorkGroup}
+  GlueDatabaseName: {Description: "Glue database holding invocation_logs, cur2 and aggregates.", Value: !Ref CatalogDatabase}
+  AggregatesTableName: {Description: Aggregates table the MSP queries., Value: !Sub "${CatalogDatabase}.aggregates"}
+  ReplayStateMachineArn: {Description: State machine the MSP starts for a replay campaign., Value: !Ref ReplayStateMachine}
+  AlertTopicArn: {Description: SNS topic receiving budget and alarm notifications., Value: !Ref AlertTopic}
