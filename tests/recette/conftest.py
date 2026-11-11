@@ -76,12 +76,12 @@ def enregistrer_referentiel(store: MemoryStore, tenants: list[Tenant], apps: lis
 def ligne_journal(record: Any, **surcharges: Any) -> dict[str, object]:
     """Ligne de journal d'invocation Bedrock pour un enregistrement de la démo.
 
-    `demo.traffic.vers_ligne_cloudwatch()` n'inclut pas l'identifiant du modèle
-    (écart M12 signalé dans la recette) ; les journaux Bedrock réels le portent.
-    On l'ajoute ici, comme le fait un vrai journal, pour exercer le parseur M1.
+    Depuis la correction d'interopérabilité M12 ↔ M1 (écart É1 de la recette),
+    `demo.traffic.vers_ligne_cloudwatch()` émet nativement le champ `modelId`
+    des journaux Bedrock réels : le parseur M1 lit la ligne brute sans ajout.
+    Ce helper ne fait plus que poser d'éventuelles surcharges de test.
     """
     ligne = record.vers_ligne_cloudwatch()
-    ligne["modelId"] = record.modele_id
     ligne.update(surcharges)
     return ligne
 

@@ -18,7 +18,7 @@ un modèle de langage (ENF-IA-01).
 export PATH="$HOME/.local/bin:$PATH"
 uv sync --all-groups
 
-# La recette seule (59 tests : 57 réussis + 2 écarts attendus, voir §4)
+# La recette seule (59 tests : 59 réussis, 0 `xfail` — écarts É1/É2 corrigés, voir §4)
 uv run pytest tests/recette -q
 
 # Un scénario précis
@@ -36,7 +36,7 @@ Arborescence de la recette :
 |---|---|
 | `tests/recette/conftest.py` | Fixtures partagées : store, table de tarifs, API en mode démo, écriture d'un journal NDJSON |
 | `tests/recette/outillage.py` | Outillage de campagne : tirage, rejeu, notation, contrôles, consolidation (§13.1 à §13.4) |
-| `tests/recette/test_r1_r2_attribution.py` | R1, R2 (+ 2 écarts M12 ↔ M1) |
+| `tests/recette/test_r1_r2_attribution.py` | R1, R2 (+ interopérabilité M12 ↔ M1) |
 | `tests/recette/test_r3_leviers.py` | R3 |
 | `tests/recette/test_r4_r5_campagne.py` | R4, R5 |
 | `tests/recette/test_r6_r7_r8_bascule.py` | R6, R7, R8 |
@@ -50,7 +50,7 @@ Arborescence de la recette :
 | Réf. | Scénario du §22 | Test | Fichier | Ce qui est vérifié |
 |---|---|---|---|---|
 | **R1** | Mise en service d'un client | `test_r1_mise_en_service_produit_un_premier_cout` | `test_r1_r2_attribution.py` | Création du client puis de l'application via l'API, table de tarifs datée de `data/pricing/`, lecture des journaux du premier jour, agrégation, et **premier coût par application** lu sur `GET /v1/applications/{id}/costs` |
-| **R2** | Journée de trafic de démonstration | `test_r2_journee_demo_100_pourcent_attribuee_et_ecart_affiche`, `test_r2_store_amorce_par_la_demo_expose_une_couverture_100` | `test_r1_r2_attribution.py` | Une journée du générateur `demo/` : **100 % des requêtes attribuées**, aucune dépense non attribuée, **écart avec la facture CUR 2.0 calculé, affiché et sous 3 %** |
+| **R2** | Journée de trafic de démonstration | `test_r2_journee_demo_100_pourcent_attribuee_et_ecart_affiche`, `test_r2_store_amorce_par_la_demo_expose_une_couverture_100`, `test_r2_le_parseur_m1_lit_les_journaux_demo_bruts`, `test_r2_le_parseur_m1_attribue_les_lignes_cur_demo` | `test_r1_r2_attribution.py` | Une journée du générateur `demo/` : **100 % des requêtes attribuées**, aucune dépense non attribuée, **écart avec la facture CUR 2.0 calculé, affiché et sous 3 %** ; et **interopérabilité M12 ↔ M1** : le parseur M1 lit les journaux et les lignes CUR de la démo **bruts** (champ `modelId`, colonnes `resource_tags_user_*`), sans rejet ni dépense non attribuée |
 | **R3** | Classement sur un grand modèle | `test_r3_levier_modele_surdimensionne_detecte_avec_economie`, `test_r3_levier_publie_sur_l_api`, `test_r3_detection_reproductible` | `test_r3_leviers.py` | Le détecteur **M3 réel** (`detecter_leviers`) trouve le levier « modèle surdimensionné » sur le trafic du classement, **avec une économie estimée > 0**, un candidat moins cher proposé, des indices cités, et le levier publié et classé par l'API |
 | **R4** | Campagne 200 requêtes / 3 candidats | `test_r4_campagne_200_requetes_3_candidats` | `test_r4_r5_campagne.py` | Tirage stratifié de **200 requêtes**, rejeu sur la référence et **3 candidats** au niveau Flex, notation par le juge, contrôles déterministes : chaque candidat expose **taux, intervalle de confiance, latence (p50/p95) et coût par requête**, cohérents avec les verdicts et les tarifs ; résultats publiés sur `GET /v1/campaigns/{id}/results` |
 | **R5** | Candidat sous le seuil | `test_r5_candidat_sous_le_seuil_rejette_avec_familles_en_echec` | `test_r4_r5_campagne.py` | Le petit modèle sous le seuil de 97 % de l'assistant : `decider` **refuse** le candidat, motive le refus (condition « taux_equivalence » non remplie) et cite les **familles de requêtes en échec** ; le taux est lu à côté de l'auto-accord du modèle actuel |
@@ -83,10 +83,17 @@ Ces écarts ont été constatés **pendant la recette**. Aucun module métier n'
 été modifié : la recette teste la spécification, signale l'écart et, quand
 l'écart est de nature à interdire le test, porte un `xfail` documenté.
 
+Les écarts d'interopérabilité **É1** et **É2** ont été **corrigés le
+2026-11-11** (PR « Interop démo ↔ attribution : modelId dans les journaux,
+colonnes CUR 2.0 réelles », branche `fix/demo-attribution-interop`) : c'est le
+générateur de démonstration (M12) qui émet désormais les vrais noms de champs
+AWS, le parseur M1 restant inchangé. Les deux tests `xfail` sont devenus des
+tests verts ; la recette ne compte plus aucun `xfail`.
+
 | N° | Écart | Impact | Test |
 |---|---|---|---|
-| **É1** | `demo/traffic.py` n'écrit pas le champ `modelId` dans les lignes de journal CloudWatch (`vers_ligne_cloudwatch`), alors que le parseur M1 (`jauge/attribution/logs.py`) l'exige : **100 % des lignes de la démo sont rejetées** (« model_id absent »). Les journaux Bedrock réels portent ce champ. | La chaîne complète « journaux → agrégats » ne peut pas ingérer directement la sortie du générateur de démonstration. La recette R2 contourne en ajoutant `modelId` (helper `tests/recette/conftest.py`), mais la démo et le module M1 ne sont pas interchangeables. | `test_r2_ecart_interop_m1_lit_les_journaux_demo_bruts` (`xfail`) |
-| **É2** | `demo/cur.py` produit la colonne CUR `tag_application`, que le parseur CUR de M1 (`CHAMPS_CUR`, `jauge/attribution/reconcile.py`) ne reconnaît pas (il attend par exemple `resource_tags_user_application`). | Les lignes CUR de la démo sont vues comme **non attribuées** par M1 : le rapprochement du module d'attribution ne peut pas être branché directement sur la sortie de la démo. | `test_r2_ecart_interop_m1_attribue_les_lignes_cur_demo` (`xfail`) |
+| **É1** | **Corrigé le 2026-11-11** : `demo/traffic.py` n'émettait pas le champ `modelId` des journaux d'invocation Bedrock réels ; le parseur M1 rejetait 100 % des lignes de la démo (« model_id absent »). La démo émet désormais `modelId` (à côté de `requestId`, `eventTime`, …). | Aucun : le parseur M1 lit les lignes CloudWatch de la démo **brutes**, sans rejet ni adaptation. | `test_r2_le_parseur_m1_lit_les_journaux_demo_bruts` (vert) |
+| **É2** | **Corrigé le 2026-11-11** : `demo/cur.py` produisait les colonnes `tag_application`, `tag_team`, `tag_environment`, inconnues du parseur CUR de M1 (`CHAMPS_CUR`). La démo émet désormais les vraies colonnes CUR 2.0 d'étiquettes utilisateur : `resource_tags_user_application`, `resource_tags_user_team`, `resource_tags_user_environment`. | Aucun : les lignes CUR de la démo sont attribuées à 100 % par M1 et le rapprochement quotidien M12 → M1 affiche un écart < 3 %. | `test_r2_le_parseur_m1_attribue_les_lignes_cur_demo` (vert) |
 | **É3** | La démonstration construit ses leviers **à la main** (`demo/analyse.py: construire_leviers`), sans appeler le détecteur M3 (`jauge/levers/detector.py`). | Les montants de leviers affichés dans la démo ne sont pas ceux que produirait le moteur de règles ; la recette R3 exerce donc M3 directement sur le trafic de la démo. | `test_r3_levier_modele_surdimensionne_detecte_avec_economie` |
 | **É4** | L'API `POST /v1/applications/{id}/campaigns` (port de démonstration) estime le coût avec la **moyenne observée par requête** du store, et non avec le devis du module M4 (`jauge/replay/cost.py`, tarif Flex + coût du juge). | L'estimation affichée par l'API et le devis de référence peuvent différer ; seul le plafond est appliqué dans les deux cas. Le module M4 reste la source de vérité (ENF-COUT-01). | `test_r9_api_refuse_la_campagne_au_dessus_du_plafond` |
 | **É5** | L'API `POST /v1/recommendations/{id}/rollout` construit elle-même l'objet `BasculeProgressive` ; elle **n'appelle pas** `ControlleurBascule` (M6). | Une bascule démarrée par l'API n'a pas de règle de passerelle réelle, pas de paliers et pas de retrait automatique : le parcours complet existe côté module M6 (couvert par R7/R8), pas côté API. | `test_r6_api_refuse_la_bascule_sans_approbation`, `test_r8_api_peut_rollback_une_bascule_en_cours` |

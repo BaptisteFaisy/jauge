@@ -56,9 +56,9 @@ def test_colonnes_cur(contexte: dict) -> None:
         "region",
         "service_tier",
         "model_id",
-        "tag_application",
-        "tag_team",
-        "tag_environment",
+        "resource_tags_user_application",
+        "resource_tags_user_team",
+        "resource_tags_user_environment",
     }
     assert colonnes == attendues
     premiere = contexte["lignes"][0]

@@ -10,9 +10,12 @@ Scénarios du §22 :
   générateur `demo/`, **100 % de la dépense est attribuée** et l'**écart avec la
   facture** CUR 2.0 est calculé et affiché (§8.2, EF-ATT-05..07).
 
-Les deux tests d'interopérabilité M1 ↔ M12 en fin de fichier documentent des
-écarts constatés : ils sont marqués `xfail` conformément à la méthode de
-recette (on teste la spec, on signale l'écart, on ne modifie pas les modules).
+Les deux tests d'interopérabilité M12 ↔ M1 en fin de fichier vérifient que le
+parseur d'attribution (M1) lit **brutes** les sorties du générateur de
+démonstration (M12) : les journaux d'invocation portent le champ `modelId` des
+journaux Bedrock réels (écart É1 corrigé) et les lignes CUR 2.0 portent les
+vraies colonnes d'étiquettes utilisateur `resource_tags_user_*` (écart É2
+corrigé) — ils ne sont plus marqués `xfail`.
 
 Aucun appel réseau : `MemoryStore`, fichiers locaux, générateur déterministe.
 """
@@ -20,16 +23,17 @@ Aucun appel réseau : `MemoryStore`, fichiers locaux, générateur déterministe
 from __future__ import annotations
 
 import json
-from datetime import date
+from datetime import UTC, date
 from pathlib import Path
 
 import pytest
+from demo.cur import LigneCur as LigneCurDemo
 from demo.cur import facture_par_jour as facture_demo_par_jour
 from demo.cur import generer_lignes_cur
 from demo.profils import DATE_FIN_DEFAUT, GRAINE_DEFAUT
 from demo.seed import construire_agregats, peupler_store, resume
 from demo.socle import SocleDemo, charger_socle_demo
-from demo.traffic import generer_trafic, lignes_cloudwatch
+from demo.traffic import JournalInvocation, generer_trafic, lignes_cloudwatch
 from fastapi.testclient import TestClient
 from tests.conftest import GRAND_MODELE, REGION
 from tests.recette.conftest import ecrire_journal_ndjson, entetes
@@ -37,9 +41,11 @@ from tests.recette.conftest import ecrire_journal_ndjson, entetes
 from jauge.api.auth import RoleUtilisateur
 from jauge.attribution.aggregate import AgregateurQuotidien, ResultatAgregation
 from jauge.attribution.logs import RapportLecture, iterer_enregistrements, lire_journaux
-from jauge.attribution.reconcile import iterer_lignes_cur
+from jauge.attribution.reconcile import StatistiquesCur, iterer_lignes_cur, rapprocher_periode
+from jauge.attribution.reconcile import facture_par_jour as facture_cur_par_jour
 from jauge.engine.attribution import rapprocher_facture
 from jauge.engine.calculator import TableTarifs
+from jauge.models.cost import RapprochementJour
 from jauge.models.tenant import Application, Tenant
 from jauge.pricing_data import table_demo
 from jauge.store.memory import MemoryStore
@@ -254,37 +260,105 @@ def test_r2_store_amorce_par_la_demo_expose_une_couverture_100(
     assert abs(synthese.ecart_rapprochement_moyen_pourcentage) < 3.0
 
 
-@pytest.mark.xfail(
-    reason=(
-        "Écart M12↔M1 : demo.traffic.lignes_cloudwatch() n'inclut pas le champ "
-        "modelId des journaux Bedrock réels ; le parseur M1 rejette donc 100 % "
-        "des lignes (« model_id absent »). À corriger dans demo/traffic.py."
-    )
-)
-def test_r2_ecart_interop_m1_lit_les_journaux_demo_bruts() -> None:
-    """R2 (écart) : le parseur M1 devrait lire les lignes CloudWatch de la démo brutes."""
+def test_r2_le_parseur_m1_lit_les_journaux_demo_bruts() -> None:
+    """R2 (interop M12 ↔ M1) : le parseur M1 lit les lignes CloudWatch brutes.
+
+    Les lignes de la démo portent les champs des journaux d'invocation Bedrock
+    réels — `modelId`, `eventTime`, compteurs de jetons, `serviceTier` et
+    étiquettes d'attribution dans `requestMetadata` : M1 les ingère toutes,
+    sans aucun rejet « model_id absent » ni adaptation (écart É1 corrigé).
+    """
     records = generer_trafic(graine=GRAINE_DEFAUT, jours=1, date_fin=DATE_FIN_DEFAUT)
+    assert records, "le générateur de démonstration doit produire du trafic"
     rapport = RapportLecture()
     enregistrements = list(iterer_enregistrements(lignes_cloudwatch(records), rapport))
+    assert len(enregistrements) > 0
     assert rapport.exploitables == len(records)
+    assert "model_id absent" not in rapport.motifs_rejet
+    assert not rapport.rejetes, f"rejets M1 : {rapport.motifs_rejet}"
+
+    # Les champs émis par la démo sont bien reconnus par `CHAMPS_ACCEPTES`
+    # (comparaison en ordre : la lecture M1 préserve l'ordre du flux source).
     assert len(enregistrements) == len(records)
+    for record, lu in zip(records, enregistrements, strict=True):
+        assert lu.request_id == record.request_id
+        assert lu.model_id == record.modele_id
+        assert lu.niveau_service == record.niveau
+        assert lu.jetons_entree == record.jetons_entree
+        assert lu.jetons_sortie == record.jetons_sortie
+        assert lu.jetons_cache_lecture == record.jetons_cache_lecture
+        assert lu.jetons_cache_ecriture == record.jetons_cache_ecriture
+        assert lu.horodatage == record.event_time.astimezone(UTC).replace(microsecond=0)
+        assert lu.etiquettes.application == record.application_id
+        assert lu.etiquettes.est_attribuee
 
 
-@pytest.mark.xfail(
-    reason=(
-        "Écart M12↔M1 : demo.cur produit la colonne « tag_application », que le "
-        "parseur CUR de M1 (CHAMPS_CUR) ne reconnaît pas — il attend par exemple "
-        "« resource_tags_user_application ». Les lignes CUR de la démo sont donc "
-        "vues comme non attribuées par M1."
+def _rapprochements_m1(
+    tenant: Tenant,
+    records: list[JournalInvocation],
+    lignes_cur: list[LigneCurDemo],
+    applications: list[Application],
+    table: TableTarifs,
+) -> list[RapprochementJour]:
+    """Rapprochement M1 d'un client, branché directement sur les sorties brutes.
+
+    Toute la chaîne est celle des modules : `demo.traffic.lignes_cloudwatch`
+    (M12) → `logs.iterer_enregistrements` → `AgregateurQuotidien` →
+    `reconcile.iterer_lignes_cur` → `reconcile.facture_par_jour` →
+    `reconcile.rapprocher_periode` (M1), sans aucune adaptation de format.
+    """
+    du_client = [r for r in records if r.tenant_id == tenant.id]
+    rapport = RapportLecture()
+    agregateur = AgregateurQuotidien(tenant, table, applications=applications)
+    resultat = agregateur.agreger(iterer_enregistrements(lignes_cloudwatch(du_client), rapport))
+    assert rapport.exploitables == len(du_client)
+    assert not rapport.rejetes, f"rejets M1 : {rapport.motifs_rejet}"
+
+    facture_brute = (
+        ligne.vers_dictionnaire()
+        for ligne in lignes_cur
+        if ligne.payer_account_id == tenant.compte_aws
     )
-)
-def test_r2_ecart_interop_m1_attribue_les_lignes_cur_demo(
+    factures = facture_cur_par_jour(iterer_lignes_cur(facture_brute))
+    return rapprocher_periode([resultat], factures.values(), tenant.id)
+
+
+def test_r2_le_parseur_m1_attribue_les_lignes_cur_demo(
     table_socle: TableTarifs,
 ) -> None:
-    """R2 (écart) : les lignes CUR de la démo devraient porter une étiquette lue par M1."""
+    """R2 (interop M12 ↔ M1) : les lignes CUR de la démo sont attribuées par M1.
+
+    La démo émet les vraies colonnes CUR 2.0 des étiquettes utilisateur
+    (`resource_tags/user:<clé>`, normalisées `resource_tags_user_<clé>`) : le
+    parseur CUR de M1 (`CHAMPS_CUR`) les lit sans adaptation, la dépense est
+    attribuée à 100 % et le rapprochement quotidien avec les journaux bruts,
+    agrégés par M1, affiche un écart sous la cible de 3 % (écart É2 corrigé).
+    """
     socle = charger_socle_demo()
     records = generer_trafic(graine=GRAINE_DEFAUT, jours=1, date_fin=DATE_FIN_DEFAUT)
     lignes = generer_lignes_cur(records, table_socle, GRAINE_DEFAUT, _comptes_demo(socle))
-    parsees = list(iterer_lignes_cur([ligne.vers_dictionnaire() for ligne in lignes]))
-    assert parsees, "aucune ligne CUR retenue"
-    assert all(ligne.attribuee for ligne in parsees)
+    assert lignes, "la démo doit produire des lignes CUR"
+
+    # 1. Le parseur CUR de M1 retient toutes les lignes et les attribue à 100 %.
+    stats = StatistiquesCur()
+    brutes = [ligne.vers_dictionnaire() for ligne in lignes]
+    parsees = list(iterer_lignes_cur(brutes, stats=stats))
+    assert len(parsees) > 0
+    assert stats.retenues == stats.lues == len(lignes)
+    assert all(ligne.attribuee for ligne in parsees), "ligne CUR vue non attribuée"
+    factures = facture_cur_par_jour(parsees)
+    assert factures, "aucune facture consolidée"
+    for facture in factures.values():
+        assert facture.cout_non_attribue_usd == 0.0
+        assert facture.part_non_attribuee_pourcentage == 0.0
+
+    # 2. Chaîne complète M12 → M1 : l'écart de rapprochement est affiché et < 3 %.
+    for tenant in (socle.tenant_a, socle.tenant_b):
+        rapprochements = _rapprochements_m1(
+            tenant, records, lignes, socle.par_tenant(tenant.id), table_socle
+        )
+        assert rapprochements, f"aucun rapprochement pour {tenant.id}"
+        for rapprochement in rapprochements:
+            assert rapprochement.conforme, rapprochement
+            assert rapprochement.ecart_pourcentage < 3.0
+            assert rapprochement.part_non_attribuee_pourcentage == 0.0
