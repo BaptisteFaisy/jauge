@@ -1,0 +1,76 @@
+{
+  "_avertissement": "MONTANTS DE DÉMONSTRATION — ce ne sont PAS les tarifs officiels d'Amazon. Les valeurs sont alignées sur la fixture `tarifs` de tests/conftest.py pour que la démonstration soit reproductible ; elles doivent être remplacées par les prix lus dans l'API de tarification AWS (Price List / Cost Explorer) avant tout usage réel (cahier des charges §23 Q3).",
+  "source": "valeurs de démonstration alignées sur tests/conftest.py — à remplacer par l'API de tarification AWS (§23 Q3)",
+  "region": "eu-west-1",
+  "devise": "USD",
+  "unite": "prix pour 1 000 jetons",
+  "date_effet": "2026-01-01",
+  "tarifs": [
+    {
+      "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+      "region": "eu-west-1",
+      "niveau": "standard",
+      "date_effet": "2026-01-01",
+      "prix_entree_1k": 0.015,
+      "prix_sortie_1k": 0.075,
+      "prix_cache_ecriture_1k": 0.01875,
+      "prix_cache_lecture_1k": 0.0015,
+      "devise": "USD"
+    },
+    {
+      "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+      "region": "eu-west-1",
+      "niveau": "flex",
+      "date_effet": "2026-01-01",
+      "prix_entree_1k": 0.0075,
+      "prix_sortie_1k": 0.0375,
+      "prix_cache_ecriture_1k": 0.0,
+      "prix_cache_lecture_1k": 0.0,
+      "devise": "USD"
+    },
+    {
+      "modele_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+      "region": "eu-west-1",
+      "niveau": "standard",
+      "date_effet": "2026-01-01",
+      "prix_entree_1k": 0.003,
+      "prix_sortie_1k": 0.015,
+      "prix_cache_ecriture_1k": 0.0,
+      "prix_cache_lecture_1k": 0.0,
+      "devise": "USD"
+    },
+    {
+      "modele_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+      "region": "eu-west-1",
+      "niveau": "flex",
+      "date_effet": "2026-01-01",
+      "prix_entree_1k": 0.0015,
+      "prix_sortie_1k": 0.0075,
+      "prix_cache_ecriture_1k": 0.0,
+      "prix_cache_lecture_1k": 0.0,
+      "devise": "USD"
+    },
+    {
+      "modele_id": "anthropic.claude-3-5-haiku-20241022-v1:0",
+      "region": "eu-west-1",
+      "niveau": "standard",
+      "date_effet": "2026-01-01",
+      "prix_entree_1k": 0.0008,
+      "prix_sortie_1k": 0.004,
+      "prix_cache_ecriture_1k": 0.0,
+      "prix_cache_lecture_1k": 0.0,
+      "devise": "USD"
+    },
+    {
+      "modele_id": "anthropic.claude-3-5-haiku-20241022-v1:0",
+      "region": "eu-west-1",
+      "niveau": "flex",
+      "date_effet": "2026-01-01",
+      "prix_entree_1k": 0.0004,
+      "prix_sortie_1k": 0.002,
+      "prix_cache_ecriture_1k": 0.0,
+      "prix_cache_lecture_1k": 0.0,
+      "devise": "USD"
+    }
+  ]
+}
