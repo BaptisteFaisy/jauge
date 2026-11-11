@@ -4,9 +4,30 @@
 network access and no credentials. Sections 2 to 4 run the seeded demo (console
 summary, API and portal) directly on your machine with a single command.
 
-What is **not** done yet is a real AWS deployment (a public portal URL), the video
-and the Devpost submission — see [`SUBMISSION.md`](SUBMISSION.md). Every step below
-carries a status line so nothing is presented as working before it is.
+## 0. Open it now — public portal
+
+> **Status: available.** https://baptistefaisy.github.io/jauge/
+
+The portal is published on GitHub Pages straight from this repository
+(`.github/workflows/pages.yml`). There is no backend behind it: it serves
+`portal/data/demo.json`, a snapshot recorded from the **real** FastAPI
+application by `scripts/export_portail_statique.py`.
+
+| What works on the public URL | How |
+|---|---|
+| Client and fleet dashboards, costs, reconciliation, levers, campaigns, recommendations, savings | Recorded API answers |
+| Approve / reject a recommendation, start a staged rollout, walk 10 → 50 → 100 %, roll back | Simulated in your browser, with the same status codes and the same guard rails (403 cross-tenant, 409 without approval) |
+| Launching a replay campaign, the chat agent | Refused with an explicit `501 static_demo`: these call Bedrock and need the live control plane |
+
+The header shows `static demo (snapshot <date>)` so nobody mistakes it for a
+live deployment. What still needs a real AWS account is section 5 below.
+
+---
+
+What is **not** done yet is a real AWS deployment (live API, replay against
+Bedrock, gateway rules), the video and the Devpost submission — see
+[`SUBMISSION.md`](SUBMISSION.md). Every step below carries a status line so
+nothing is presented as working before it is.
 
 | Status | Meaning |
 |---|---|

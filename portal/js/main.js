@@ -7,7 +7,8 @@
  * envoyé en en-têtes `X-Jauge-*` à chaque appel.
  */
 
-import { creerApi } from "./api.js";
+import { creerApi, modePortail } from "./api.js";
+import { metaInstantane } from "./statique.js";
 import { analyser, demarrer, naviguer } from "./router.js";
 import { choisir, choisirTous, html, monter, sur, ecrireTexte } from "./dom.js";
 import { CLIENTS_DEMO, ROLES_DEMO, SESSION_DEFAUT } from "./config.js";
@@ -45,6 +46,8 @@ const CLE_SESSION = "jauge.demo";
 
 let session = lireSession();
 let jeton = 0;
+/** Suffixe ajouté à la note d'en-tête quand le portail tourne sur l'instantané statique. */
+let suffixeNote = "";
 
 /** Session de démonstration : stockage de session, repli sur les valeurs par défaut. */
 function lireSession() {
@@ -118,8 +121,29 @@ function remplirSelecteurs() {
     role.value = session.role;
   }
   if (noteDemo) {
-    ecrireTexte(noteDemo, `Signed in as ${session.utilisateur} · client ${session.clientId}`);
+    ecrireTexte(
+      noteDemo,
+      `Signed in as ${session.utilisateur} · client ${session.clientId}${suffixeNote}`,
+    );
   }
+}
+
+/**
+ * Signale le mode statique (GitHub Pages : portail publié sans backend).
+ *
+ * Les juges doivent savoir d'où viennent les chiffres : un instantané généré par
+ * `scripts/export_portail_statique.py` depuis la véritable API, et des écritures
+ * simulées dans le navigateur uniquement.
+ */
+async function annoncerMode() {
+  const mode = await modePortail();
+  if (mode !== "statique") {
+    return;
+  }
+  const meta = metaInstantane() || {};
+  const date = String(meta.genere_le || "").slice(0, 10) || "unknown date";
+  suffixeNote = ` · static demo (snapshot ${date}, changes stay in your browser)`;
+  remplirSelecteurs();
 }
 
 /** Marque l'onglet actif pour les lecteurs d'écran. */
@@ -238,6 +262,7 @@ function initialiser() {
     formulaireDemo.addEventListener("submit", appliquerDemo);
   }
   document.addEventListener("click", basculerClient);
+  annoncerMode();
   demarrer(afficher);
 }
 

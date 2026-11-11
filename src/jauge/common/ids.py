@@ -26,10 +26,31 @@ PREFIXES = {
 }
 
 
+#: Mode déterministe (démonstration, export statique) : `None` = aléa réel.
+_GRANGE_DETERMINISTE: list[object] = [None, 0]
+
+
+def activer_ids_deterministes(graine: int | None) -> None:
+    """Rend les identifiants reproductibles, ou rétablit l'aléa réel.
+
+    Utile à la démonstration et à l'export statique du portail : à graine
+    constante, deux exécutions produisent les **mêmes** identifiants, donc un
+    instantané comparable d'un commit à l'autre. Le plan de contrôle en
+    production n'appelle jamais cette fonction : il garde `secrets`.
+    """
+    _GRANGE_DETERMINISTE[0] = graine
+    _GRANGE_DETERMINISTE[1] = 0
+
+
 def aleatoire(entite: str) -> str:
     """Identifiant court et unique : `c-4f2a91`. Préfixe issu de `PREFIXES`."""
     prefixe = PREFIXES.get(entite, entite[:3])
-    return f"{prefixe}-{secrets.token_hex(3)}"
+    graine = _GRANGE_DETERMINISTE[0]
+    if graine is None:
+        return f"{prefixe}-{secrets.token_hex(3)}"
+    _GRANGE_DETERMINISTE[1] = int(_GRANGE_DETERMINISTE[1]) + 1
+    empreinte = deterministic(graine, entite, _GRANGE_DETERMINISTE[1])[:12]
+    return f"{prefixe}-{empreinte}"
 
 
 def deterministic(*parties: object) -> str:

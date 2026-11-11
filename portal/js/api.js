@@ -8,6 +8,7 @@
  */
 
 import { DELAI_API_MS } from "./config.js";
+import { detecterMode, racine, servirStatique } from "./statique.js";
 
 const ENTETE_TENANT = "X-Jauge-Tenant";
 const ENTETE_ROLE = "X-Jauge-Role";
@@ -22,6 +23,17 @@ export class ErreurApi extends Error {
     this.code = code;
     this.details = details;
   }
+}
+
+/** Mode de fonctionnement résolu une fois : "live", "statique" ou "indisponible". */
+let promesseMode = null;
+
+/** Mode du portail, résolu une seule fois : API réelle ou instantané statique. */
+export function modePortail() {
+  if (!promesseMode) {
+    promesseMode = detecterMode();
+  }
+  return promesseMode;
 }
 
 /** Chemin encodé d'une ressource, sans injection possible dans l'URL. */
@@ -44,6 +56,21 @@ export function creerApi(session) {
   }
 
   async function appeler(methode, chemin, corps) {
+    const mode = await modePortail();
+    if (mode === "statique") {
+      // Portail publié sans backend : l'instantané `data/demo.json` répond, avec
+      // les mêmes formes JSON, le même cloisonnement et les mêmes refus.
+      const resultat = servirStatique(methode, chemin, corps, session);
+      if (!resultat.ok) {
+        const erreur = (resultat.corps && resultat.corps.error) || {};
+        throw new ErreurApi(erreur.message || `Static demo error ${resultat.statut}`, {
+          statut: resultat.statut,
+          code: erreur.code || "static_demo",
+          details: erreur.details || null,
+        });
+      }
+      return resultat.corps;
+    }
     const controleur = new AbortController();
     const minuteur = setTimeout(() => controleur.abort(), DELAI_API_MS);
     const options = { method: methode, headers: entetes(), signal: controleur.signal };
@@ -53,7 +80,7 @@ export function creerApi(session) {
     }
     let reponse;
     try {
-      reponse = await fetch(chemin, options);
+      reponse = await fetch(racine() + chemin.replace(/^\//, ""), options);
     } catch (erreur) {
       clearTimeout(minuteur);
       if (erreur && erreur.name === "AbortError") {

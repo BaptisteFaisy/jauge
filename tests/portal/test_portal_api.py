@@ -112,14 +112,26 @@ def test_aucun_calcul_metier_dans_les_vues() -> None:
 
 
 def test_aucun_appel_reseau_hors_api() -> None:
-    """`fetch` n'apparaît que dans le client d'API, en chemin relatif."""
+    """`fetch` n'apparaît que dans le client d'API et le mode statique, en relatif.
+
+    `statique.js` est le second point de sortie réseau du portail : il sonde
+    `/health` et charge `data/demo.json` quand le portail est publié sans
+    backend (GitHub Pages). Les deux appels restent **relatifs à la racine de
+    publication** et sur la même origine — aucune URL absolue, aucun CDN.
+    """
+    autorises = {"api.js", "statique.js"}
     for chemin in sorted(PORTAL.rglob("*.js")):
         source = lire(chemin)
         if "fetch(" not in source:
             continue
-        assert chemin.name == "api.js", f"fetch trouvé dans {chemin.name}"
-        assert "fetch(chemin" in source
-        assert not re.search(r"fetch\(\s*[`\"](https?:)?//", source)
+        assert chemin.name in autorises, f"fetch trouvé dans {chemin.name}"
+        assert not re.search(r"fetch\(\s*[`\"](https?:)?//", source), (
+            f"URL absolue dans {chemin.name}"
+        )
+    api = lire(PORTAL / "js" / "api.js")
+    assert "fetch(racine()" in api, "le client d'API doit résoudre les chemins depuis la racine"
+    statique = lire(PORTAL / "js" / "statique.js")
+    assert "resoudre(" in statique, "le mode statique doit résoudre depuis la racine de publication"
 
 
 def test_session_demo_transmise_en_entetes() -> None:

@@ -1,0 +1,2529 @@
+{
+  "meta": {
+    "avertissement": "Instantané de démonstration, données synthétiques. Aucun client réel. Les nombres sont ceux calculés par le code sur le trafic de démo.",
+    "clients": [
+      "t-demo-a",
+      "t-demo-b"
+    ],
+    "genere_le": "2026-11-11T22:06:05+00:00",
+    "points_api": 34,
+    "source": "scripts/export_portail_statique.py"
+  },
+  "reponses": {
+    "GET /v1/applications/doc-summarizer": {
+      "description_tache": "Résumé de documents internes, traitement nocturne",
+      "environnement": "production",
+      "equipe": "back-office",
+      "id": "doc-summarizer",
+      "identifiant_passerelle": null,
+      "modele_actuel": "anthropic.claude-opus-4-20250514-v1:0",
+      "nom": "Résumé de documents",
+      "passe_par_passerelle": true,
+      "relecture_humaine_autorisee": true,
+      "seuil_intervalle_bas": 0.9,
+      "seuil_qualite": 0.95,
+      "tenant_id": "t-demo-a"
+    },
+    "GET /v1/applications/doc-summarizer/costs": {
+      "agregats": [
+        {
+          "application_id": "doc-summarizer",
+          "cout_recalcule_usd": 26.2209,
+          "environnement": "production",
+          "equipe": "back-office",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 407887,
+          "jetons_sortie_total": 268034,
+          "jour": "2026-10-28",
+          "latence_p50_ms": 6022,
+          "latence_p95_ms": 9959,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 105,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "doc-summarizer",
+          "cout_recalcule_usd": 25.3374,
+          "environnement": "production",
+          "equipe": "back-office",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 384550,
+          "jetons_sortie_total": 260922,
+          "jour": "2026-10-29",
+          "latence_p50_ms": 6399,
+          "latence_p95_ms": 10387,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 106,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "doc-summarizer",
+          "cout_recalcule_usd": 23.9219,
+          "environnement": "production",
+          "equipe": "back-office",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 394281,
+          "jetons_sortie_total": 240102,
+          "jour": "2026-10-30",
+          "latence_p50_ms": 6361,
+          "latence_p95_ms": 9941,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 102,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "doc-summarizer",
+          "cout_recalcule_usd": 20.9569,
+          "environnement": "production",
+          "equipe": "back-office",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 332333,
+          "jetons_sortie_total": 212959,
+          "jour": "2026-10-31",
+          "latence_p50_ms": 5877,
+          "latence_p95_ms": 8472,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 89,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "doc-summarizer",
+          "cout_recalcule_usd": 24.9198,
+          "environnement": "production",
+          "equipe": "back-office",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 392993,
+          "jetons_sortie_total": 253665,
+          "jour": "2026-11-01",
+          "latence_p50_ms": 6304,
+          "latence_p95_ms": 9568,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 107,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "doc-summarizer",
+          "cout_recalcule_usd": 21.5605,
+          "environnement": "production",
+          "equipe": "back-office",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 334264,
+          "jetons_sortie_total": 220621,
+          "jour": "2026-11-02",
+          "latence_p50_ms": 6150,
+          "latence_p95_ms": 10103,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 90,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "doc-summarizer",
+          "cout_recalcule_usd": 20.8448,
+          "environnement": "production",
+          "equipe": "back-office",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 348941,
+          "jetons_sortie_total": 208143,
+          "jour": "2026-11-03",
+          "latence_p50_ms": 6302,
+          "latence_p95_ms": 9884,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 91,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "doc-summarizer",
+          "cout_recalcule_usd": 27.2364,
+          "environnement": "production",
+          "equipe": "back-office",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 398830,
+          "jetons_sortie_total": 283386,
+          "jour": "2026-11-04",
+          "latence_p50_ms": 6251,
+          "latence_p95_ms": 9936,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 110,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "doc-summarizer",
+          "cout_recalcule_usd": 27.0753,
+          "environnement": "production",
+          "equipe": "back-office",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 416983,
+          "jetons_sortie_total": 277607,
+          "jour": "2026-11-05",
+          "latence_p50_ms": 6229,
+          "latence_p95_ms": 10352,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 111,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "doc-summarizer",
+          "cout_recalcule_usd": 26.5949,
+          "environnement": "production",
+          "equipe": "back-office",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 417999,
+          "jetons_sortie_total": 270999,
+          "jour": "2026-11-06",
+          "latence_p50_ms": 6295,
+          "latence_p95_ms": 10068,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 111,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "doc-summarizer",
+          "cout_recalcule_usd": 25.648,
+          "environnement": "production",
+          "equipe": "back-office",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 404193,
+          "jetons_sortie_total": 261135,
+          "jour": "2026-11-07",
+          "latence_p50_ms": 6455,
+          "latence_p95_ms": 10106,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 107,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "doc-summarizer",
+          "cout_recalcule_usd": 25.7881,
+          "environnement": "production",
+          "equipe": "back-office",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 400047,
+          "jetons_sortie_total": 263832,
+          "jour": "2026-11-08",
+          "latence_p50_ms": 6301,
+          "latence_p95_ms": 9856,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 107,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "doc-summarizer",
+          "cout_recalcule_usd": 22.5833,
+          "environnement": "production",
+          "equipe": "back-office",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 333516,
+          "jetons_sortie_total": 234408,
+          "jour": "2026-11-09",
+          "latence_p50_ms": 6329,
+          "latence_p95_ms": 10279,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 93,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "doc-summarizer",
+          "cout_recalcule_usd": 26.3339,
+          "environnement": "production",
+          "equipe": "back-office",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 416315,
+          "jetons_sortie_total": 267855,
+          "jour": "2026-11-10",
+          "latence_p50_ms": 6175,
+          "latence_p95_ms": 9384,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 110,
+          "tenant_id": "t-demo-a"
+        }
+      ],
+      "application_id": "doc-summarizer",
+      "cout_total_usd": 345.0221,
+      "par_jour": [
+        {
+          "cout_recalcule_usd": 26.2209,
+          "jour": "2026-10-28",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 105
+        },
+        {
+          "cout_recalcule_usd": 25.3374,
+          "jour": "2026-10-29",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 106
+        },
+        {
+          "cout_recalcule_usd": 23.9219,
+          "jour": "2026-10-30",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 102
+        },
+        {
+          "cout_recalcule_usd": 20.9569,
+          "jour": "2026-10-31",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 89
+        },
+        {
+          "cout_recalcule_usd": 24.9198,
+          "jour": "2026-11-01",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 107
+        },
+        {
+          "cout_recalcule_usd": 21.5605,
+          "jour": "2026-11-02",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 90
+        },
+        {
+          "cout_recalcule_usd": 20.8448,
+          "jour": "2026-11-03",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 91
+        },
+        {
+          "cout_recalcule_usd": 27.2364,
+          "jour": "2026-11-04",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 110
+        },
+        {
+          "cout_recalcule_usd": 27.0753,
+          "jour": "2026-11-05",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 111
+        },
+        {
+          "cout_recalcule_usd": 26.5949,
+          "jour": "2026-11-06",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 111
+        },
+        {
+          "cout_recalcule_usd": 25.648,
+          "jour": "2026-11-07",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 107
+        },
+        {
+          "cout_recalcule_usd": 25.7881,
+          "jour": "2026-11-08",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 107
+        },
+        {
+          "cout_recalcule_usd": 22.5833,
+          "jour": "2026-11-09",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 93
+        },
+        {
+          "cout_recalcule_usd": 26.3339,
+          "jour": "2026-11-10",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 110
+        }
+      ],
+      "par_modele": {
+        "anthropic.claude-opus-4-20250514-v1:0": 345.0221
+      },
+      "periode_debut": "2026-10-12",
+      "periode_fin": "2026-11-11",
+      "requetes_total": 1439,
+      "tenant_id": "t-demo-a"
+    },
+    "GET /v1/applications/doc-summarizer/levers": [
+      {
+        "action_proposee": "Niveau Flex ou traitement par lots",
+        "application_id": "doc-summarizer",
+        "candidats_suggeres": [],
+        "confiance": 0.9,
+        "economie_mensuelle_estimee_usd": 369.72,
+        "id": "lv-77a95b78bd6689bc",
+        "indices": [
+          "Trafic nocturne sur 100 %, rafale sur 83 %",
+          "Appels non interactifs : 100 % du trafic",
+          "Niveau de service actuel : Standard (100 % du trafic, Flex 0 %)",
+          "Hypothèse : 100 % du trafic est différable (3 084 requêtes/mois), coût 0.239765 $/requête en Standard contre 0.119883 $/requête en Flex",
+          "Remise Flex appliquée : 50.00 %"
+        ],
+        "preuve_exigee": "Accord du responsable sur le délai",
+        "statut": "detecte",
+        "tenant_id": "t-demo-a",
+        "type_levier": "traitement_differable"
+      },
+      {
+        "action_proposee": "Limite de jetons, consigne de concision",
+        "application_id": "doc-summarizer",
+        "candidats_suggeres": [],
+        "confiance": 0.63,
+        "economie_mensuelle_estimee_usd": 37.44,
+        "id": "lv-88679d1222923dc8",
+        "indices": [
+          "Sortie p95 à 3 674 jetons pour une limite de 4 096 jetons (ratio 0.85)",
+          "Médiane de la tâche : 2 467 jetons, soit 1 207 jetons excédentaires au p95",
+          "Requêtes à sortie longue : 13 %",
+          "Hypothèse : 3 084 requêtes/mois, prix de sortie 0.075 $/1k, gain sur les seuls jetons excédentaires"
+        ],
+        "preuve_exigee": "Rejeu avec la nouvelle limite",
+        "statut": "detecte",
+        "tenant_id": "t-demo-a",
+        "type_levier": "sorties_trop_longues"
+      }
+    ],
+    "GET /v1/applications/doc-summarizer/recommendations": [
+      {
+        "applicationId": "doc-summarizer",
+        "approvalNotes": null,
+        "approvedBy": "responsable-applications@client-a.example",
+        "campaignId": "c-63fc9e38631d",
+        "cost": {
+          "costPerRequestAfter": 0.11985,
+          "costPerRequestBefore": 0.2397,
+          "currency": "USD",
+          "expectedMonthlySaving": 369.62,
+          "monthlyRequests": 3084
+        },
+        "currentModel": "anthropic.claude-opus-4-20250514-v1:0",
+        "id": "r-bd0819e8bf11",
+        "latency": {
+          "p50After": 7845,
+          "p50Before": 6276,
+          "p95After": 12427,
+          "p95Before": 9942,
+          "unit": "ms"
+        },
+        "quality": {
+          "confidenceIntervalLow": 0.981155,
+          "deterministicFailures": 0,
+          "equivalenceRate": 1.0,
+          "judgeHumanAgreement": 0.93,
+          "selfAgreementOfCurrentModel": 0.985
+        },
+        "risks": [
+          "Niveau Flex : latence p95 allongée d'environ 25 %, sans effet sur un traitement nocturne",
+          "Vérifier l'absence d'échéance de production avant 6 h du matin"
+        ],
+        "rolloutPlan": [
+          10,
+          50,
+          100
+        ],
+        "sampleSize": 200,
+        "status": "ROLLING_OUT",
+        "targetModel": "anthropic.claude-opus-4-20250514-v1:0",
+        "tenantId": "t-demo-a"
+      }
+    ],
+    "GET /v1/applications/kb-search": {
+      "description_tache": "Recherche documentaire interne",
+      "environnement": "production",
+      "equipe": "documentation",
+      "id": "kb-search",
+      "identifiant_passerelle": null,
+      "modele_actuel": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+      "nom": "Recherche dans la base de connaissances",
+      "passe_par_passerelle": true,
+      "relecture_humaine_autorisee": true,
+      "seuil_intervalle_bas": 0.9,
+      "seuil_qualite": 0.95,
+      "tenant_id": "t-demo-b"
+    },
+    "GET /v1/applications/kb-search/costs": {
+      "agregats": [
+        {
+          "application_id": "kb-search",
+          "cout_recalcule_usd": 0.689,
+          "environnement": "production",
+          "equipe": "documentation",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 52070,
+          "jetons_sortie_total": 35519,
+          "jour": "2026-10-28",
+          "latence_p50_ms": 927,
+          "latence_p95_ms": 1635,
+          "modele_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+          "nombre_requetes": 113,
+          "tenant_id": "t-demo-b"
+        },
+        {
+          "application_id": "kb-search",
+          "cout_recalcule_usd": 0.7704,
+          "environnement": "production",
+          "equipe": "documentation",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 57261,
+          "jetons_sortie_total": 39905,
+          "jour": "2026-10-29",
+          "latence_p50_ms": 927,
+          "latence_p95_ms": 1548,
+          "modele_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+          "nombre_requetes": 123,
+          "tenant_id": "t-demo-b"
+        },
+        {
+          "application_id": "kb-search",
+          "cout_recalcule_usd": 0.7179,
+          "environnement": "production",
+          "equipe": "documentation",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 52446,
+          "jetons_sortie_total": 37373,
+          "jour": "2026-10-30",
+          "latence_p50_ms": 900,
+          "latence_p95_ms": 1376,
+          "modele_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+          "nombre_requetes": 116,
+          "tenant_id": "t-demo-b"
+        },
+        {
+          "application_id": "kb-search",
+          "cout_recalcule_usd": 0.2995,
+          "environnement": "production",
+          "equipe": "documentation",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 22394,
+          "jetons_sortie_total": 15491,
+          "jour": "2026-10-31",
+          "latence_p50_ms": 947,
+          "latence_p95_ms": 1492,
+          "modele_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+          "nombre_requetes": 50,
+          "tenant_id": "t-demo-b"
+        },
+        {
+          "application_id": "kb-search",
+          "cout_recalcule_usd": 0.2582,
+          "environnement": "production",
+          "equipe": "documentation",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 19475,
+          "jetons_sortie_total": 13321,
+          "jour": "2026-11-01",
+          "latence_p50_ms": 985,
+          "latence_p95_ms": 1684,
+          "modele_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+          "nombre_requetes": 43,
+          "tenant_id": "t-demo-b"
+        },
+        {
+          "application_id": "kb-search",
+          "cout_recalcule_usd": 0.8072,
+          "environnement": "production",
+          "equipe": "documentation",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 60265,
+          "jetons_sortie_total": 41762,
+          "jour": "2026-11-02",
+          "latence_p50_ms": 922,
+          "latence_p95_ms": 1512,
+          "modele_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+          "nombre_requetes": 130,
+          "tenant_id": "t-demo-b"
+        },
+        {
+          "application_id": "kb-search",
+          "cout_recalcule_usd": 0.7954,
+          "environnement": "production",
+          "equipe": "documentation",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 60023,
+          "jetons_sortie_total": 41023,
+          "jour": "2026-11-03",
+          "latence_p50_ms": 936,
+          "latence_p95_ms": 1603,
+          "modele_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+          "nombre_requetes": 129,
+          "tenant_id": "t-demo-b"
+        },
+        {
+          "application_id": "kb-search",
+          "cout_recalcule_usd": 0.6908,
+          "environnement": "production",
+          "equipe": "documentation",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 50451,
+          "jetons_sortie_total": 35961,
+          "jour": "2026-11-04",
+          "latence_p50_ms": 941,
+          "latence_p95_ms": 1483,
+          "modele_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+          "nombre_requetes": 114,
+          "tenant_id": "t-demo-b"
+        },
+        {
+          "application_id": "kb-search",
+          "cout_recalcule_usd": 0.7091,
+          "environnement": "production",
+          "equipe": "documentation",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 57758,
+          "jetons_sortie_total": 35723,
+          "jour": "2026-11-05",
+          "latence_p50_ms": 946,
+          "latence_p95_ms": 1568,
+          "modele_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+          "nombre_requetes": 119,
+          "tenant_id": "t-demo-b"
+        },
+        {
+          "application_id": "kb-search",
+          "cout_recalcule_usd": 0.7536,
+          "environnement": "production",
+          "equipe": "documentation",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 61088,
+          "jetons_sortie_total": 38023,
+          "jour": "2026-11-06",
+          "latence_p50_ms": 915,
+          "latence_p95_ms": 1503,
+          "modele_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+          "nombre_requetes": 124,
+          "tenant_id": "t-demo-b"
+        },
+        {
+          "application_id": "kb-search",
+          "cout_recalcule_usd": 0.3065,
+          "environnement": "production",
+          "equipe": "documentation",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 24328,
+          "jetons_sortie_total": 15568,
+          "jour": "2026-11-07",
+          "latence_p50_ms": 968,
+          "latence_p95_ms": 1604,
+          "modele_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+          "nombre_requetes": 50,
+          "tenant_id": "t-demo-b"
+        },
+        {
+          "application_id": "kb-search",
+          "cout_recalcule_usd": 0.2647,
+          "environnement": "production",
+          "equipe": "documentation",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 19633,
+          "jetons_sortie_total": 13721,
+          "jour": "2026-11-08",
+          "latence_p50_ms": 974,
+          "latence_p95_ms": 1443,
+          "modele_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+          "nombre_requetes": 44,
+          "tenant_id": "t-demo-b"
+        },
+        {
+          "application_id": "kb-search",
+          "cout_recalcule_usd": 0.8003,
+          "environnement": "production",
+          "equipe": "documentation",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 60027,
+          "jetons_sortie_total": 41345,
+          "jour": "2026-11-09",
+          "latence_p50_ms": 930,
+          "latence_p95_ms": 1567,
+          "modele_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+          "nombre_requetes": 130,
+          "tenant_id": "t-demo-b"
+        },
+        {
+          "application_id": "kb-search",
+          "cout_recalcule_usd": 0.7283,
+          "environnement": "production",
+          "equipe": "documentation",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 56437,
+          "jetons_sortie_total": 37269,
+          "jour": "2026-11-10",
+          "latence_p50_ms": 934,
+          "latence_p95_ms": 1349,
+          "modele_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+          "nombre_requetes": 120,
+          "tenant_id": "t-demo-b"
+        }
+      ],
+      "application_id": "kb-search",
+      "cout_total_usd": 8.5909,
+      "par_jour": [
+        {
+          "cout_recalcule_usd": 0.689,
+          "jour": "2026-10-28",
+          "modele_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+          "nombre_requetes": 113
+        },
+        {
+          "cout_recalcule_usd": 0.7704,
+          "jour": "2026-10-29",
+          "modele_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+          "nombre_requetes": 123
+        },
+        {
+          "cout_recalcule_usd": 0.7179,
+          "jour": "2026-10-30",
+          "modele_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+          "nombre_requetes": 116
+        },
+        {
+          "cout_recalcule_usd": 0.2995,
+          "jour": "2026-10-31",
+          "modele_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+          "nombre_requetes": 50
+        },
+        {
+          "cout_recalcule_usd": 0.2582,
+          "jour": "2026-11-01",
+          "modele_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+          "nombre_requetes": 43
+        },
+        {
+          "cout_recalcule_usd": 0.8072,
+          "jour": "2026-11-02",
+          "modele_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+          "nombre_requetes": 130
+        },
+        {
+          "cout_recalcule_usd": 0.7954,
+          "jour": "2026-11-03",
+          "modele_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+          "nombre_requetes": 129
+        },
+        {
+          "cout_recalcule_usd": 0.6908,
+          "jour": "2026-11-04",
+          "modele_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+          "nombre_requetes": 114
+        },
+        {
+          "cout_recalcule_usd": 0.7091,
+          "jour": "2026-11-05",
+          "modele_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+          "nombre_requetes": 119
+        },
+        {
+          "cout_recalcule_usd": 0.7536,
+          "jour": "2026-11-06",
+          "modele_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+          "nombre_requetes": 124
+        },
+        {
+          "cout_recalcule_usd": 0.3065,
+          "jour": "2026-11-07",
+          "modele_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+          "nombre_requetes": 50
+        },
+        {
+          "cout_recalcule_usd": 0.2647,
+          "jour": "2026-11-08",
+          "modele_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+          "nombre_requetes": 44
+        },
+        {
+          "cout_recalcule_usd": 0.8003,
+          "jour": "2026-11-09",
+          "modele_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+          "nombre_requetes": 130
+        },
+        {
+          "cout_recalcule_usd": 0.7283,
+          "jour": "2026-11-10",
+          "modele_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+          "nombre_requetes": 120
+        }
+      ],
+      "par_modele": {
+        "anthropic.claude-3-5-sonnet-20241022-v2:0": 8.5909
+      },
+      "periode_debut": "2026-10-12",
+      "periode_fin": "2026-11-11",
+      "requetes_total": 1405,
+      "tenant_id": "t-demo-b"
+    },
+    "GET /v1/applications/kb-search/levers": [],
+    "GET /v1/applications/kb-search/recommendations": [],
+    "GET /v1/applications/support-assistant": {
+      "description_tache": "Réponse rédigée au client, multi-sujets",
+      "environnement": "production",
+      "equipe": "support",
+      "id": "support-assistant",
+      "identifiant_passerelle": null,
+      "modele_actuel": "anthropic.claude-opus-4-20250514-v1:0",
+      "nom": "Assistant de support",
+      "passe_par_passerelle": true,
+      "relecture_humaine_autorisee": true,
+      "seuil_intervalle_bas": 0.9,
+      "seuil_qualite": 0.97,
+      "tenant_id": "t-demo-a"
+    },
+    "GET /v1/applications/support-assistant/costs": {
+      "agregats": [
+        {
+          "application_id": "support-assistant",
+          "cout_recalcule_usd": 26.6554,
+          "environnement": "production",
+          "equipe": "support",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 621094,
+          "jetons_sortie_total": 231186,
+          "jour": "2026-10-28",
+          "latence_p50_ms": 2469,
+          "latence_p95_ms": 4654,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 319,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "support-assistant",
+          "cout_recalcule_usd": 26.063,
+          "environnement": "production",
+          "equipe": "support",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 600144,
+          "jetons_sortie_total": 227478,
+          "jour": "2026-10-29",
+          "latence_p50_ms": 2475,
+          "latence_p95_ms": 4396,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 305,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "support-assistant",
+          "cout_recalcule_usd": 27.5351,
+          "environnement": "production",
+          "equipe": "support",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 635280,
+          "jetons_sortie_total": 240078,
+          "jour": "2026-10-30",
+          "latence_p50_ms": 2476,
+          "latence_p95_ms": 4573,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 327,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "support-assistant",
+          "cout_recalcule_usd": 10.1779,
+          "environnement": "production",
+          "equipe": "support",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 237210,
+          "jetons_sortie_total": 88264,
+          "jour": "2026-10-31",
+          "latence_p50_ms": 2514,
+          "latence_p95_ms": 4724,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 121,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "support-assistant",
+          "cout_recalcule_usd": 10.549,
+          "environnement": "production",
+          "equipe": "support",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 241801,
+          "jetons_sortie_total": 92293,
+          "jour": "2026-11-01",
+          "latence_p50_ms": 2455,
+          "latence_p95_ms": 4567,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 124,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "support-assistant",
+          "cout_recalcule_usd": 23.1552,
+          "environnement": "production",
+          "equipe": "support",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 533077,
+          "jetons_sortie_total": 202120,
+          "jour": "2026-11-02",
+          "latence_p50_ms": 2448,
+          "latence_p95_ms": 4487,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 274,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "support-assistant",
+          "cout_recalcule_usd": 26.9215,
+          "environnement": "production",
+          "equipe": "support",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 630535,
+          "jetons_sortie_total": 232846,
+          "jour": "2026-11-03",
+          "latence_p50_ms": 2506,
+          "latence_p95_ms": 4112,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 323,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "support-assistant",
+          "cout_recalcule_usd": 27.9062,
+          "environnement": "production",
+          "equipe": "support",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 650221,
+          "jetons_sortie_total": 242038,
+          "jour": "2026-11-04",
+          "latence_p50_ms": 2484,
+          "latence_p95_ms": 4452,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 335,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "support-assistant",
+          "cout_recalcule_usd": 25.8137,
+          "environnement": "production",
+          "equipe": "support",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 614225,
+          "jetons_sortie_total": 221338,
+          "jour": "2026-11-05",
+          "latence_p50_ms": 2471,
+          "latence_p95_ms": 4544,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 313,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "support-assistant",
+          "cout_recalcule_usd": 24.5207,
+          "environnement": "production",
+          "equipe": "support",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 568036,
+          "jetons_sortie_total": 213336,
+          "jour": "2026-11-06",
+          "latence_p50_ms": 2497,
+          "latence_p95_ms": 4528,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 288,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "support-assistant",
+          "cout_recalcule_usd": 10.8738,
+          "environnement": "production",
+          "equipe": "support",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 257331,
+          "jetons_sortie_total": 93518,
+          "jour": "2026-11-07",
+          "latence_p50_ms": 2552,
+          "latence_p95_ms": 4451,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 130,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "support-assistant",
+          "cout_recalcule_usd": 10.895,
+          "environnement": "production",
+          "equipe": "support",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 252878,
+          "jetons_sortie_total": 94691,
+          "jour": "2026-11-08",
+          "latence_p50_ms": 2435,
+          "latence_p95_ms": 3755,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 130,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "support-assistant",
+          "cout_recalcule_usd": 24.9894,
+          "environnement": "production",
+          "equipe": "support",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 578717,
+          "jetons_sortie_total": 217449,
+          "jour": "2026-11-09",
+          "latence_p50_ms": 2461,
+          "latence_p95_ms": 4225,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 294,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "support-assistant",
+          "cout_recalcule_usd": 24.791,
+          "environnement": "production",
+          "equipe": "support",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 582006,
+          "jetons_sortie_total": 214146,
+          "jour": "2026-11-10",
+          "latence_p50_ms": 2504,
+          "latence_p95_ms": 3919,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 292,
+          "tenant_id": "t-demo-a"
+        }
+      ],
+      "application_id": "support-assistant",
+      "cout_total_usd": 300.8469,
+      "par_jour": [
+        {
+          "cout_recalcule_usd": 26.6554,
+          "jour": "2026-10-28",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 319
+        },
+        {
+          "cout_recalcule_usd": 26.063,
+          "jour": "2026-10-29",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 305
+        },
+        {
+          "cout_recalcule_usd": 27.5351,
+          "jour": "2026-10-30",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 327
+        },
+        {
+          "cout_recalcule_usd": 10.1779,
+          "jour": "2026-10-31",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 121
+        },
+        {
+          "cout_recalcule_usd": 10.549,
+          "jour": "2026-11-01",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 124
+        },
+        {
+          "cout_recalcule_usd": 23.1552,
+          "jour": "2026-11-02",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 274
+        },
+        {
+          "cout_recalcule_usd": 26.9215,
+          "jour": "2026-11-03",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 323
+        },
+        {
+          "cout_recalcule_usd": 27.9062,
+          "jour": "2026-11-04",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 335
+        },
+        {
+          "cout_recalcule_usd": 25.8137,
+          "jour": "2026-11-05",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 313
+        },
+        {
+          "cout_recalcule_usd": 24.5207,
+          "jour": "2026-11-06",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 288
+        },
+        {
+          "cout_recalcule_usd": 10.8738,
+          "jour": "2026-11-07",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 130
+        },
+        {
+          "cout_recalcule_usd": 10.895,
+          "jour": "2026-11-08",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 130
+        },
+        {
+          "cout_recalcule_usd": 24.9894,
+          "jour": "2026-11-09",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 294
+        },
+        {
+          "cout_recalcule_usd": 24.791,
+          "jour": "2026-11-10",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 292
+        }
+      ],
+      "par_modele": {
+        "anthropic.claude-opus-4-20250514-v1:0": 300.8469
+      },
+      "periode_debut": "2026-10-12",
+      "periode_fin": "2026-11-11",
+      "requetes_total": 3575,
+      "tenant_id": "t-demo-a"
+    },
+    "GET /v1/applications/support-assistant/levers": [
+      {
+        "action_proposee": "Cache applicatif",
+        "application_id": "support-assistant",
+        "candidats_suggeres": [],
+        "confiance": 0.64,
+        "economie_mensuelle_estimee_usd": 76.32,
+        "id": "lv-64d788a1e0414f0b",
+        "indices": [
+          "Requêtes identiques répétées : 12 % du volume (seuil 10 %)",
+          "Hypothèse : 7 661 requêtes/mois, coût moyen 0.084153 $/requête, chaque doublon est servi sans appel au modèle"
+        ],
+        "preuve_exigee": "Comptage",
+        "statut": "detecte",
+        "tenant_id": "t-demo-a",
+        "type_levier": "requetes_repetees"
+      },
+      {
+        "action_proposee": "Activer le cache de prompts",
+        "application_id": "support-assistant",
+        "candidats_suggeres": [],
+        "confiance": 0.9,
+        "economie_mensuelle_estimee_usd": 64.0,
+        "id": "lv-a2e0e458fbdce030",
+        "indices": [
+          "Préfixe commun de 619 jetons sur 100 % des requêtes (seuil 512 jetons)",
+          "Aucun jeton lu en cache sur la période observée (0 jetons)",
+          "Réutilisation moyenne : 3 548,0 requêtes par entrée de cache (1 écriture, 3 547,0 lectures)",
+          "Hypothèse : 7 661 requêtes/mois, préfixe à 0.009285 $/requête sans cache, prix entrée 0.015 $/1k, écriture 0.01875 $/1k, lecture 0.0015 $/1k",
+          "Baisse potentielle sur le préfixe mis en cache : 89.97 %"
+        ],
+        "preuve_exigee": "Calcul sur les jetons",
+        "statut": "detecte",
+        "tenant_id": "t-demo-a",
+        "type_levier": "cache_prompts_absent"
+      },
+      {
+        "action_proposee": "Corriger la cause",
+        "application_id": "support-assistant",
+        "candidats_suggeres": [],
+        "confiance": 0.8,
+        "economie_mensuelle_estimee_usd": 4.88,
+        "id": "lv-58b5226091f66962",
+        "indices": [
+          "27 erreurs observées sur 14 jours, dont 27 relances (100 % des erreurs)",
+          "Hypothèse : 57,9 relances/mois à 0.084153 $/requête, 7 661 requêtes/mois"
+        ],
+        "preuve_exigee": "Comptage",
+        "statut": "detecte",
+        "tenant_id": "t-demo-a",
+        "type_levier": "erreurs_et_relances"
+      }
+    ],
+    "GET /v1/applications/support-assistant/recommendations": [
+      {
+        "applicationId": "support-assistant",
+        "approvalNotes": null,
+        "approvedBy": null,
+        "campaignId": "c-2e7454af6805",
+        "cost": {
+          "costPerRequestAfter": 0.00055361,
+          "costPerRequestBefore": 0.01039718,
+          "currency": "USD",
+          "expectedMonthlySaving": 75.41,
+          "monthlyRequests": 7661
+        },
+        "currentModel": "anthropic.claude-opus-4-20250514-v1:0",
+        "id": "r-088b03907c22",
+        "latency": {
+          "p50After": 389,
+          "p50Before": 410,
+          "p95After": 584,
+          "p95Before": 588,
+          "unit": "ms"
+        },
+        "quality": {
+          "confidenceIntervalLow": 0.891981,
+          "deterministicFailures": 9,
+          "equivalenceRate": 0.935,
+          "judgeHumanAgreement": null,
+          "selfAgreementOfCurrentModel": 1.0
+        },
+        "risks": [
+          "Le candidat échoue aux contrôles déterministes : il ne peut pas être proposé en l'état.",
+          "Surveillance de la qualité en ligne à chaque palier de la bascule."
+        ],
+        "rolloutPlan": [
+          10,
+          50,
+          100
+        ],
+        "sampleSize": 200,
+        "status": "REJECTED",
+        "targetModel": "anthropic.claude-3-5-haiku-20241022-v1:0",
+        "tenantId": "t-demo-a"
+      }
+    ],
+    "GET /v1/applications/ticket-classifier": {
+      "description_tache": "Classification en 6 catégories, sortie JSON",
+      "environnement": "production",
+      "equipe": "support",
+      "id": "ticket-classifier",
+      "identifiant_passerelle": null,
+      "modele_actuel": "anthropic.claude-opus-4-20250514-v1:0",
+      "nom": "Classement de tickets",
+      "passe_par_passerelle": true,
+      "relecture_humaine_autorisee": true,
+      "seuil_intervalle_bas": 0.9,
+      "seuil_qualite": 0.95,
+      "tenant_id": "t-demo-a"
+    },
+    "GET /v1/applications/ticket-classifier/costs": {
+      "agregats": [
+        {
+          "application_id": "ticket-classifier",
+          "cout_recalcule_usd": 2.6775,
+          "environnement": "production",
+          "equipe": "support",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 112668,
+          "jetons_sortie_total": 13167,
+          "jour": "2026-10-28",
+          "latence_p50_ms": 725,
+          "latence_p95_ms": 1269,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 775,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "ticket-classifier",
+          "cout_recalcule_usd": 2.7684,
+          "environnement": "production",
+          "equipe": "support",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 117342,
+          "jetons_sortie_total": 13444,
+          "jour": "2026-10-29",
+          "latence_p50_ms": 722,
+          "latence_p95_ms": 1206,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 794,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "ticket-classifier",
+          "cout_recalcule_usd": 2.6483,
+          "environnement": "production",
+          "equipe": "support",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 111206,
+          "jetons_sortie_total": 13069,
+          "jour": "2026-10-30",
+          "latence_p50_ms": 715,
+          "latence_p95_ms": 1216,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 773,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "ticket-classifier",
+          "cout_recalcule_usd": 1.0574,
+          "environnement": "production",
+          "equipe": "support",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 44203,
+          "jetons_sortie_total": 5258,
+          "jour": "2026-10-31",
+          "latence_p50_ms": 727,
+          "latence_p95_ms": 1240,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 309,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "ticket-classifier",
+          "cout_recalcule_usd": 0.897,
+          "environnement": "production",
+          "equipe": "support",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 37840,
+          "jetons_sortie_total": 4392,
+          "jour": "2026-11-01",
+          "latence_p50_ms": 727,
+          "latence_p95_ms": 1184,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 258,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "ticket-classifier",
+          "cout_recalcule_usd": 2.6774,
+          "environnement": "production",
+          "equipe": "support",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 112825,
+          "jetons_sortie_total": 13134,
+          "jour": "2026-11-02",
+          "latence_p50_ms": 719,
+          "latence_p95_ms": 1232,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 774,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "ticket-classifier",
+          "cout_recalcule_usd": 2.5581,
+          "environnement": "production",
+          "equipe": "support",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 107663,
+          "jetons_sortie_total": 12576,
+          "jour": "2026-11-03",
+          "latence_p50_ms": 710,
+          "latence_p95_ms": 1256,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 746,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "ticket-classifier",
+          "cout_recalcule_usd": 2.9408,
+          "environnement": "production",
+          "equipe": "support",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 124223,
+          "jetons_sortie_total": 14366,
+          "jour": "2026-11-04",
+          "latence_p50_ms": 726,
+          "latence_p95_ms": 1220,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 856,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "ticket-classifier",
+          "cout_recalcule_usd": 2.9687,
+          "environnement": "production",
+          "equipe": "support",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 125077,
+          "jetons_sortie_total": 14567,
+          "jour": "2026-11-05",
+          "latence_p50_ms": 724,
+          "latence_p95_ms": 1235,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 858,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "ticket-classifier",
+          "cout_recalcule_usd": 2.7885,
+          "environnement": "production",
+          "equipe": "support",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 118116,
+          "jetons_sortie_total": 13557,
+          "jour": "2026-11-06",
+          "latence_p50_ms": 725,
+          "latence_p95_ms": 1225,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 810,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "ticket-classifier",
+          "cout_recalcule_usd": 0.9332,
+          "environnement": "production",
+          "equipe": "support",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 39080,
+          "jetons_sortie_total": 4626,
+          "jour": "2026-11-07",
+          "latence_p50_ms": 709,
+          "latence_p95_ms": 1248,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 271,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "ticket-classifier",
+          "cout_recalcule_usd": 0.8869,
+          "environnement": "production",
+          "equipe": "support",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 37376,
+          "jetons_sortie_total": 4350,
+          "jour": "2026-11-08",
+          "latence_p50_ms": 704,
+          "latence_p95_ms": 1111,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 260,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "ticket-classifier",
+          "cout_recalcule_usd": 2.5934,
+          "environnement": "production",
+          "equipe": "support",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 109831,
+          "jetons_sortie_total": 12612,
+          "jour": "2026-11-09",
+          "latence_p50_ms": 723,
+          "latence_p95_ms": 1285,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 749,
+          "tenant_id": "t-demo-a"
+        },
+        {
+          "application_id": "ticket-classifier",
+          "cout_recalcule_usd": 2.7595,
+          "environnement": "production",
+          "equipe": "support",
+          "jetons_cache_ecriture_total": 0,
+          "jetons_cache_lecture_total": 0,
+          "jetons_entree_total": 116231,
+          "jetons_sortie_total": 13547,
+          "jour": "2026-11-10",
+          "latence_p50_ms": 725,
+          "latence_p95_ms": 1203,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 804,
+          "tenant_id": "t-demo-a"
+        }
+      ],
+      "application_id": "ticket-classifier",
+      "cout_total_usd": 31.1551,
+      "par_jour": [
+        {
+          "cout_recalcule_usd": 2.6775,
+          "jour": "2026-10-28",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 775
+        },
+        {
+          "cout_recalcule_usd": 2.7684,
+          "jour": "2026-10-29",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 794
+        },
+        {
+          "cout_recalcule_usd": 2.6483,
+          "jour": "2026-10-30",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 773
+        },
+        {
+          "cout_recalcule_usd": 1.0574,
+          "jour": "2026-10-31",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 309
+        },
+        {
+          "cout_recalcule_usd": 0.897,
+          "jour": "2026-11-01",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 258
+        },
+        {
+          "cout_recalcule_usd": 2.6774,
+          "jour": "2026-11-02",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 774
+        },
+        {
+          "cout_recalcule_usd": 2.5581,
+          "jour": "2026-11-03",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 746
+        },
+        {
+          "cout_recalcule_usd": 2.9408,
+          "jour": "2026-11-04",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 856
+        },
+        {
+          "cout_recalcule_usd": 2.9687,
+          "jour": "2026-11-05",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 858
+        },
+        {
+          "cout_recalcule_usd": 2.7885,
+          "jour": "2026-11-06",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 810
+        },
+        {
+          "cout_recalcule_usd": 0.9332,
+          "jour": "2026-11-07",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 271
+        },
+        {
+          "cout_recalcule_usd": 0.8869,
+          "jour": "2026-11-08",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 260
+        },
+        {
+          "cout_recalcule_usd": 2.5934,
+          "jour": "2026-11-09",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 749
+        },
+        {
+          "cout_recalcule_usd": 2.7595,
+          "jour": "2026-11-10",
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes": 804
+        }
+      ],
+      "par_modele": {
+        "anthropic.claude-opus-4-20250514-v1:0": 31.1551
+      },
+      "periode_debut": "2026-10-12",
+      "periode_fin": "2026-11-11",
+      "requetes_total": 9037,
+      "tenant_id": "t-demo-a"
+    },
+    "GET /v1/applications/ticket-classifier/levers": [
+      {
+        "action_proposee": "Rejeu sur des modèles plus petits",
+        "application_id": "ticket-classifier",
+        "candidats_suggeres": [
+          "anthropic.claude-3-5-haiku-20241022-v1:0",
+          "anthropic.claude-3-5-sonnet-20241022-v2:0"
+        ],
+        "confiance": 0.8,
+        "economie_mensuelle_estimee_usd": 63.2,
+        "id": "lv-7ab06b226b954406",
+        "indices": [
+          "Tâche simple sur 100 % du trafic (classification, extraction)",
+          "Entrée moyenne 148 jetons (seuil 512), sortie moyenne 17 jetons (seuil 256)",
+          "Sorties structurées sur 0 % des requêtes, diversité des sorties 82 %",
+          "Candidat d'estimation : anthropic.claude-3-5-haiku-20241022-v1:0 (modèle autorisé le moins cher ; 2 candidats autorisés retenus)",
+          "Hypothèse : coût moyen observé 0.003448 $/requête → 0.000184 $/requête, volume 19 365 requêtes/mois × part éligible 100 %",
+          "Baisse potentielle du coût par requête : 94.67 %"
+        ],
+        "preuve_exigee": "Campagne de rejeu",
+        "statut": "detecte",
+        "tenant_id": "t-demo-a",
+        "type_levier": "modele_surdimensionne"
+      },
+      {
+        "action_proposee": "Cache applicatif",
+        "application_id": "ticket-classifier",
+        "candidats_suggeres": [],
+        "confiance": 0.65,
+        "economie_mensuelle_estimee_usd": 11.68,
+        "id": "lv-296947a860eb6372",
+        "indices": [
+          "Requêtes identiques répétées : 18 % du volume (seuil 10 %)",
+          "Hypothèse : 19 365 requêtes/mois, coût moyen 0.003448 $/requête, chaque doublon est servi sans appel au modèle"
+        ],
+        "preuve_exigee": "Comptage",
+        "statut": "detecte",
+        "tenant_id": "t-demo-a",
+        "type_levier": "requetes_repetees"
+      },
+      {
+        "action_proposee": "Corriger la cause",
+        "application_id": "ticket-classifier",
+        "candidats_suggeres": [],
+        "confiance": 0.8,
+        "economie_mensuelle_estimee_usd": 1.34,
+        "id": "lv-9255bc90022eaeca",
+        "indices": [
+          "181 erreurs observées sur 14 jours, dont 181 relances (100 % des erreurs)",
+          "Hypothèse : 387,9 relances/mois à 0.003448 $/requête, 19 365 requêtes/mois"
+        ],
+        "preuve_exigee": "Comptage",
+        "statut": "detecte",
+        "tenant_id": "t-demo-a",
+        "type_levier": "erreurs_et_relances"
+      }
+    ],
+    "GET /v1/applications/ticket-classifier/recommendations": [
+      {
+        "applicationId": "ticket-classifier",
+        "approvalNotes": null,
+        "approvedBy": null,
+        "campaignId": "c-a753aa159c45",
+        "cost": {
+          "costPerRequestAfter": 0.00022,
+          "costPerRequestBefore": 0.00109999,
+          "currency": "USD",
+          "expectedMonthlySaving": 17.04,
+          "monthlyRequests": 19365
+        },
+        "currentModel": "anthropic.claude-opus-4-20250514-v1:0",
+        "id": "r-19ee45bc95d2",
+        "latency": {
+          "p50After": 424,
+          "p50Before": 387,
+          "p95After": 585,
+          "p95Before": 578,
+          "unit": "ms"
+        },
+        "quality": {
+          "confidenceIntervalLow": 0.981155,
+          "deterministicFailures": 0,
+          "equivalenceRate": 1.0,
+          "judgeHumanAgreement": null,
+          "selfAgreementOfCurrentModel": 1.0
+        },
+        "risks": [
+          "Le taux d'équivalence mesuré reste proche de celui du modèle actuel.",
+          "Surveillance de la qualité en ligne à chaque palier de la bascule."
+        ],
+        "rolloutPlan": [
+          10,
+          50,
+          100
+        ],
+        "sampleSize": 200,
+        "status": "PENDING_APPROVAL",
+        "targetModel": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+        "tenantId": "t-demo-a"
+      }
+    ],
+    "GET /v1/campaigns/c-2e7454af6805": {
+      "application_id": "support-assistant",
+      "cout_estime_usd": 47.75504,
+      "cout_reel_usd": 4.685463,
+      "graine_aleatoire": 42,
+      "id": "c-2e7454af6805",
+      "modele_juge_id": "anthropic.claude-opus-4-20250514-v1:0",
+      "modeles_candidats": [
+        "anthropic.claude-3-5-sonnet-20241022-v2:0",
+        "anthropic.claude-3-5-haiku-20241022-v1:0"
+      ],
+      "resultats": [
+        {
+          "accord_juge_humain": null,
+          "auto_accord_modele_actuel": 1.0,
+          "conforme_seuils": true,
+          "cout_par_requete_usd": 0.01039718,
+          "echecs_deterministes": 0,
+          "est_reference": true,
+          "familles_en_echec": [],
+          "intervalle_confiance_bas": 1.0,
+          "intervalle_confiance_haut": 1.0,
+          "latence_p50_ms": 410,
+          "latence_p95_ms": 588,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes_rejouees": 200,
+          "taux_equivalence": 1.0
+        },
+        {
+          "accord_juge_humain": null,
+          "auto_accord_modele_actuel": 1.0,
+          "conforme_seuils": false,
+          "cout_par_requete_usd": 0.00207936,
+          "echecs_deterministes": 0,
+          "est_reference": false,
+          "familles_en_echec": [],
+          "intervalle_confiance_bas": 0.898068,
+          "intervalle_confiance_haut": 0.965348,
+          "latence_p50_ms": 384,
+          "latence_p95_ms": 578,
+          "modele_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+          "nombre_requetes_rejouees": 200,
+          "taux_equivalence": 0.94
+        },
+        {
+          "accord_juge_humain": null,
+          "auto_accord_modele_actuel": 1.0,
+          "conforme_seuils": false,
+          "cout_par_requete_usd": 0.00055361,
+          "echecs_deterministes": 9,
+          "est_reference": false,
+          "familles_en_echec": [],
+          "intervalle_confiance_bas": 0.891981,
+          "intervalle_confiance_haut": 0.961624,
+          "latence_p50_ms": 389,
+          "latence_p95_ms": 584,
+          "modele_id": "anthropic.claude-3-5-haiku-20241022-v1:0",
+          "nombre_requetes_rejouees": 200,
+          "taux_equivalence": 0.935
+        }
+      ],
+      "statut": "terminee",
+      "taille_echantillon": 200,
+      "tenant_id": "t-demo-a"
+    },
+    "GET /v1/campaigns/c-2e7454af6805/results": [
+      {
+        "accord_juge_humain": null,
+        "auto_accord_modele_actuel": 1.0,
+        "conforme_seuils": true,
+        "cout_par_requete_usd": 0.01039718,
+        "echecs_deterministes": 0,
+        "est_reference": true,
+        "familles_en_echec": [],
+        "intervalle_confiance_bas": 1.0,
+        "intervalle_confiance_haut": 1.0,
+        "latence_p50_ms": 410,
+        "latence_p95_ms": 588,
+        "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+        "nombre_requetes_rejouees": 200,
+        "taux_equivalence": 1.0
+      },
+      {
+        "accord_juge_humain": null,
+        "auto_accord_modele_actuel": 1.0,
+        "conforme_seuils": false,
+        "cout_par_requete_usd": 0.00207936,
+        "echecs_deterministes": 0,
+        "est_reference": false,
+        "familles_en_echec": [],
+        "intervalle_confiance_bas": 0.898068,
+        "intervalle_confiance_haut": 0.965348,
+        "latence_p50_ms": 384,
+        "latence_p95_ms": 578,
+        "modele_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+        "nombre_requetes_rejouees": 200,
+        "taux_equivalence": 0.94
+      },
+      {
+        "accord_juge_humain": null,
+        "auto_accord_modele_actuel": 1.0,
+        "conforme_seuils": false,
+        "cout_par_requete_usd": 0.00055361,
+        "echecs_deterministes": 9,
+        "est_reference": false,
+        "familles_en_echec": [],
+        "intervalle_confiance_bas": 0.891981,
+        "intervalle_confiance_haut": 0.961624,
+        "latence_p50_ms": 389,
+        "latence_p95_ms": 584,
+        "modele_id": "anthropic.claude-3-5-haiku-20241022-v1:0",
+        "nombre_requetes_rejouees": 200,
+        "taux_equivalence": 0.935
+      }
+    ],
+    "GET /v1/campaigns/c-63fc9e38631d": {
+      "application_id": "doc-summarizer",
+      "cout_estime_usd": 143.82,
+      "cout_reel_usd": 139.51,
+      "graine_aleatoire": 42,
+      "id": "c-63fc9e38631d",
+      "modele_juge_id": "eu.anthropic.claude-3-5-sonnet-20241022-v2:0",
+      "modeles_candidats": [
+        "anthropic.claude-opus-4-20250514-v1:0"
+      ],
+      "resultats": [
+        {
+          "accord_juge_humain": null,
+          "auto_accord_modele_actuel": 0.985,
+          "conforme_seuils": true,
+          "cout_par_requete_usd": 0.2397,
+          "echecs_deterministes": 0,
+          "est_reference": true,
+          "familles_en_echec": [],
+          "intervalle_confiance_bas": 0.981155,
+          "intervalle_confiance_haut": 1.0,
+          "latence_p50_ms": 6276,
+          "latence_p95_ms": 9942,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes_rejouees": 200,
+          "taux_equivalence": 1.0
+        },
+        {
+          "accord_juge_humain": 0.93,
+          "auto_accord_modele_actuel": 0.985,
+          "conforme_seuils": true,
+          "cout_par_requete_usd": 0.11985,
+          "echecs_deterministes": 0,
+          "est_reference": false,
+          "familles_en_echec": [],
+          "intervalle_confiance_bas": 0.981155,
+          "intervalle_confiance_haut": 1.0,
+          "latence_p50_ms": 7845,
+          "latence_p95_ms": 12427,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes_rejouees": 200,
+          "taux_equivalence": 1.0
+        }
+      ],
+      "statut": "terminee",
+      "taille_echantillon": 200,
+      "tenant_id": "t-demo-a"
+    },
+    "GET /v1/campaigns/c-63fc9e38631d/results": [
+      {
+        "accord_juge_humain": null,
+        "auto_accord_modele_actuel": 0.985,
+        "conforme_seuils": true,
+        "cout_par_requete_usd": 0.2397,
+        "echecs_deterministes": 0,
+        "est_reference": true,
+        "familles_en_echec": [],
+        "intervalle_confiance_bas": 0.981155,
+        "intervalle_confiance_haut": 1.0,
+        "latence_p50_ms": 6276,
+        "latence_p95_ms": 9942,
+        "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+        "nombre_requetes_rejouees": 200,
+        "taux_equivalence": 1.0
+      },
+      {
+        "accord_juge_humain": 0.93,
+        "auto_accord_modele_actuel": 0.985,
+        "conforme_seuils": true,
+        "cout_par_requete_usd": 0.11985,
+        "echecs_deterministes": 0,
+        "est_reference": false,
+        "familles_en_echec": [],
+        "intervalle_confiance_bas": 0.981155,
+        "intervalle_confiance_haut": 1.0,
+        "latence_p50_ms": 7845,
+        "latence_p95_ms": 12427,
+        "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+        "nombre_requetes_rejouees": 200,
+        "taux_equivalence": 1.0
+      }
+    ],
+    "GET /v1/campaigns/c-a753aa159c45": {
+      "application_id": "ticket-classifier",
+      "cout_estime_usd": 29.5605,
+      "cout_reel_usd": 0.495458,
+      "graine_aleatoire": 42,
+      "id": "c-a753aa159c45",
+      "modele_juge_id": "anthropic.claude-opus-4-20250514-v1:0",
+      "modeles_candidats": [
+        "anthropic.claude-3-5-sonnet-20241022-v2:0",
+        "anthropic.claude-3-5-haiku-20241022-v1:0"
+      ],
+      "resultats": [
+        {
+          "accord_juge_humain": null,
+          "auto_accord_modele_actuel": 1.0,
+          "conforme_seuils": true,
+          "cout_par_requete_usd": 0.00109999,
+          "echecs_deterministes": 0,
+          "est_reference": true,
+          "familles_en_echec": [],
+          "intervalle_confiance_bas": 1.0,
+          "intervalle_confiance_haut": 1.0,
+          "latence_p50_ms": 387,
+          "latence_p95_ms": 578,
+          "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+          "nombre_requetes_rejouees": 200,
+          "taux_equivalence": 1.0
+        },
+        {
+          "accord_juge_humain": null,
+          "auto_accord_modele_actuel": 1.0,
+          "conforme_seuils": true,
+          "cout_par_requete_usd": 0.00022,
+          "echecs_deterministes": 0,
+          "est_reference": false,
+          "familles_en_echec": [],
+          "intervalle_confiance_bas": 0.981155,
+          "intervalle_confiance_haut": 1.0,
+          "latence_p50_ms": 424,
+          "latence_p95_ms": 585,
+          "modele_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+          "nombre_requetes_rejouees": 200,
+          "taux_equivalence": 1.0
+        },
+        {
+          "accord_juge_humain": null,
+          "auto_accord_modele_actuel": 1.0,
+          "conforme_seuils": false,
+          "cout_par_requete_usd": 5.732e-05,
+          "echecs_deterministes": 19,
+          "est_reference": false,
+          "familles_en_echec": [],
+          "intervalle_confiance_bas": 0.856398,
+          "intervalle_confiance_haut": 0.938337,
+          "latence_p50_ms": 412,
+          "latence_p95_ms": 576,
+          "modele_id": "anthropic.claude-3-5-haiku-20241022-v1:0",
+          "nombre_requetes_rejouees": 200,
+          "taux_equivalence": 0.905
+        }
+      ],
+      "statut": "terminee",
+      "taille_echantillon": 200,
+      "tenant_id": "t-demo-a"
+    },
+    "GET /v1/campaigns/c-a753aa159c45/results": [
+      {
+        "accord_juge_humain": null,
+        "auto_accord_modele_actuel": 1.0,
+        "conforme_seuils": true,
+        "cout_par_requete_usd": 0.00109999,
+        "echecs_deterministes": 0,
+        "est_reference": true,
+        "familles_en_echec": [],
+        "intervalle_confiance_bas": 1.0,
+        "intervalle_confiance_haut": 1.0,
+        "latence_p50_ms": 387,
+        "latence_p95_ms": 578,
+        "modele_id": "anthropic.claude-opus-4-20250514-v1:0",
+        "nombre_requetes_rejouees": 200,
+        "taux_equivalence": 1.0
+      },
+      {
+        "accord_juge_humain": null,
+        "auto_accord_modele_actuel": 1.0,
+        "conforme_seuils": true,
+        "cout_par_requete_usd": 0.00022,
+        "echecs_deterministes": 0,
+        "est_reference": false,
+        "familles_en_echec": [],
+        "intervalle_confiance_bas": 0.981155,
+        "intervalle_confiance_haut": 1.0,
+        "latence_p50_ms": 424,
+        "latence_p95_ms": 585,
+        "modele_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+        "nombre_requetes_rejouees": 200,
+        "taux_equivalence": 1.0
+      },
+      {
+        "accord_juge_humain": null,
+        "auto_accord_modele_actuel": 1.0,
+        "conforme_seuils": false,
+        "cout_par_requete_usd": 5.732e-05,
+        "echecs_deterministes": 19,
+        "est_reference": false,
+        "familles_en_echec": [],
+        "intervalle_confiance_bas": 0.856398,
+        "intervalle_confiance_haut": 0.938337,
+        "latence_p50_ms": 412,
+        "latence_p95_ms": 576,
+        "modele_id": "anthropic.claude-3-5-haiku-20241022-v1:0",
+        "nombre_requetes_rejouees": 200,
+        "taux_equivalence": 0.905
+      }
+    ],
+    "GET /v1/demo/identity": {
+      "compte_demo_juges": {
+        "email": "juge@demo.jauge.local",
+        "id": "juge-hackathon",
+        "nom": "Juge du hackathon (compte de démonstration)",
+        "role": "administrateur_plateforme",
+        "scopes": [],
+        "tenant_id": "t-demo-a",
+        "tenants_autorises": [
+          "t-demo-a",
+          "t-demo-b"
+        ]
+      },
+      "entetes_demo": {
+        "X-Jauge-Role": "administrateur_plateforme",
+        "X-Jauge-Tenant": "t-demo-a",
+        "X-Jauge-User": "juge-hackathon"
+      },
+      "roles_disponibles": [
+        "administrateur_plateforme",
+        "analyste_finops",
+        "responsable_compte",
+        "responsable_application",
+        "relecteur",
+        "directeur"
+      ],
+      "utilisateur": {
+        "email": "export-statique@demo.jauge.local",
+        "id": "export-statique",
+        "nom": "Utilisateur de démonstration",
+        "role": "analyste_finops",
+        "scopes": [],
+        "tenant_id": "t-demo-a",
+        "tenants_autorises": [
+          "t-demo-a"
+        ]
+      }
+    },
+    "GET /v1/rollouts/ro-f8718d8444a1": {
+      "actif": true,
+      "annule_automatiquement": false,
+      "application_id": "doc-summarizer",
+      "id": "ro-f8718d8444a1",
+      "modele_cible": "anthropic.claude-opus-4-20250514-v1:0",
+      "motif_annulation": null,
+      "palier_actuel_pourcentage": 50,
+      "qualite_en_ligne_mesuree": 0.995,
+      "recommandation_id": "r-bd0819e8bf11",
+      "regle_passerelle_id": "gw-rule-doc-summarizer-flex",
+      "seuil_alerte": 0.9,
+      "tenant_id": "t-demo-a"
+    },
+    "GET /v1/settings": {
+      "duree_conservation_jours": 365,
+      "modeles_candidats_par_client": {},
+      "paliers_bascule": [
+        10,
+        50,
+        100
+      ],
+      "seuil_intervalle_bas_defaut": 0.9,
+      "seuil_qualite_defaut": 0.95,
+      "table_tarifs": [],
+      "taille_echantillon_defaut": 200
+    },
+    "GET /v1/tenants": [
+      {
+        "compte_aws": "123456789012",
+        "external_id": "ext-demo-a",
+        "formule": "optimisation_continue",
+        "id": "t-demo-a",
+        "modeles_autorises": [
+          "anthropic.claude-opus-4-20250514-v1:0",
+          "anthropic.claude-3-5-sonnet-20241022-v2:0",
+          "anthropic.claude-3-5-haiku-20241022-v1:0"
+        ],
+        "nom": "Client A — Démo",
+        "plafond_campagne_usd": 50.0,
+        "region_principale": "eu-west-1",
+        "role_arn": "arn:aws:iam::123456789012:role/jauge-dataplane",
+        "schema_attribution": {
+          "application_par_defaut": "non-attribue",
+          "dimensions": [
+            "application",
+            "team",
+            "environment"
+          ],
+          "valeurs_environnements": [
+            "production",
+            "staging",
+            "dev"
+          ],
+          "valeurs_equipes": []
+        }
+      },
+      {
+        "compte_aws": "210987654321",
+        "external_id": "ext-demo-b",
+        "formule": "visibilite",
+        "id": "t-demo-b",
+        "modeles_autorises": [],
+        "nom": "Client B — Démo",
+        "plafond_campagne_usd": 20.0,
+        "region_principale": "eu-west-1",
+        "role_arn": "arn:aws:iam::210987654321:role/jauge-dataplane",
+        "schema_attribution": {
+          "application_par_defaut": "non-attribue",
+          "dimensions": [
+            "application",
+            "team",
+            "environment"
+          ],
+          "valeurs_environnements": [
+            "production",
+            "staging",
+            "dev"
+          ],
+          "valeurs_equipes": []
+        }
+      }
+    ],
+    "GET /v1/tenants/t-demo-a": {
+      "compte_aws": "123456789012",
+      "external_id": "ext-demo-a",
+      "formule": "optimisation_continue",
+      "id": "t-demo-a",
+      "modeles_autorises": [
+        "anthropic.claude-opus-4-20250514-v1:0",
+        "anthropic.claude-3-5-sonnet-20241022-v2:0",
+        "anthropic.claude-3-5-haiku-20241022-v1:0"
+      ],
+      "nom": "Client A — Démo",
+      "plafond_campagne_usd": 50.0,
+      "region_principale": "eu-west-1",
+      "role_arn": "arn:aws:iam::123456789012:role/jauge-dataplane",
+      "schema_attribution": {
+        "application_par_defaut": "non-attribue",
+        "dimensions": [
+          "application",
+          "team",
+          "environment"
+        ],
+        "valeurs_environnements": [
+          "production",
+          "staging",
+          "dev"
+        ],
+        "valeurs_equipes": []
+      }
+    },
+    "GET /v1/tenants/t-demo-a/applications": [
+      {
+        "description_tache": "Réponse rédigée au client, multi-sujets",
+        "environnement": "production",
+        "equipe": "support",
+        "id": "support-assistant",
+        "identifiant_passerelle": null,
+        "modele_actuel": "anthropic.claude-opus-4-20250514-v1:0",
+        "nom": "Assistant de support",
+        "passe_par_passerelle": true,
+        "relecture_humaine_autorisee": true,
+        "seuil_intervalle_bas": 0.9,
+        "seuil_qualite": 0.97,
+        "tenant_id": "t-demo-a"
+      },
+      {
+        "description_tache": "Classification en 6 catégories, sortie JSON",
+        "environnement": "production",
+        "equipe": "support",
+        "id": "ticket-classifier",
+        "identifiant_passerelle": null,
+        "modele_actuel": "anthropic.claude-opus-4-20250514-v1:0",
+        "nom": "Classement de tickets",
+        "passe_par_passerelle": true,
+        "relecture_humaine_autorisee": true,
+        "seuil_intervalle_bas": 0.9,
+        "seuil_qualite": 0.95,
+        "tenant_id": "t-demo-a"
+      },
+      {
+        "description_tache": "Résumé de documents internes, traitement nocturne",
+        "environnement": "production",
+        "equipe": "back-office",
+        "id": "doc-summarizer",
+        "identifiant_passerelle": null,
+        "modele_actuel": "anthropic.claude-opus-4-20250514-v1:0",
+        "nom": "Résumé de documents",
+        "passe_par_passerelle": true,
+        "relecture_humaine_autorisee": true,
+        "seuil_intervalle_bas": 0.9,
+        "seuil_qualite": 0.95,
+        "tenant_id": "t-demo-a"
+      }
+    ],
+    "GET /v1/tenants/t-demo-a/reconciliation": [
+      {
+        "causes_non_attribuees": [],
+        "conforme": true,
+        "cout_facture_usd": 55.3732,
+        "cout_recalcule_usd": 55.5538,
+        "ecart_pourcentage": 0.33,
+        "ecart_usd": 0.1806,
+        "jour": "2026-10-28",
+        "part_non_attribuee_pourcentage": 0.0,
+        "tenant_id": "t-demo-a"
+      },
+      {
+        "causes_non_attribuees": [],
+        "conforme": true,
+        "cout_facture_usd": 54.308,
+        "cout_recalcule_usd": 54.1688,
+        "ecart_pourcentage": 0.26,
+        "ecart_usd": -0.1392,
+        "jour": "2026-10-29",
+        "part_non_attribuee_pourcentage": 0.0,
+        "tenant_id": "t-demo-a"
+      },
+      {
+        "causes_non_attribuees": [],
+        "conforme": true,
+        "cout_facture_usd": 53.6231,
+        "cout_recalcule_usd": 54.1053,
+        "ecart_pourcentage": 0.9,
+        "ecart_usd": 0.4822,
+        "jour": "2026-10-30",
+        "part_non_attribuee_pourcentage": 0.0,
+        "tenant_id": "t-demo-a"
+      },
+      {
+        "causes_non_attribuees": [],
+        "conforme": true,
+        "cout_facture_usd": 32.0126,
+        "cout_recalcule_usd": 32.1922,
+        "ecart_pourcentage": 0.56,
+        "ecart_usd": 0.1796,
+        "jour": "2026-10-31",
+        "part_non_attribuee_pourcentage": 0.0,
+        "tenant_id": "t-demo-a"
+      },
+      {
+        "causes_non_attribuees": [],
+        "conforme": true,
+        "cout_facture_usd": 36.3233,
+        "cout_recalcule_usd": 36.3658,
+        "ecart_pourcentage": 0.12,
+        "ecart_usd": 0.0425,
+        "jour": "2026-11-01",
+        "part_non_attribuee_pourcentage": 0.0,
+        "tenant_id": "t-demo-a"
+      },
+      {
+        "causes_non_attribuees": [],
+        "conforme": true,
+        "cout_facture_usd": 47.2247,
+        "cout_recalcule_usd": 47.3931,
+        "ecart_pourcentage": 0.36,
+        "ecart_usd": 0.1684,
+        "jour": "2026-11-02",
+        "part_non_attribuee_pourcentage": 0.0,
+        "tenant_id": "t-demo-a"
+      },
+      {
+        "causes_non_attribuees": [],
+        "conforme": true,
+        "cout_facture_usd": 49.8353,
+        "cout_recalcule_usd": 50.3244,
+        "ecart_pourcentage": 0.98,
+        "ecart_usd": 0.4891,
+        "jour": "2026-11-03",
+        "part_non_attribuee_pourcentage": 0.0,
+        "tenant_id": "t-demo-a"
+      },
+      {
+        "causes_non_attribuees": [],
+        "conforme": true,
+        "cout_facture_usd": 58.4325,
+        "cout_recalcule_usd": 58.0834,
+        "ecart_pourcentage": 0.6,
+        "ecart_usd": -0.3491,
+        "jour": "2026-11-04",
+        "part_non_attribuee_pourcentage": 0.0,
+        "tenant_id": "t-demo-a"
+      },
+      {
+        "causes_non_attribuees": [],
+        "conforme": true,
+        "cout_facture_usd": 56.3864,
+        "cout_recalcule_usd": 55.8577,
+        "ecart_pourcentage": 0.94,
+        "ecart_usd": -0.5287,
+        "jour": "2026-11-05",
+        "part_non_attribuee_pourcentage": 0.0,
+        "tenant_id": "t-demo-a"
+      },
+      {
+        "causes_non_attribuees": [],
+        "conforme": true,
+        "cout_facture_usd": 54.1987,
+        "cout_recalcule_usd": 53.9041,
+        "ecart_pourcentage": 0.54,
+        "ecart_usd": -0.2946,
+        "jour": "2026-11-06",
+        "part_non_attribuee_pourcentage": 0.0,
+        "tenant_id": "t-demo-a"
+      },
+      {
+        "causes_non_attribuees": [],
+        "conforme": true,
+        "cout_facture_usd": 37.8634,
+        "cout_recalcule_usd": 37.455,
+        "ecart_pourcentage": 1.08,
+        "ecart_usd": -0.4084,
+        "jour": "2026-11-07",
+        "part_non_attribuee_pourcentage": 0.0,
+        "tenant_id": "t-demo-a"
+      },
+      {
+        "causes_non_attribuees": [],
+        "conforme": true,
+        "cout_facture_usd": 37.6582,
+        "cout_recalcule_usd": 37.57,
+        "ecart_pourcentage": 0.23,
+        "ecart_usd": -0.0882,
+        "jour": "2026-11-08",
+        "part_non_attribuee_pourcentage": 0.0,
+        "tenant_id": "t-demo-a"
+      },
+      {
+        "causes_non_attribuees": [],
+        "conforme": true,
+        "cout_facture_usd": 50.5793,
+        "cout_recalcule_usd": 50.1661,
+        "ecart_pourcentage": 0.82,
+        "ecart_usd": -0.4132,
+        "jour": "2026-11-09",
+        "part_non_attribuee_pourcentage": 0.0,
+        "tenant_id": "t-demo-a"
+      },
+      {
+        "causes_non_attribuees": [],
+        "conforme": true,
+        "cout_facture_usd": 54.0371,
+        "cout_recalcule_usd": 53.8844,
+        "ecart_pourcentage": 0.28,
+        "ecart_usd": -0.1527,
+        "jour": "2026-11-10",
+        "part_non_attribuee_pourcentage": 0.0,
+        "tenant_id": "t-demo-a"
+      }
+    ],
+    "GET /v1/tenants/t-demo-a/savings": {
+      "ecart_pourcentage": -4.0,
+      "economie_attendue_usd": 369.62,
+      "economie_constatee_usd": 354.84,
+      "tenant_id": "t-demo-a",
+      "verifications": [
+        {
+          "application_id": "doc-summarizer",
+          "cout_par_requete_apres": 0.11985,
+          "cout_par_requete_avant": 0.2397,
+          "ecart_pourcentage": 4.0,
+          "economie_attendue_usd": 369.62,
+          "economie_constatee_usd": 354.84,
+          "recommandation_id": "r-bd0819e8bf11",
+          "volume_periode": 3084
+        }
+      ]
+    },
+    "GET /v1/tenants/t-demo-b": {
+      "compte_aws": "210987654321",
+      "external_id": "ext-demo-b",
+      "formule": "visibilite",
+      "id": "t-demo-b",
+      "modeles_autorises": [],
+      "nom": "Client B — Démo",
+      "plafond_campagne_usd": 20.0,
+      "region_principale": "eu-west-1",
+      "role_arn": "arn:aws:iam::210987654321:role/jauge-dataplane",
+      "schema_attribution": {
+        "application_par_defaut": "non-attribue",
+        "dimensions": [
+          "application",
+          "team",
+          "environment"
+        ],
+        "valeurs_environnements": [
+          "production",
+          "staging",
+          "dev"
+        ],
+        "valeurs_equipes": []
+      }
+    },
+    "GET /v1/tenants/t-demo-b/applications": [
+      {
+        "description_tache": "Recherche documentaire interne",
+        "environnement": "production",
+        "equipe": "documentation",
+        "id": "kb-search",
+        "identifiant_passerelle": null,
+        "modele_actuel": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+        "nom": "Recherche dans la base de connaissances",
+        "passe_par_passerelle": true,
+        "relecture_humaine_autorisee": true,
+        "seuil_intervalle_bas": 0.9,
+        "seuil_qualite": 0.95,
+        "tenant_id": "t-demo-b"
+      }
+    ],
+    "GET /v1/tenants/t-demo-b/reconciliation": [
+      {
+        "causes_non_attribuees": [],
+        "conforme": true,
+        "cout_facture_usd": 0.6896,
+        "cout_recalcule_usd": 0.689,
+        "ecart_pourcentage": 0.09,
+        "ecart_usd": -0.0006,
+        "jour": "2026-10-28",
+        "part_non_attribuee_pourcentage": 0.0,
+        "tenant_id": "t-demo-b"
+      },
+      {
+        "causes_non_attribuees": [],
+        "conforme": true,
+        "cout_facture_usd": 0.7763,
+        "cout_recalcule_usd": 0.7704,
+        "ecart_pourcentage": 0.76,
+        "ecart_usd": -0.0059,
+        "jour": "2026-10-29",
+        "part_non_attribuee_pourcentage": 0.0,
+        "tenant_id": "t-demo-b"
+      },
+      {
+        "causes_non_attribuees": [],
+        "conforme": true,
+        "cout_facture_usd": 0.7246,
+        "cout_recalcule_usd": 0.7179,
+        "ecart_pourcentage": 0.92,
+        "ecart_usd": -0.0067,
+        "jour": "2026-10-30",
+        "part_non_attribuee_pourcentage": 0.0,
+        "tenant_id": "t-demo-b"
+      },
+      {
+        "causes_non_attribuees": [],
+        "conforme": true,
+        "cout_facture_usd": 0.2995,
+        "cout_recalcule_usd": 0.2995,
+        "ecart_pourcentage": 0.0,
+        "ecart_usd": 0.0,
+        "jour": "2026-10-31",
+        "part_non_attribuee_pourcentage": 0.0,
+        "tenant_id": "t-demo-b"
+      },
+      {
+        "causes_non_attribuees": [],
+        "conforme": true,
+        "cout_facture_usd": 0.2602,
+        "cout_recalcule_usd": 0.2582,
+        "ecart_pourcentage": 0.77,
+        "ecart_usd": -0.002,
+        "jour": "2026-11-01",
+        "part_non_attribuee_pourcentage": 0.0,
+        "tenant_id": "t-demo-b"
+      },
+      {
+        "causes_non_attribuees": [],
+        "conforme": true,
+        "cout_facture_usd": 0.8008,
+        "cout_recalcule_usd": 0.8072,
+        "ecart_pourcentage": 0.8,
+        "ecart_usd": 0.0064,
+        "jour": "2026-11-02",
+        "part_non_attribuee_pourcentage": 0.0,
+        "tenant_id": "t-demo-b"
+      },
+      {
+        "causes_non_attribuees": [],
+        "conforme": true,
+        "cout_facture_usd": 0.7903,
+        "cout_recalcule_usd": 0.7954,
+        "ecart_pourcentage": 0.65,
+        "ecart_usd": 0.0051,
+        "jour": "2026-11-03",
+        "part_non_attribuee_pourcentage": 0.0,
+        "tenant_id": "t-demo-b"
+      },
+      {
+        "causes_non_attribuees": [],
+        "conforme": true,
+        "cout_facture_usd": 0.6838,
+        "cout_recalcule_usd": 0.6908,
+        "ecart_pourcentage": 1.02,
+        "ecart_usd": 0.007,
+        "jour": "2026-11-04",
+        "part_non_attribuee_pourcentage": 0.0,
+        "tenant_id": "t-demo-b"
+      },
+      {
+        "causes_non_attribuees": [],
+        "conforme": true,
+        "cout_facture_usd": 0.7048,
+        "cout_recalcule_usd": 0.7091,
+        "ecart_pourcentage": 0.61,
+        "ecart_usd": 0.0043,
+        "jour": "2026-11-05",
+        "part_non_attribuee_pourcentage": 0.0,
+        "tenant_id": "t-demo-b"
+      },
+      {
+        "causes_non_attribuees": [],
+        "conforme": true,
+        "cout_facture_usd": 0.7532,
+        "cout_recalcule_usd": 0.7536,
+        "ecart_pourcentage": 0.05,
+        "ecart_usd": 0.0004,
+        "jour": "2026-11-06",
+        "part_non_attribuee_pourcentage": 0.0,
+        "tenant_id": "t-demo-b"
+      },
+      {
+        "causes_non_attribuees": [],
+        "conforme": true,
+        "cout_facture_usd": 0.3031,
+        "cout_recalcule_usd": 0.3065,
+        "ecart_pourcentage": 1.12,
+        "ecart_usd": 0.0034,
+        "jour": "2026-11-07",
+        "part_non_attribuee_pourcentage": 0.0,
+        "tenant_id": "t-demo-b"
+      },
+      {
+        "causes_non_attribuees": [],
+        "conforme": true,
+        "cout_facture_usd": 0.2624,
+        "cout_recalcule_usd": 0.2647,
+        "ecart_pourcentage": 0.88,
+        "ecart_usd": 0.0023,
+        "jour": "2026-11-08",
+        "part_non_attribuee_pourcentage": 0.0,
+        "tenant_id": "t-demo-b"
+      },
+      {
+        "causes_non_attribuees": [],
+        "conforme": true,
+        "cout_facture_usd": 0.7998,
+        "cout_recalcule_usd": 0.8003,
+        "ecart_pourcentage": 0.06,
+        "ecart_usd": 0.0005,
+        "jour": "2026-11-09",
+        "part_non_attribuee_pourcentage": 0.0,
+        "tenant_id": "t-demo-b"
+      },
+      {
+        "causes_non_attribuees": [],
+        "conforme": true,
+        "cout_facture_usd": 0.7301,
+        "cout_recalcule_usd": 0.7283,
+        "ecart_pourcentage": 0.25,
+        "ecart_usd": -0.0018,
+        "jour": "2026-11-10",
+        "part_non_attribuee_pourcentage": 0.0,
+        "tenant_id": "t-demo-b"
+      }
+    ],
+    "GET /v1/tenants/t-demo-b/savings": {
+      "ecart_pourcentage": 0.0,
+      "economie_attendue_usd": 0.0,
+      "economie_constatee_usd": 0.0,
+      "tenant_id": "t-demo-b",
+      "verifications": []
+    }
+  }
+}
