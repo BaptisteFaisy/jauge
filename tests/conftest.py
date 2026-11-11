@@ -133,3 +133,36 @@ def tarifs() -> list[TarifModele]:
             prix_sortie_1k=0.015,
         ),
     ]
+
+
+@pytest.fixture(autouse=True)
+def aws_hors_ligne(monkeypatch: pytest.MonkeyPatch, tmp_path_factory) -> None:
+    """Coupe toute découverte de configuration AWS pendant les tests.
+
+    Règle du dépôt : **aucun test ne touche AWS ni le réseau**. Or botocore lit
+    `~/.aws/config`, les variables `AWS_*` et les métadonnées EC2 dès qu'un
+    client est construit — y compris indirectement, quand un agent Strands
+    instancie son modèle. Constaté le 2026-11-11 : une simple configuration
+    `~/.aws/config` posée par un autre chantier a fait échouer 12 tests de
+    `tests/agents/` avec `MissingDependencyException: botocore[crt]`.
+
+    Cette fixture rend la suite **hermétique** : elle pointe les fichiers de
+    configuration vers un chemin inexistant, désactive IMDS et purge les
+    identifiants ambiants. Elle s'applique à tous les tests (autouse).
+    """
+    inexistant = str(tmp_path_factory.mktemp("aws-vide") / "config-absent")
+    monkeypatch.setenv("AWS_CONFIG_FILE", inexistant)
+    monkeypatch.setenv("AWS_SHARED_CREDENTIALS_FILE", inexistant)
+    monkeypatch.setenv("AWS_EC2_METADATA_DISABLED", "true")
+    monkeypatch.setenv("AWS_DEFAULT_REGION", "eu-west-1")
+    for variable in (
+        "AWS_PROFILE",
+        "AWS_ACCESS_KEY_ID",
+        "AWS_SECRET_ACCESS_KEY",
+        "AWS_SESSION_TOKEN",
+        "AWS_SSO_SESSION",
+        "AWS_ROLE_ARN",
+        "AWS_WEB_IDENTITY_TOKEN_FILE",
+        "AWS_CONTAINER_CREDENTIALS_FULL_URI",
+    ):
+        monkeypatch.delenv(variable, raising=False)
