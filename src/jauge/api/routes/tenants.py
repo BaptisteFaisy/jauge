@@ -11,13 +11,18 @@ from jauge.api.deps import DepAudit, DepStore, DepUtilisateur
 from jauge.api.tenancy import exiger_role, obtenir_tenant_controle
 from jauge.common.errors import ValidationError
 from jauge.common.ids import aleatoire
-from jauge.models.tenant import FormuleOffre, Tenant
+from jauge.models.tenant import FormuleOffre, SchemaAttribution, Tenant
 
 router = APIRouter(tags=["clients"])
 
 
 class CreationTenant(BaseModel):
-    """Corps de `POST /v1/tenants` : identifiant et identifiant externe optionnels."""
+    """Corps de `POST /v1/tenants` : identifiant et identifiant externe optionnels.
+
+    `schema_attribution` porte le schéma fixé avec le client à la mise en
+    service (EF-ATT-03) : dimensions d'attribution, valeurs autorisées et
+    application par défaut pour les appels non étiquetés.
+    """
 
     nom: str = Field(min_length=1)
     compte_aws: str = Field(pattern=r"^\d{12}$")
@@ -27,6 +32,7 @@ class CreationTenant(BaseModel):
     formule: FormuleOffre = FormuleOffre.OPTIMISATION
     plafond_campagne_usd: float = Field(default=50.0, ge=0.0)
     modeles_autorises: list[str] = Field(default_factory=list)
+    schema_attribution: SchemaAttribution = Field(default_factory=SchemaAttribution)
 
 
 @router.post("/v1/tenants", response_model=Tenant, status_code=status.HTTP_201_CREATED)
@@ -48,6 +54,7 @@ def creer_tenant(
         formule=corps.formule,
         plafond_campagne_usd=corps.plafond_campagne_usd,
         modeles_autorises=corps.modeles_autorises,
+        schema_attribution=corps.schema_attribution,
     )
     if store.obtenir_tenant(tenant.id) is not None:
         raise ValidationError("Un client porte déjà cet identifiant", tenant_id=tenant.id)

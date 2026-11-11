@@ -29,7 +29,7 @@ repository (AWS deployment, video, Devpost submission). Every module of
 | 6 | ~3-minute video, public on YouTube, English, no third-party brand or music | **Pending** | Script ready: [`DEMO-SCRIPT.md`](DEMO-SCRIPT.md) |
 | 7 | Architecture diagram | **Done** | [`architecture.mmd`](architecture.mmd) + [`architecture.svg`](architecture.svg), explained in [`ARCHITECTURE.md`](ARCHITECTURE.md) |
 | 8 | High-Level Design document | **Done** | [`HLD.md`](HLD.md) |
-| 9 | Test instructions for judges | **Done** | [`TEST-INSTRUCTIONS.md`](TEST-INSTRUCTIONS.md) — reflects the real state of `main`: what runs offline, the one blocked command (`uvicorn jauge.api.app:app`, no module-level `app`) and its verified launcher |
+| 9 | Test instructions for judges | **Done** | [`TEST-INSTRUCTIONS.md`](TEST-INSTRUCTIONS.md) — reflects the real state of `main`: full offline test suite, seeded console demo and single-command `uvicorn jauge.api.app:app` portal |
 | 10 | README as submission front page | **Done** | [`README.md`](../README.md) |
 | 11 | Solution kept online until 22 January 2027 | **Pending** | Minimal traffic baseline from January; AWS Budgets alarms delivered as code per account (§17.3) |
 
@@ -173,6 +173,5 @@ claims made in the description.
 | Gap | Consequence for judging | Mitigation |
 |---|---|---|
 | The public portal is not deployed yet — the code is merged (M8 API, M12 demo, M13 portal) but a live URL needs a real AWS account (credits, Bedrock enabled) | Judges cannot click a URL until they land | Local run instructions are complete and offline (`demo.seed` + the launcher); portal URL added once deployed |
-| `uv run uvicorn jauge.api.app:app` is blocked: `src/jauge/api/app.py` exposes only `creer_app()`, no module-level `app` | The one-line portal command fails with `Attribute "app" not found` | Marked **blocked** in [`TEST-INSTRUCTIONS.md`](TEST-INSTRUCTIONS.md) with a verified launcher; the clean fix is `app = creer_app()` in that file. `uv run python -m demo.seed` works as documented |
 | Multi-turn and tool-using applications are out of v1 | A judge may ask about agentic workloads | Declared as a limit in `HLD.md` §2.2 and §13.1, with the reason (replay fidelity) |
 | Judge bias is mitigated, not eliminated | Legitimate question on measurement rigour | Deterministic checks, 30-pair human review, self-agreement column, declared in `HLD.md` §8.7 |

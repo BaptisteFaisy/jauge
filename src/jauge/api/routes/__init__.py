@@ -8,6 +8,7 @@ from jauge.api.routes import (
     chat,
     costs,
     demo,
+    health,
     levers,
     recommendations,
     reports,
@@ -19,6 +20,7 @@ from jauge.api.routes import (
 
 #: Ordre d'enregistrement dans l'application (l'ordre n'a pas d'effet sur le routage).
 ROUTEURS = (
+    health.router,
     tenants.router,
     applications.router,
     costs.router,

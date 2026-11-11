@@ -20,6 +20,7 @@ from jauge.api.audit import AuditSink, MemoryAuditStore
 from jauge.api.auth import CognitoJwksVerifier, mode_demo_actif
 from jauge.api.errors import enregistrer_gestionnaires_erreurs
 from jauge.api.ports import (
+    BasculePort,
     CampagnePort,
     ChatPort,
     PortCampagnesDemo,
@@ -51,17 +52,25 @@ client. Les refus sont journalisés dans l'audit (EF-ADM-02).
 
 
 class Ports:
-    """Regroupe les trois ports métier injectés dans l'application."""
+    """Regroupe les ports métier injectés dans l'application.
+
+    `bascules` reste optionnel : sans lui, les routes de bascule construisent
+    l'état elles-mêmes (comportement historique, testé par la recette R6/R8).
+    Avec lui (module M17/M18), la bascule passe par le `ControlleurBascule` de M6
+    et crée une vraie règle de passerelle (EF-BAS-01..03).
+    """
 
     def __init__(
         self,
         campagnes: CampagnePort,
         rapports: RapportPort,
         chat: ChatPort,
+        bascules: BasculePort | None = None,
     ) -> None:
         self.campagnes = campagnes
         self.rapports = rapports
         self.chat = chat
+        self.bascules = bascules
 
 
 def ports_par_defaut(store: Store, mode_demo: bool) -> Ports:
@@ -104,6 +113,7 @@ def creer_app(
     app.state.port_campagnes = ports_choisis.campagnes
     app.state.port_rapports = ports_choisis.rapports
     app.state.port_chat = ports_choisis.chat
+    app.state.port_bascules = ports_choisis.bascules
 
     app.add_middleware(
         CORSMiddleware,
@@ -123,3 +133,47 @@ def _monter_portail(app: FastAPI) -> None:
     """Monte le portail statique s'il existe (module M13), sans le rendre obligatoire."""
     if DOSSIER_PORTAIL.is_dir() and (DOSSIER_PORTAIL / "index.html").is_file():
         app.mount("/", StaticFiles(directory=str(DOSSIER_PORTAIL), html=True), name="portal")
+
+
+def creer_app_asgi() -> FastAPI:
+    """Point d'entrée ASGI documenté : `uvicorn jauge.api.app:app`.
+
+    En mode démonstration (défaut), l'application est celle du câblage M17 :
+    les ports de l'API (campagnes, rapports, chat, **bascules**) sont branchés
+    sur les modules réels, et le store est amorcé avec le scénario de démo
+    (`demo.seed`) pour que le portail affiche des chiffres dès l'ouverture.
+
+    Hors démonstration (`JAUGE_MODE_DEMO=0`), l'application est nue : aucun
+    amorçage, authentification Cognito exigée, ports non câblés → 502 explicite.
+    Les imports sont tardifs : `jauge.integration` importe ce module.
+    """
+    if not mode_demo_actif():
+        return creer_app(mode_demo=False)
+    try:
+        from demo.seed import peupler_store
+
+        from jauge.integration.factory import creer_app as creer_app_integree
+    except ImportError as erreur:  # paquet installé sans le dépôt (demo absent)
+        logger.warning("Amorçage de démonstration indisponible (%s) : application nue.", erreur)
+        return creer_app(mode_demo=True)
+    magasin = MemoryStore()
+    plan = peupler_store(magasin)
+    return creer_app_integree(mode_demo=True, store=magasin, plan=plan)
+
+
+_APP_ASGI: FastAPI | None = None
+
+
+def __getattr__(nom: str) -> FastAPI:
+    """Expose `app` (ASGI) sans l'amorcer à l'import du module.
+
+    L'amorçage de démonstration coûte quelques secondes : le rendre paresseux
+    évite de le payer à chaque `from jauge.api.app import creer_app` (tests).
+    `uvicorn jauge.api.app:app` accède à l'attribut, donc le déclenche.
+    """
+    global _APP_ASGI  # noqa: PLW0603 - mise en cache volontaire du point d'entrée
+    if nom != "app":
+        raise AttributeError(f"module {__name__!r} n'a pas d'attribut {nom!r}")
+    if _APP_ASGI is None:
+        _APP_ASGI = creer_app_asgi()
+    return _APP_ASGI

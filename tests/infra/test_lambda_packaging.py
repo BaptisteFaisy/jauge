@@ -30,12 +30,29 @@ def _charger(nom: str):
     return module
 
 
-def test_handler_repond_501_sans_application():
+def test_handler_repond_501_sans_application(monkeypatch: pytest.MonkeyPatch) -> None:
     """Sans `jauge.api` dans la couche, la fonction le dit au lieu de planter."""
     handler = _charger("handler")
+
+    def _application_absente() -> object:
+        raise ImportError("jauge.api.app absent de la couche Lambda")
+
+    monkeypatch.setattr(handler, "_application", _application_absente)
     reponse = handler.handler({"httpMethod": "GET", "path": "/health"}, None)
     assert reponse["statusCode"] == 501
-    assert "not_implemented" in reponse["body"]
+    assert "not available" in reponse["body"]
+
+
+def test_handler_sert_la_sonde_de_vie() -> None:
+    """Application présente : la sonde `/health` passe réellement par l'ASGI.
+
+    Prouve que le nom d'intégration documenté (`jauge.api.app:app`) existe et
+    que l'adaptateur Lambda exécute l'application au lieu de répondre 501.
+    """
+    handler = _charger("handler")
+    reponse = handler.handler({"httpMethod": "GET", "path": "/health"}, None)
+    assert reponse["statusCode"] == 200
+    assert '"status": "ok"' in reponse["body"] or '"status":"ok"' in reponse["body"]
 
 
 def test_handler_construit_une_portee_asgi():

@@ -1,6 +1,9 @@
-"""Bascule progressive et retour arrière (§15, EF-BAS-01..04, ENF-IA-02).
+"""Routes de bascule progressive et de retour arrière (§15, EF-BAS-01..04).
 
 Scénario R6 : une recommandation non approuvée ne peut pas être basculée.
+Quand le port `bascules` est câblé (module M6 via `integration`), les règles
+de passerelle et les paliers passent réellement par `ControlleurBascule` ;
+sinon, la route construit l'état localement (tests unitaires d'API isolés).
 """
 
 from __future__ import annotations
@@ -12,7 +15,8 @@ from pydantic import BaseModel, Field
 
 from jauge.api.audit import AuditSink, journaliser
 from jauge.api.auth import RoleUtilisateur, Utilisateur
-from jauge.api.deps import DepAudit, DepReglages, DepStore, DepUtilisateur
+from jauge.api.deps import DepAudit, DepPortBascules, DepReglages, DepStore, DepUtilisateur
+from jauge.api.ports import BasculePort
 from jauge.api.routes.recommendations import recommandation_controlee
 from jauge.api.tenancy import exiger_role, localiser
 from jauge.common.errors import ApprobationRequiseError, EtatIncompatibleError
@@ -106,20 +110,24 @@ def _creer_bascule(
     utilisateur: Utilisateur,
     store: Store,
     audit: AuditSink,
+    port: BasculePort | None = None,
 ) -> ResultatBascule:
     """Crée la règle de passerelle au premier palier et la journalise."""
-    bascule = BasculeProgressive(
-        id=aleatoire("rollout"),
-        tenant_id=reco.tenantId,
-        recommandation_id=reco.id,
-        application_id=reco.applicationId,
-        modele_cible=reco.targetModel,
-        regle_passerelle_id=f"gw-{aleatoire('rollout')}",
-        palier_actuel_pourcentage=paliers[0],
-        seuil_alerte=reco.quality.confidenceIntervalLow,
-    )
-    store.enregistrer_bascule(bascule)
-    _marquer_recommandation(store, reco, StatutRecommandation.EN_COURS_DE_BASCULE)
+    if port is not None:
+        bascule = port.demarrer(reco, paliers=paliers)
+    else:
+        bascule = BasculeProgressive(
+            id=aleatoire("rollout"),
+            tenant_id=reco.tenantId,
+            recommandation_id=reco.id,
+            application_id=reco.applicationId,
+            modele_cible=reco.targetModel,
+            regle_passerelle_id=f"gw-{aleatoire('rollout')}",
+            palier_actuel_pourcentage=paliers[0],
+            seuil_alerte=reco.quality.confidenceIntervalLow,
+        )
+        store.enregistrer_bascule(bascule)
+        _marquer_recommandation(store, reco, StatutRecommandation.EN_COURS_DE_BASCULE)
     journaliser(
         audit,
         utilisateur,
@@ -151,6 +159,7 @@ def demarrer_bascule(
     store: DepStore,
     reglages: DepReglages,
     audit: DepAudit,
+    port: DepPortBascules,
 ) -> ResultatBascule:
     """Démarre la bascule d'une recommandation approuvée (ENF-IA-02)."""
     exiger_role(utilisateur, *ROLES_BASCULE)
@@ -161,7 +170,7 @@ def demarrer_bascule(
     if application is not None and not application.passe_par_passerelle:
         return _ouvrir_ticket(reco, utilisateur, store, audit)
     paliers = demande.paliers or reglages.obtenir().paliers_bascule
-    return _creer_bascule(reco, paliers, utilisateur, store, audit)
+    return _creer_bascule(reco, paliers, utilisateur, store, audit, port=port)
 
 
 def bascule_controlee(
@@ -188,28 +197,61 @@ def lire_bascule(
     return bascule_controlee(bascule_id, utilisateur, store, audit)
 
 
+@router.post("/v1/rollouts/{bascule_id}/advance", response_model=BasculeProgressive)
+def avancer_bascule(
+    bascule_id: str,
+    utilisateur: DepUtilisateur,
+    store: DepStore,
+    audit: DepAudit,
+    port: DepPortBascules,
+) -> BasculeProgressive:
+    """Rejuge le palier courant et passe au palier suivant, ou annule (EF-BAS-02)."""
+    exiger_role(utilisateur, *ROLES_BASCULE)
+    bascule = bascule_controlee(bascule_id, utilisateur, store, audit, "avance_bascule")
+    if port is None:
+        raise EtatIncompatibleError(
+            "Aucun contrôleur de passerelle câblé sur ce plan de contrôle",
+            bascule_id=bascule.id,
+        )
+    suivante = port.avancer(bascule)
+    journaliser(
+        audit,
+        utilisateur,
+        "bascule_avancee",
+        "bascule",
+        suivante.id,
+        {
+            "palier": suivante.palier_actuel_pourcentage,
+            "actif": suivante.actif,
+            "annule_automatiquement": suivante.annule_automatiquement,
+        },
+        tenant_id=bascule.tenant_id,
+    )
+    return suivante
+
+
 @router.post("/v1/rollouts/{bascule_id}/rollback", response_model=BasculeProgressive)
 def annuler_bascule(
     bascule_id: str,
     utilisateur: DepUtilisateur,
     store: DepStore,
     audit: DepAudit,
+    port: DepPortBascules,
 ) -> BasculeProgressive:
     """Retour arrière manuel d'une bascule (EF-BAS-03)."""
     exiger_role(utilisateur, *ROLES_BASCULE)
     bascule = bascule_controlee(bascule_id, utilisateur, store, audit, "rollback")
     if not bascule.actif:
         raise EtatIncompatibleError("Cette bascule est déjà arrêtée", bascule_id=bascule.id)
-    annulee = bascule.model_copy(
-        update={
-            "actif": False,
-            "motif_annulation": f"Retour arrière demandé par {utilisateur.id}",
-        }
-    )
-    store.enregistrer_bascule(annulee)
-    reco = store.obtenir_recommandation(bascule.tenant_id, bascule.recommandation_id)
-    if reco is not None:
-        _marquer_recommandation(store, reco, StatutRecommandation.ANNULEE)
+    motif = f"Retour arrière demandé par {utilisateur.id}"
+    if port is not None:
+        annulee = port.annuler(bascule, motif)
+    else:
+        annulee = bascule.model_copy(update={"actif": False, "motif_annulation": motif})
+        store.enregistrer_bascule(annulee)
+        reco = store.obtenir_recommandation(bascule.tenant_id, bascule.recommandation_id)
+        if reco is not None:
+            _marquer_recommandation(store, reco, StatutRecommandation.ANNULEE)
     journaliser(
         audit,
         utilisateur,
