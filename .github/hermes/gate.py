@@ -209,7 +209,7 @@ def try_merge(repo, token, pr, required):
     return "error"
 
 
-def handle_pr(pr, repo, token, required, dry=False):
+def handle_pr(pr, repo, token, required, dry=False, auto_rebase=True):
     num = pr["number"]
     sha = pr["head"]["sha"]
     base_ref = pr["base"]["ref"]
@@ -239,6 +239,14 @@ def handle_pr(pr, repo, token, required, dry=False):
     set_label(pr, repo, token, LABEL_CONFLIT, False)
 
     if not fresh:
+        if not auto_rebase:
+            # Rebase serveur désactivé (variable HERMES_AUTO_REBASE=0).
+            # Raison : le push de rebase est fait avec le GITHUB_TOKEN, qui ne
+            # déclenche AUCUN workflow → le nouveau head n'a plus de check runs
+            # et la PR resterait ouverte. Dans ce mode, le rafraîchissement est
+            # fait par un agent avec un jeton classique (la CI repart alors).
+            print("[gate] #%d : en retard de %d commit(s) — rebase manuel attendu" % (num, behind))
+            return "behind"
         if dry:
             print(
                 "[gate] #%d : en retard de %s commit(s) — rebase serveur (dry-run)" % (num, behind)
@@ -308,6 +316,7 @@ def main():
         s.strip() for s in os.environ.get("HERMES_REQUIRED_CHECKS", "").split(",") if s.strip()
     ]
     dry = os.environ.get("HERMES_LITE_DRY_RUN") == "1"
+    auto_rebase = os.environ.get("HERMES_AUTO_REBASE", "1") == "1"
 
     for lbl in (LABEL_OK, LABEL_CONFLIT):
         ensure_label(
@@ -336,7 +345,7 @@ def main():
         if pr.get("draft") or pr.get("state") != "open":
             continue
         try:
-            r = handle_pr(pr, repo, token, required, dry)
+            r = handle_pr(pr, repo, token, required, dry, auto_rebase=auto_rebase)
             if r == "merged":
                 merged += 1
         except Exception as e:
