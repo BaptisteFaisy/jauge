@@ -12,9 +12,10 @@ from datetime import date
 
 from jauge.models.campaign import Campagne
 from jauge.models.cost import AgregatQuotidien, RapprochementJour, SyntheseCout
-from jauge.models.lever import Levier
+from jauge.models.lever import Levier, StatutLevier
 from jauge.models.recommendation import BasculeProgressive, Recommandation, VerificationEconomie
 from jauge.models.tenant import Application, Tenant
+from jauge.store.synthese import synthese
 
 
 class MemoryStore:
@@ -82,35 +83,14 @@ class MemoryStore:
         return [r for r in self._rapprochements if r.tenant_id == tenant_id]
 
     def synthese_cout(self, tenant_id: str, debut: date, fin: date) -> SyntheseCout:
-        agregats = self.lister_agregats(tenant_id, debut=debut, fin=fin)
-        par_app: dict[str, float] = defaultdict(float)
-        par_equipe: dict[str, float] = defaultdict(float)
-        par_modele: dict[str, float] = defaultdict(float)
-        total = 0.0
-        for a in agregats:
-            par_app[a.application_id] += a.cout_recalcule_usd
-            par_equipe[a.equipe] += a.cout_recalcule_usd
-            par_modele[a.modele_id] += a.cout_recalcule_usd
-            total += a.cout_recalcule_usd
-        rapprochements = [r for r in self._rapprochements if r.tenant_id == tenant_id]
-        ecart_moyen = (
-            sum(r.ecart_pourcentage for r in rapprochements) / len(rapprochements)
-            if rapprochements
-            else 0.0
-        )
-        apps = self.lister_applications(tenant_id)
-        attribue = sum(par_app[a.id] for a in apps if a.id != "non-attribue")
-        couverture = (attribue / total * 100.0) if total > 0 else 0.0
-        return SyntheseCout(
+        """Synthèse de période — calcul partagé avec le store DynamoDB."""
+        return synthese(
             tenant_id=tenant_id,
-            periode_debut=debut,
-            periode_fin=fin,
-            cout_total_usd=round(total, 4),
-            cout_par_application=dict(par_app),
-            cout_par_equipe=dict(par_equipe),
-            cout_par_modele=dict(par_modele),
-            couverture_attribution_pourcentage=round(couverture, 2),
-            ecart_rapprochement_moyen_pourcentage=round(ecart_moyen, 2),
+            agregats=self.lister_agregats(tenant_id, debut=debut, fin=fin),
+            rapprochements=self._rapprochements,
+            applications_connues=[a.id for a in self.lister_applications(tenant_id)],
+            debut=debut,
+            fin=fin,
         )
 
     # --- Leviers ------------------------------------------------------------
@@ -126,7 +106,7 @@ class MemoryStore:
     def maj_statut_levier(self, levier_id: str, statut: str) -> None:
         if levier_id in self._leviers:
             lv = self._leviers[levier_id]
-            self._leviers[levier_id] = lv.model_copy(update={"statut": statut})
+            self._leviers[levier_id] = lv.model_copy(update={"statut": StatutLevier(statut)})
 
     # --- Campagnes ----------------------------------------------------------
     def enregistrer_campagne(self, campagne: Campagne) -> None:

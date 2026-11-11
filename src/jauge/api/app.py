@@ -143,12 +143,17 @@ def creer_app_asgi() -> FastAPI:
     sur les modules réels, et le store est amorcé avec le scénario de démo
     (`demo.seed`) pour que le portail affiche des chiffres dès l'ouverture.
 
-    Hors démonstration (`JAUGE_MODE_DEMO=0`), l'application est nue : aucun
-    amorçage, authentification Cognito exigée, ports non câblés → 502 explicite.
-    Les imports sont tardifs : `jauge.integration` importe ce module.
+    Hors démonstration (`JAUGE_MODE_DEMO=0`), l'application n'amorce aucune
+    donnée de démo, exige un jeton Cognito, et prend son store dans
+    l'environnement (`JAUGE_STORE=dynamodb` + `JAUGE_STATE_TABLE`, posés par le
+    CDK) : c'est la configuration déployée sur AWS.
+    Les imports sont tardifs : `jauge.integration` et `jauge.store` importent ce
+    module.
     """
     if not mode_demo_actif():
-        return creer_app(mode_demo=False)
+        from jauge.store import creer_store
+
+        return creer_app(store=creer_store(), mode_demo=False)
     try:
         from demo.seed import peupler_store
 

@@ -120,7 +120,15 @@ class Api(Construct):
         """Variables d'environnement : noms seuls, aucun secret."""
         return {
             "JAUGE_ENVIRONMENT": self.config.environment,
+            # Choix du store : `jauge.store.creer_store()` lit ces variables.
+            # Sans `JAUGE_STORE=dynamodb`, la Lambda démarrerait sur le store en
+            # mémoire et perdrait tout état à chaque conteneur froid.
+            "JAUGE_STORE": "dynamodb",
             "JAUGE_STATE_TABLE": table.table_name,
+            "JAUGE_DYNAMO_REGION": self.config.region,
+            # Jamais de mode démonstration en déploiement réel : l'identité vient
+            # de Cognito, pas des en-têtes `X-Jauge-*`.
+            "JAUGE_MODE_DEMO": "0",
             "JAUGE_REPORTS_BUCKET": reports_bucket.bucket_name,
             "JAUGE_USER_POOL_ID": identity.user_pool.user_pool_id,
             "JAUGE_USER_POOL_CLIENT_ID": identity.client.user_pool_client_id,
