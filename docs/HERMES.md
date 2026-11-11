@@ -125,7 +125,7 @@ Secrets (noms seuls — aucune valeur n'est jamais affichée) :
 | Nom | Rôle | Obligatoire | État |
 |---|---|---|---|
 | `INFERHUB_API_KEY` | jambe LLM directe InferHub (`combo/cheap`) | non — absent ⇒ 100 % déterministe | **posé le 2026-11-11** |
-| `HERMES_PUSH_TOKEN` | PAT `contents: write` pour le push git (déclenche les vrais événements) | non — absent ⇒ ré-armement par dispatch | absent : le ré-armement par `workflow_dispatch` suffit (vérifié) |
+| `HERMES_PUSH_TOKEN` | PAT `contents: write` pour le push git (déclenche les vrais événements) | non — absent ⇒ ré-armement par dispatch | **absent** : le ré-armement fonctionne, mais les runs déclenchés par le push du `GITHUB_TOKEN` arrivent en `action_required` et doivent être approuvés (voir §11) |
 
 Le `GITHUB_TOKEN` du workflow suffit pour l'API (labels, commentaires,
 check-runs, dispatches) ; il ne suffit **pas** pour que le push déclenche la CI
@@ -197,3 +197,54 @@ n'est **pas** utilisée : le modèle InferHub est fixé dans `resolve.py`.
 | `hermes-worker.yml` (ré-armement générique) | non porté | un seul point d'entrée suffit ; le ré-armement est fait par le résolveur |
 | Résolution par hunk | non portée | voir limites §8.2 |
 | Watchdog en cron `*/5` | déclenchement événementiel (`workflow_run`) + manuel | le planificateur GitHub est peu fiable (leçon [WD-EVENT]) et un cron réveille le gate sans événement à traiter |
+
+## 11. Essai sur un conflit réel — 2026-11-11, réussi
+
+Scénario volontairement provocé pour valider la chaîne complète : deux branches
+modifient **la même docstring** de `src/jauge/common/ids.py` (fonction
+`deterministic`), chacune y ajoutant un paragraphe différent.
+
+| Étape | Référence | Résultat |
+|---|---|---|
+| PR A fusionnée | #27 | paragraphe « reproductibilité inter-machine » sur `main` |
+| PR B en conflit réel | #28 | GitHub : `mergeable=CONFLICTING`, `mergeStateStatus=DIRTY` |
+| Détection par le gate | run `43068032014` | `[dispatch] #28 : résolveur lancé sur test/conflit-b` |
+| Résolution + validation + push | run `43076859827` (18:20:52 → 18:28:52) | `[resolver] conflit : src/jauge/common/ids.py` puis `rebase + résolution + push OK` |
+| Preuve du push | commit `650b6365` | commiteur **`hermes-resolver <hermes-resolver@jauge.local>`** |
+| CI ré-armée | run `43079751879` | `lint`, `limits`, `test`, `test-2`, `test-3`, `iac` → tous verts |
+| Fusion | #28, 19:04:42 UTC | fusionnée par la file **Mergify** |
+
+**Résultat sur `main`** : la docstring contient les **deux** paragraphes — celui
+de la PR #27 *et* celui de la PR #28. Ce n'est donc ni un « garde le mien » ni un
+« garde le leur » : c'est une fusion sémantique. Le fichier étant sous `src/`
+(chemin critique), le repli déterministe était **interdit** (`resoudre_heuristique`
+rend `None`) : c'est bien la jambe **InferHub** (`combo/cheap`) qui a produit le
+contenu, validé ensuite par le garde-fou de sortie puis par toute la toolchain.
+
+### Les trois bugs trouvés par cet essai (tous corrigés)
+
+Un essai de bout en bout vaut mieux qu'un selftest : les trois défauts suivants
+étaient invisibles hors conditions réelles, et chacun bloquait **toute**
+résolution automatique.
+
+| # | Bug | Effet | Correctif |
+|---|---|---|---|
+| 1 | `GET /repos/{o}/{r}/pulls` (la **liste**) ne renvoie ni `mergeable` ni `mergeable_state` ; le gate ne lisait que la liste | un conflit réel passait pour un simple retard → le résolveur n'était **jamais** dispatché | PR #29 : `etat_fusion()` rappelle le détail de la PR (3 tentatives, 4 s) |
+| 2 | `hermes-lite.yml` déclarait `actions: read` | `POST …/workflows/{id}/dispatches` → **HTTP 403**, dispatch impossible | PR #32 : `actions: write` |
+| 3 | `hermes-resolver.yml` sans `node` dans le `PATH` ni `TMPDIR` hors de `/tmp`, et `VALIDATION_TIMEOUT` à 200 puis 270 s | validation rouge : `BrokenPipeError` dans `jsii` (aws-cdk-lib lance un processus Node) et timeout avant la fin de `ci-local.sh` | PR #35 (480 s) et #36 (`node` + `TMPDIR` + rapport tronqué par ligne) |
+
+Le troisième bug illustre le garde-fou : validation rouge ⇒ **aucun push**,
+escalade `hermes/intervention-humaine` et rapport sur la PR. Le résolveur n'a
+jamais poussé un arbre non validé.
+
+### Ce qui reste manuel aujourd'hui
+
+Le push du résolveur est fait avec le `GITHUB_TOKEN` (pas de
+`HERMES_PUSH_TOKEN`). Conséquence mesurée : les runs déclenchés par ce push
+arrivent en état **`action_required`** et doivent être approuvés
+(`POST /repos/{o}/{r}/actions/runs/{id}/approve` — 4 runs approuvés à la main
+sur cet essai) avant que Mergify voie `ci-budget` et `stale-base-guard` verts.
+
+Avec un PAT `contents: write` posé en secret `HERMES_PUSH_TOKEN`, le push
+déclenche des runs normaux, sans approbation : la chaîne devient entièrement
+autonome. C'est le seul geste restant pour l'autonomie complète.
