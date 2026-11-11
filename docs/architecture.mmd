@@ -1,0 +1,65 @@
+%% Jauge — architecture overview (docs/ARCHITECTURE.md)
+%% Two planes: the data plane lives in the customer AWS account, the control
+%% plane in the MSP account. Request and response text never crosses the
+%% boundary (ENF-CONF-01): only aggregates, scores and identifiers do.
+%% Layout: top-to-bottom so the picture stays readable in a document; the two
+%% planes remain separate subgraphs, the customer one above the MSP one.
+flowchart TB
+  subgraph CLIENT["Customer AWS account — data plane"]
+    direction LR
+    APPS["Customer<br/>applications"]
+    GWI["AgentCore Gateway<br/>inference target<br/>+ routing rules"]
+    BR["Amazon Bedrock<br/>models"]
+    LOGS["S3<br/>invocation logs"]
+    ATH["Glue + Athena"]
+    CUR["CUR 2.0<br/>invoiced dollars"]
+    SFN["Step Functions<br/>replay"]
+    EVAL["Bedrock<br/>evaluation jobs"]
+    RES["S3<br/>replay results"]
+    PUSH["Aggregate push<br/>Lambda"]
+    ROLE["Cross-account role<br/>external ID<br/>no read on logs"]
+  end
+
+  subgraph MSP["MSP AWS account — control plane"]
+    direction LR
+    PORTAL["Portal<br/>CloudFront + S3"]
+    COG["Cognito"]
+    API["Control-plane API<br/>API Gateway + Lambda"]
+    AGT["Strands agents<br/>AgentCore Runtime"]
+    GWT["AgentCore Gateway<br/>agent tools"]
+    BRM["Amazon Bedrock"]
+    DB["DynamoDB<br/>aggregates, campaigns,<br/>recommendations, audit"]
+    RPT["S3 reports"]
+  end
+
+  APPS --> GWI
+  GWI --> BR
+  BR -.->|logs| LOGS
+  LOGS --> ATH
+  ATH --> PUSH
+  CUR --> PUSH
+  PUSH -->|"aggregates only"| API
+  SFN --> BR
+  SFN --> EVAL
+  EVAL --> RES
+  RES -.->|scores| PUSH
+  GWT -->|"AssumeRole"| ROLE
+  ROLE --> ATH
+  ROLE --> SFN
+  ROLE --> CUR
+  ROLE --> GWI
+  GWT --> DB
+  AGT --> BRM
+  AGT --> GWT
+  PORTAL --> API
+  API --> COG
+  API --> DB
+  API --> AGT
+  API --> RPT
+
+  classDef dp fill:#eef6ff,stroke:#2b6cb0,color:#1a365d
+  classDef cp fill:#fff8ee,stroke:#b7791f,color:#5c3d0e
+  classDef secret fill:#fdecec,stroke:#c53030,color:#742a2a
+  class APPS,GWI,BR,LOGS,ATH,CUR,SFN,EVAL,PUSH dp
+  class PORTAL,COG,API,AGT,GWT,BRM,DB,RPT cp
+  class ROLE,RES secret
