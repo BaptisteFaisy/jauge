@@ -455,24 +455,27 @@ with synthetic logs and fake adapters.
 
 ## 14. Implementation status
 
-This HLD describes the target design. What `main` contains today is the shared
-library — entities (`src/jauge/models/`), the typed error hierarchy and id helpers
-(`src/jauge/common/`), the deterministic engine for request cost, daily
-aggregation, bill reconciliation, Wilson intervals and saving arithmetic
-(`src/jauge/engine/`), the store contract with its in-memory implementation
-(`src/jauge/store/`) — plus four feature modules: evaluation (judge prompt and
-adapters, deterministic checks, the decision rule of §8.4 with its relative
-reading of the current model, human review sub-sample), replay (stratified
-reproducible sampling, executor, cost estimate and cap, Step Functions
-definition), the dated price-table loader, and the Strands agents (orchestrator
-plus four specialists as tools, guardrails, schema-validated outputs, traces and
-sessions). All of it is covered by offline tests, with no AWS call.
+This HLD describes the design as built. **Every module of the build plan
+(`docs/MODULES.md`, M1–M16) is merged on `main`.** Beyond the shared library —
+entities (`src/jauge/models/`), errors and ids (`src/jauge/common/`), the
+deterministic engine (`src/jauge/engine/`), the tenant-scoped store
+(`src/jauge/store/`) — every feature module is delivered: attribution and CUR 2.0
+reconciliation (M1), the price-table loader (M2), the lever rules (M3), sampling
+and replay with cost cap and Step Functions definition (M4), the judge, checks,
+decision rule and human review (M5), staged rollout with rollback and savings
+verification (M6), the Strands agents (M7), the control-plane REST API (M8), the
+monthly report (M9), the infrastructure as code — CDK control plane and
+per-customer CloudFormation template (M10/M11, `infra/`), the demo and the static
+portal (M12/M13, `demo/`, `portal/`), and the acceptance scenarios R1–R13 with
+their negative security tests (M15, `tests/recette/`).
 
-The data plane, the control plane, the demo and the end-to-end acceptance are
-delivered module by module through their own pull requests (`docs/MODULES.md`,
-M1–M16). The README carries the same status table, and
-`docs/TEST-INSTRUCTIONS.md` marks every command that depends on a planned module
-as **planned**, so a judge is never told to run something that does not exist yet.
+The suite is covered by offline tests — **1021 passed, 2 xfailed** on `main` — with
+no AWS call: the real boto3/Bedrock adapters are written but exercised only through
+their interface with fake clients. What is **not** done is not code but gestures: a
+real AWS deployment (accounts, credits, Bedrock enabled — the adapters have never
+run live), the video shoot, and the Devpost submission, all listed in
+`docs/SUBMISSION.md`. The README carries the same per-module status table, and
+`docs/TEST-INSTRUCTIONS.md` states, command by command, what runs today.
 
 ## 15. Glossary
 

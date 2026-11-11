@@ -12,8 +12,10 @@ the one-sentence answer to each of the four judging criteria (§19.2).
 
 ## 1. Submission checklist
 
-Legend — **Done**: already true in the repository. **Pending**: needs a human
-gesture or a module still in flight. Each pending line names its owner action.
+Legend — **Done**: already true in the repository. **Partly done**: code
+delivered, a live step remains. **Pending**: needs a human action outside the
+repository (AWS deployment, video, Devpost submission). Every module of
+`docs/MODULES.md` (M1–M16) is merged on `main`; no line waits on code any more.
 
 ### 1.1 Track and description
 
@@ -21,15 +23,15 @@ gesture or a module still in flight. Each pending line names its owner action.
 |---|---|---|---|
 | 1 | Track 2 selected, AWS AI services listed | **Pending** | Devpost form. Services to list: Strands Agents, Amazon Bedrock (invocation logs, model evaluation with an LLM judge, service tiers, batch), AgentCore Runtime, AgentCore Gateway |
 | 2 | English description: features, problem, measured results | **Pending** | Draft from [`README.md`](../README.md) and [`HLD.md`](HLD.md) §1; measured results only after the shoot table in [`DEMO-SCRIPT.md`](DEMO-SCRIPT.md#43-numbers-to-write-down-during-the-shoot) is filled |
-| 3 | Public portal URL + demo credentials in the test instructions | **Pending** | URL into [`TEST-INSTRUCTIONS.md`](TEST-INSTRUCTIONS.md#3-demo-accounts-planned) once the portal is deployed (M13) |
+| 3 | Public portal URL + demo credentials in the test instructions | **Pending** | Portal + API code delivered (M8, M13) and runnable locally; the public URL still needs a real AWS deployment, then it goes into [`TEST-INSTRUCTIONS.md`](TEST-INSTRUCTIONS.md#3-demo-accounts) |
 | 4 | Private repository shared with `testing@devpost.com` and `aws-msp@amazon.com` | **Pending** | GitHub → Settings → Collaborators, two read-only invites |
 | 5 | Code actually calls an AWS AI service at runtime | **Partly done** | The real adapters are in the repository: `BedrockModeleClient` (`bedrock-runtime`, `Converse`) in `src/jauge/replay/client.py`, and `BedrockJugeClient` (Bedrock evaluation jobs + S3 dataset) in `src/jauge/evaluation/judge.py`. What remains: run them **live** against AWS in the demo environment and show it in the video — the test suite stays offline on purpose |
 | 6 | ~3-minute video, public on YouTube, English, no third-party brand or music | **Pending** | Script ready: [`DEMO-SCRIPT.md`](DEMO-SCRIPT.md) |
 | 7 | Architecture diagram | **Done** | [`architecture.mmd`](architecture.mmd) + [`architecture.svg`](architecture.svg), explained in [`ARCHITECTURE.md`](ARCHITECTURE.md) |
 | 8 | High-Level Design document | **Done** | [`HLD.md`](HLD.md) |
-| 9 | Test instructions for judges | **Done** | [`TEST-INSTRUCTIONS.md`](TEST-INSTRUCTIONS.md) — commands that depend on unfinished modules are marked **planned** |
+| 9 | Test instructions for judges | **Done** | [`TEST-INSTRUCTIONS.md`](TEST-INSTRUCTIONS.md) — reflects the real state of `main`: what runs offline, the one blocked command (`uvicorn jauge.api.app:app`, no module-level `app`) and its verified launcher |
 | 10 | README as submission front page | **Done** | [`README.md`](../README.md) |
-| 11 | Solution kept online until 22 January 2027 | **Pending** | Minimal traffic baseline from January; AWS Budgets alarms already planned per account (§17.3) |
+| 11 | Solution kept online until 22 January 2027 | **Pending** | Minimal traffic baseline from January; AWS Budgets alarms delivered as code per account (§17.3) |
 
 ### 1.2 Repository hygiene before submission
 
@@ -134,9 +136,9 @@ deterministic core of the claim.
 | `ENF-REP-01` infrastructure as code | `infra/control-plane/` (M10), `infra/client-account/` (M11), README deployment section |
 | `ENF-OBS-01` traces and alarms | [`ARCHITECTURE.md`](ARCHITECTURE.md#12-observability) |
 | `R10` MSP role denied on the log bucket | M15 acceptance test; IAM screenshot in the video |
-| `R11` customer A refused on customer B data | `tests/isolation/` (per module, M15) |
+| `R11` customer A refused on customer B data | `tests/api/test_isolation.py` (36 cases), `tests/recette/test_r11_cloisonnement.py` (M15) |
 
-Modules still in flight are listed in `docs/MODULES.md`; each of them ships its
+Every module of `docs/MODULES.md` (M1–M16) is merged on `main`; each shipped its
 own pull request with its own tests.
 
 ---
@@ -170,7 +172,7 @@ claims made in the description.
 
 | Gap | Consequence for judging | Mitigation |
 |---|---|---|
-| The public portal is not deployed yet (M13), and the API (M8) and demo seed (M12) are still in pull requests | Judges cannot click a URL until they land | Local run instructions are complete and offline; portal URL added when deployed |
-| `uv run python -m demo.seed` and `uvicorn jauge.api.app:app` do not exist yet | The quickstart is partly forward-looking | Marked **planned** in [`TEST-INSTRUCTIONS.md`](TEST-INSTRUCTIONS.md); what runs today (`uv sync`, `uv run pytest`) is stated as the current state |
+| The public portal is not deployed yet — the code is merged (M8 API, M12 demo, M13 portal) but a live URL needs a real AWS account (credits, Bedrock enabled) | Judges cannot click a URL until they land | Local run instructions are complete and offline (`demo.seed` + the launcher); portal URL added once deployed |
+| `uv run uvicorn jauge.api.app:app` is blocked: `src/jauge/api/app.py` exposes only `creer_app()`, no module-level `app` | The one-line portal command fails with `Attribute "app" not found` | Marked **blocked** in [`TEST-INSTRUCTIONS.md`](TEST-INSTRUCTIONS.md) with a verified launcher; the clean fix is `app = creer_app()` in that file. `uv run python -m demo.seed` works as documented |
 | Multi-turn and tool-using applications are out of v1 | A judge may ask about agentic workloads | Declared as a limit in `HLD.md` §2.2 and §13.1, with the reason (replay fidelity) |
 | Judge bias is mitigated, not eliminated | Legitimate question on measurement rigour | Deterministic checks, 30-pair human review, self-agreement column, declared in `HLD.md` §8.7 |

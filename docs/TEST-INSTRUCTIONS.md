@@ -1,17 +1,20 @@
 # Jauge — test instructions for judges
 
-**Everything in section 1 runs today, offline, in under a minute.** It needs no
-AWS account, no network access and no credentials.
+**Everything here runs today, offline.** Section 1 needs no AWS account, no
+network access and no credentials. Sections 2 to 4 run the seeded demo (console
+summary, API and portal) on your machine; they are delivered, with one caveat: the
+single-command `uvicorn jauge.api.app:app` form is blocked (no module-level `app`
+object), so section 2 gives a verified launcher instead.
 
-Sections 2 to 4 describe the demo environment (portal, seeded data, demo
-accounts). Those parts are **planned**: they belong to modules that are still in
-flight (`docs/MODULES.md`, M8 API, M12 demo, M13 portal). Each step below carries
-a status line so nothing is presented as working before it is.
+What is **not** done yet is a real AWS deployment (a public portal URL), the video
+and the Devpost submission — see [`SUBMISSION.md`](SUBMISSION.md). Every step below
+carries a status line so nothing is presented as working before it is.
 
 | Status | Meaning |
 |---|---|
 | **Available** | In the repository on `main`, runs as written |
-| **Planned** | Not in the repository yet; the interface is specified here, not implemented |
+| **Blocked** | In the repository, but a known code gap stops one command; the workaround is given |
+| **Pending gesture** | Needs a human action outside the repository (AWS deployment, video, submission) |
 
 ---
 
@@ -38,12 +41,13 @@ Expected output — the last line is the summary (`-q` is already set in
 
 ```
 ...                                                                      [100%]
-348 passed in 1:41
+1021 passed, 2 xfailed in 2:11
 ```
 
-The count grows as modules land; the summary line is the source of truth.
+That is the state of `main` at the time of writing; the summary line pytest prints
+is the source of truth (the duration depends on your machine).
 
-The suite covers what is delivered today:
+The suite covers every delivered module:
 
 | Test file | What it proves |
 |---|---|
@@ -58,6 +62,15 @@ The suite covers what is delivered today:
 | `tests/pricing_data/test_loader.py`, `test_dates.py`, `test_seed.py` | Dated price-table loader and validation: an invalid row names the offending line; a price change takes effect on its date without recomputing the past |
 | `tests/replay/test_sampling.py`, `test_executor.py`, `test_cost.py`, `test_client.py`, `test_statemachine.py` | Stratified reproducible sample (same seed → same sample), replay of the current model twice for its own variability, Flex-tier runs, campaign cost estimate and cap, Step Functions definition |
 | `tests/agents/test_orchestrator.py`, `test_tools.py`, `test_guardrails.py`, `test_schemas.py`, `test_ports.py`, `test_traces_sessions.py`, `test_strands_integration.py` | Orchestrator plus four specialists used as tools, guardrails (no request text reaches an agent tool), schema-validated outputs, traces and sessions — all offline |
+| `tests/attribution/` | Invocation-log parsing, tagging, aggregation, CUR 2.0 reconciliation, unattributed spend and its causes, performance on a large log volume |
+| `tests/levers/` | The savings-lever rules (oversized model, missing prompt cache, deferrable processing, repeated requests, retries, over-long outputs), estimated saving and ranking |
+| `tests/api/` | Every control-plane endpoint, authentication and roles, JWKS verification, audit, settings, and 36 tenant-isolation cases (customer B on customer A's data → refusal) |
+| `tests/reports/` | Monthly report builder, written synthesis through the LLM interface, S3 storage, confidentiality (no request text in a report) |
+| `tests/rollout/` | Gateway-rule creation, staged rollout, automatic rollback, ticket for an app off-gateway, constant-volume savings verification, confidentiality |
+| `tests/infra/`, `tests/infra-client/` | CDK assertions on the control plane and Lambda packaging; the per-customer CloudFormation template, its least-privilege cross-account role and explicit denials |
+| `tests/portal/` | The static portal is served by the API, its structure, and the endpoints it calls |
+| `tests/demo/` | The synthetic applications, traffic generator, CUR lines, scenario and seed summary — deterministic, no real data |
+| `tests/recette/` | The end-to-end acceptance scenarios R1–R13, including the R10/R11 negative security tests and the R13 documentation-consistency checks |
 
 ### 1.3 The same checks the CI runs
 
@@ -86,64 +99,97 @@ file/function size limits (`scripts/check_limits.py`), `pytest`, and
 
 ---
 
-## 2. Local demo (planned)
+## 2. Local demo (available)
 
-> **Status: planned.** `demo/` (M12) and `src/jauge/api/` (M8) are not in the
-> repository yet. The commands below are the intended interface and are listed so
-> that the target is explicit. Running them today fails with
-> `No module named 'demo'` / `No module named 'jauge.api'`.
+> **Status: available.** `demo/` (M12) and `src/jauge/api/` (M8) are merged. The
+> console demo runs as written; the portal needs the launcher below because the
+> one-line `uvicorn` form is blocked.
 
 ```bash
 uv sync --all-groups
-uv run python -m demo.seed                    # populate the in-memory store
-uv run uvicorn jauge.api.app:app --reload     # API + portal on http://127.0.0.1:8000
+uv run python -m demo.seed     # seeds an in-memory store, prints the summary
 ```
 
-`demo.seed` will create the demonstration environment of specification §18.1:
+`demo.seed` creates the demonstration environment of specification §18.1 and
+prints the figures the code computed. **Demo output, not a customer result** — on
+`main` today it reports a mean reconciliation gap of **0.57 %** (14/14 days inside
+the 3 % target), an estimated **853.52 $/month** of savings across six detected
+levers, a `ticket-classifier` recommendation `PENDING_APPROVAL`, a
+`support-assistant` campaign `REJECTED` with evidence, and a `doc-summarizer`
+rollout at stage 50 % with online quality 0.995:
 
-| Tenant | Application | Current model | Scenario |
+| Tenant | Application | Current model | Scenario (as seeded) |
 |---|---|---|---|
-| `client-a` | `support-assistant` | large model | Candidate too weak → rejected with evidence |
-| `client-a` | `ticket-classifier` | large model | Candidate accepted → staged rollout to a small model |
-| `client-a` | `nightly-summarizer` | large model, Standard tier | Deferrable processing lever |
-| `client-b` | `doc-qa` | medium model | Fleet view, second tenant |
+| `t-demo-a` | `support-assistant` | large model | Cheaper candidate **rejected** with evidence — "keep your model" |
+| `t-demo-a` | `ticket-classifier` | large model (oversized) | Smaller candidate accepted → recommendation **pending approval** |
+| `t-demo-a` | `doc-summarizer` | large model, Standard tier (nightly) | Deferrable-processing lever → rollout **in progress** at stage 50 % |
+| `t-demo-b` | `kb-search` | medium model | Fleet view, second tenant |
 
 All requests are generated. No real customer data is used at any point.
 
+### 2.1 The portal and API (blocked one-liner, verified launcher)
+
+> **Status: blocked for the one-line form.** `src/jauge/api/app.py` exposes only
+> the `creer_app()` factory, not a module-level `app`, so
+> `uv run uvicorn jauge.api.app:app --reload` fails with `Attribute "app" not
+> found in module "jauge.api.app"`. It would work once `app = creer_app()` is added
+> to that file. Until then, use this launcher from the repository root — it seeds a
+> store, then serves the API + portal on http://127.0.0.1:8000:
+
+```bash
+cat > _serve.py <<'PY'
+import uvicorn
+from demo.seed import peupler_store
+from jauge.store.memory import MemoryStore
+from jauge.api.app import creer_app
+store = MemoryStore(); peupler_store(store)
+uvicorn.run(creer_app(store=store, mode_demo=True), host="127.0.0.1", port=8000)
+PY
+uv run python _serve.py        # then open http://127.0.0.1:8000
+```
+
+A bare `uv run uvicorn --factory jauge.api.app:creer_app` also starts the server,
+but on an **empty** store (no demo data), because the factory does not seed. The
+launcher above is the way to see the portal populated.
+
 ---
 
-## 3. Demo accounts (planned)
+## 3. Demo accounts
 
-> **Status: planned.** `src/jauge/api/auth.py` does not exist yet (M8). The
-> interface below is the intended demo mode, described so that judges and the
-> team work from the same target.
+> **Status: available.** `src/jauge/api/auth.py` is merged (M8). In demo mode the
+> API reads identity from two headers instead of a Cognito token. Demo mode is on
+> by default (`JAUGE_MODE_DEMO=1`) and is **refused when `JAUGE_ENV=production`**.
+> Start the server with the launcher of section 2.1 first.
 
-Demo mode is enabled by a single environment variable and is **refused when
-`JAUGE_ENV=production`**. It lets a judge switch identity with two HTTP headers
-instead of going through Cognito:
+The two demo tenants are `t-demo-a` (customer A, three applications) and
+`t-demo-b` (customer B, one application). The six roles are the values of
+`RoleUtilisateur`:
 
 | Header | Value | Effect |
 |---|---|---|
-| `X-Jauge-Tenant` | `client-a` or `client-b` | Selects the tenant the request is scoped to |
-| `X-Jauge-Role` | `platform-admin`, `finops-analyst`, `account-manager`, `app-owner`, `reviewer`, `executive` | Selects the role and therefore the permitted actions |
+| `X-Jauge-Tenant` | `t-demo-a` or `t-demo-b` | Selects the tenant the request is scoped to |
+| `X-Jauge-Role` | `administrateur_plateforme`, `analyste_finops`, `responsable_compte`, `responsable_application`, `relecteur`, `directeur` | Selects the role and therefore the permitted actions |
 
 | Demo identity | Headers | Sees | Can |
 |---|---|---|---|
-| MSP platform admin | `X-Jauge-Tenant: client-a`, `X-Jauge-Role: platform-admin` | Everything, both tenants | Everything |
-| MSP FinOps analyst | `client-a` / `finops-analyst` | Aggregates of both tenants | Launch campaigns, prepare recommendations |
-| Customer A application owner | `client-a` / `app-owner` | Customer A only | Approve or reject a recommendation on their applications |
-| Customer A reviewer | `client-a` / `reviewer` | Customer A, request text (data-plane UI only) | Review a 30-pair sub-sample |
-| Customer B executive | `client-b` / `executive` | Customer B only | Read dashboards and reports |
+| MSP platform admin | `X-Jauge-Tenant: t-demo-a`, `X-Jauge-Role: administrateur_plateforme` | Everything, both tenants | Everything |
+| MSP FinOps analyst | `t-demo-a` / `analyste_finops` | Aggregates of both tenants | Launch campaigns, prepare recommendations |
+| Customer A application owner | `t-demo-a` / `responsable_application` | Customer A only | Approve or reject a recommendation on their applications |
+| Customer A reviewer | `t-demo-a` / `relecteur` | Customer A, request text (data-plane UI only) | Review a 30-pair sub-sample |
+| Customer B executive | `t-demo-b` / `directeur` | Customer B only | Read dashboards and reports |
+
+The account pre-filled for judges is `juge-hackathon` (role
+`administrateur_plateforme`, tenant `t-demo-a`); `GET /v1/demo/identity` returns it
+together with the header values to use.
 
 **Negative test to try yourself** (this is the security claim, so verify it):
-call any endpoint with `X-Jauge-Tenant: client-b` while requesting a customer A
-resource. The answer must be a refusal (`403`, `CloisonnementError`), never an
-empty list and never another tenant's data.
+request a customer A resource while scoped to customer B. The answer is a refusal
+(`403`, `CloisonnementError`) — never an empty list, never another tenant's data:
 
 ```bash
 # expected: 403, not 200 with someone else's data
 curl -s -o /dev/null -w '%{http_code}\n' \
-  -H 'X-Jauge-Tenant: client-b' -H 'X-Jauge-Role: executive' \
+  -H 'X-Jauge-Tenant: t-demo-b' -H 'X-Jauge-Role: directeur' \
   http://127.0.0.1:8000/v1/applications/support-assistant
 ```
 
@@ -152,10 +198,14 @@ credentials published in the submission form and nowhere else.
 
 ---
 
-## 4. Guided test path (planned — minute by minute)
+## 4. Guided test path (minute by minute)
 
-> **Status: planned.** Each step depends on the portal (M13) and the API (M8).
-> Timing assumes a warm environment.
+> **Status: available.** Each step runs against the seeded demo store through the
+> portal served by the launcher of section 2.1 (portal M13 + API M8 are merged).
+> Timing assumes a warm environment. Read screens (overview, levers, campaign,
+> recommendation, costs, reconciliation) and the approval mutation are verified;
+> some later states (a rollout already at stage 50 %, the rejected candidate) are
+> pre-set by the seed so you can observe them directly.
 
 | Time | Step | What you should see | Requirement |
 |---|---|---|---|
@@ -190,7 +240,8 @@ account by following the README) are console/deployment checks, not UI checks.
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `No module named 'demo'` / `'jauge.api'` | Those modules are not delivered yet (M12 / M8) | Use section 1: the test suite is the runnable part today |
+| `Attribute "app" not found in module "jauge.api.app"` | `src/jauge/api/app.py` exposes only the `creer_app()` factory, no module-level `app` | Use the launcher of section 2.1 (or `uvicorn --factory jauge.api.app:creer_app` for an empty store); the clean fix is `app = creer_app()` in that file |
+| `ModuleNotFoundError: demo` when running the launcher | The launcher was not run from the repository root, so `demo`/`jauge` are not importable | `cd` to the repository root, then `uv run python _serve.py` |
 | `uv run pytest -q` prints dots but no summary | `-q` is already set in `pyproject.toml`; a second `-q` silences the summary | Run `uv run pytest` |
 | `uv: command not found` | `uv` not installed or not on `PATH` | `curl -LsSf https://astral.sh/uv/install.sh \| sh`, then `export PATH="$HOME/.local/bin:$PATH"` |
 | `ModuleNotFoundError: jauge` | Running `pytest` from outside the project or without `uv run` | Use `uv run pytest` from the repository root |
