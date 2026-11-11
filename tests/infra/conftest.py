@@ -3,6 +3,9 @@
 Aucun appel AWS : la pile est synthétisée en mémoire dans une `App` de test et
 inspectée par `aws_cdk.assertions.Template.from_stack`. Les fabriques
 `config_test` / `stack_test` vivent dans `support.py` (importable par les tests).
+
+Les imports CDK sont **paresseux** : le job CI `test` collecte ces modules sans
+installer le groupe `infra`, il ne fait que les désélectionner.
 """
 
 from __future__ import annotations
