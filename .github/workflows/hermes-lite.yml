@@ -24,7 +24,10 @@ permissions:
   contents: write
   pull-requests: write
   checks: write
-  actions: read
+  # `actions: write` est indispensable pour dispatcher `hermes-resolver.yml` sur
+  # un vrai conflit : avec `actions: read`, l'API répond 403 et le résolveur
+  # n'est jamais lancé (constaté le 2026-11-11 sur la PR #28).
+  actions: write
 
 concurrency:
   # Groupe PAR PR : deux PR différentes ne s'annulent plus mutuellement.
