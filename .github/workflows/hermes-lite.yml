@@ -2,10 +2,16 @@ name: Hermes Lite (gate)
 
 # [HERMES-REFRESH] Gate « fraîcheur exigée au merge ».
 # La logique complète vit dans .github/hermes/gate.py (stdlib seule).
+#
+# Déclencheurs : `pull_request` (évaluation immédiate) et `workflow_run` sur la
+# CI terminée (une seule évaluation par fin de CI, au lieu d'une par check —
+# l'ancien déclencheur `check_run` créait une boucle : le gate crée son propre
+# check, ce qui le relançait, et chaque relance annulait la précédente).
 on:
   pull_request:
     types: [opened, reopened, ready_for_review, synchronize]
-  check_run:
+  workflow_run:
+    workflows: ["CI"]
     types: [completed]
   workflow_dispatch:
     inputs:
@@ -18,6 +24,7 @@ permissions:
   contents: write
   pull-requests: write
   checks: write
+  actions: read
 
 concurrency:
   group: hermes-lite-${{ github.repository }}
@@ -29,6 +36,9 @@ env:
   # noms de jobs CI requis avant merge, séparés par des virgules.
   # Vide = merge dès que la PR est fraîche (à éviter en production).
   HERMES_REQUIRED_CHECKS: ${{ vars.HERMES_REQUIRED_CHECKS || '' }}
+  # HERMES_AUTO_REBASE=0 : pas de rebase serveur par le gate (le push du
+  # GITHUB_TOKEN ne relance pas la CI : le nouveau head n'aurait aucun check).
+  HERMES_AUTO_REBASE: ${{ vars.HERMES_AUTO_REBASE || '1' }}
   MERGE_METHOD: rebase
 
 jobs:

@@ -337,6 +337,11 @@ def main():
         # Un check vient de finir : ré-évalue les PR dont le head porte ce check.
         sha = event["check_run"]["head_sha"]
         prs = [p for p in list_open_prs(repo, token) if p["head"]["sha"] == sha]
+    elif event_name == "workflow_run":
+        # La CI vient de terminer : ré-évalue les PR dont le head porte ce SHA.
+        # (Un déclencheur par fin de CI, pas un par check : pas de boucle.)
+        sha = event["workflow_run"]["head_sha"]
+        prs = [p for p in list_open_prs(repo, token) if p["head"]["sha"] == sha]
     else:
         prs = []
 
