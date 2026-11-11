@@ -2,7 +2,12 @@ name: CI
 
 # Budget CI : verdict <= 5 minutes (règle user 2026-10-24). Chaque job porte
 # timeout-minutes: 5, un concurrency qui annule le run précédent, et un
-# checkout superficiel. Les dépendances passent par uv avec cache du dépôt uv.
+# checkout superficiel.
+#
+# Cache : les runners sont self-hosted et persistants (r630) ; le cache uv
+# (/home/baptiste/.cache/uv) y est déjà chaud et préchauffé. Mesuré : sync
+# 4 s, suite de tests 6 s. Pas de `actions/cache` ici : copier 700 Mo de
+# cache coûtait plus de temps que l'installation qu'il évitait.
 
 on:
   pull_request:
@@ -20,6 +25,7 @@ concurrency:
 env:
   # uv est installé dans ~/.local/bin sur les runners self-hosted (r630).
   PATH: /home/baptiste/.local/bin:/usr/local/bin:/usr/bin:/bin
+  UV_CACHE_DIR: /home/baptiste/.cache/uv
   UV_NO_PROGRESS: "1"
 
 jobs:
@@ -60,11 +66,6 @@ jobs:
         with:
           fetch-depth: 1
           persist-credentials: false
-      - uses: actions/cache@v4
-        with:
-          path: /home/baptiste/.cache/uv
-          key: uv-jauge-${{ hashFiles('uv.lock') }}-dev-agents
-          restore-keys: uv-jauge-${{ hashFiles('uv.lock') }}-
       - name: Dépendances + tests
         run: |
           set -euo pipefail
@@ -81,11 +82,6 @@ jobs:
         with:
           fetch-depth: 1
           persist-credentials: false
-      - uses: actions/cache@v4
-        with:
-          path: /home/baptiste/.cache/uv
-          key: uv-jauge-${{ hashFiles('uv.lock') }}-dev-infra
-          restore-keys: uv-jauge-${{ hashFiles('uv.lock') }}-
       - name: CloudFormation (cfn-lint) + CDK (assertions)
         run: |
           set -euo pipefail
