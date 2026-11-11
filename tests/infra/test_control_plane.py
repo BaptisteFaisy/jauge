@@ -11,7 +11,7 @@ AWS Budgets, alarmes) et l'exigence « aucun compartiment public ».
 from __future__ import annotations
 
 import pytest
-from support import config_test, stack_test
+from tests.infra.support import config_test, stack_test
 
 pytestmark = pytest.mark.infra
 
