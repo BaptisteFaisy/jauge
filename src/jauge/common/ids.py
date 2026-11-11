@@ -41,6 +41,10 @@ def deterministic(*parties: object) -> str:
     L'empreinte ne dépend que des parties fournies : elle est identique d'une
     machine à l'autre et d'une exécution à l'autre, ce qui permet de rejouer un
     tirage ou de retrouver un agrégat sans base de données partagée.
+
+    Seize caractères hexadécimaux (64 bits) : la probabilité de collision reste
+    négligeable aux volumes visés (un million de requêtes par jour), et une
+    collision ne ferait que fusionner deux agrégats — jamais fuiter du texte.
     """
     joint = "|".join(str(partie) for partie in parties)
     return hashlib.sha256(joint.encode("utf-8")).hexdigest()[:16]
