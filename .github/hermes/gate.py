@@ -130,7 +130,7 @@ def required_checks_green(repo, token, pr, required):
     return True
 
 
-def declencher_resolveur(pr, dry=False):
+def declencher_resolveur(pr, dry=False, forcer=False):
     """[M16] Vrai conflit → lance `hermes-resolver.yml` sur cette PR.
 
     Le résolveur rebase, résout (jambe InferHub puis repli déterministe),
@@ -138,17 +138,24 @@ def declencher_resolveur(pr, dry=False):
     rapporte sur la PR. La logique (anti-doublon, backoff, escalade) vit dans
     `dispatch.py`, testée par `dispatch.py --selftest`.
 
+    `forcer=True` dissocie le résolveur du dry-run : quand Mergify est le pilote
+    de merge (HERMES_LITE_DRY_RUN=1), le gate ne doit plus fusionner, mais il
+    reste le seul à détecter les vrais conflits et à envoyer le résolveur.
+
     Best effort : une erreur de dispatch ne doit jamais empêcher le gate de
     conclure son verdict.
     """
     try:
         import dispatch
 
-        dispatch.dispatch_resolver(pr, dry=dry)
+        dispatch.dispatch_resolver(pr, dry=dry and not forcer)
     except Exception as e:  # noqa: BLE001 - best effort, jamais bloquant
         print("[gate] #%s dispatch résolveur : %r" % (pr.get("number"), e), flush=True)
 
-def settle_after_refresh(repo, token, num, required, attempts=20, pause=10, dry=False):
+
+def settle_after_refresh(
+    repo, token, num, required, attempts=20, pause=10, dry=False, dispatch_resolveur=True
+):
     """[HERMES-REFRESH] Ré-évalue la PR après le rebase serveur, DANS CE RUN.
 
     Le push effectué par `update-branch` est un push de bot : il ne déclenche
@@ -186,7 +193,7 @@ def settle_after_refresh(repo, token, num, required, attempts=20, pause=10, dry=
             )
             set_label(pr, repo, token, LABEL_CONFLIT, True)
             set_label(pr, repo, token, LABEL_OK, False)
-            declencher_resolveur(pr, dry=dry)
+            declencher_resolveur(pr, dry=dry, forcer=dispatch_resolveur)
             return "conflict"
         set_label(pr, repo, token, LABEL_OK, True)
         create_check(
@@ -230,7 +237,7 @@ def try_merge(repo, token, pr, required):
     return "error"
 
 
-def handle_pr(pr, repo, token, required, dry=False, auto_rebase=True):
+def handle_pr(pr, repo, token, required, dry=False, auto_rebase=True, dispatch_resolveur=True):
     num = pr["number"]
     sha = pr["head"]["sha"]
     base_ref = pr["base"]["ref"]
@@ -257,7 +264,7 @@ def handle_pr(pr, repo, token, required, dry=False, auto_rebase=True):
         )
         set_label(pr, repo, token, LABEL_CONFLIT, True)
         set_label(pr, repo, token, LABEL_OK, False)
-        declencher_resolveur(pr, dry=dry)
+        declencher_resolveur(pr, dry=dry, forcer=dispatch_resolveur)
         return "conflict"
     set_label(pr, repo, token, LABEL_CONFLIT, False)
 
@@ -280,7 +287,14 @@ def handle_pr(pr, repo, token, required, dry=False, auto_rebase=True):
         if r == "refreshed":
             # Le push du rebase est un push de bot : aucun workflow ne se
             # déclenche. Ré-évaluation et merge DANS CE RUN.
-            return settle_after_refresh(repo, token, num, required, dry=dry)
+            return settle_after_refresh(
+                repo,
+                token,
+                num,
+                required,
+                dry=dry,
+                dispatch_resolveur=dispatch_resolveur,
+            )
         if r == "conflict":
             # Le rebase serveur a été refusé : conflit réel après tout.
             create_check(
@@ -294,7 +308,7 @@ def handle_pr(pr, repo, token, required, dry=False, auto_rebase=True):
             )
             set_label(pr, repo, token, LABEL_CONFLIT, True)
             set_label(pr, repo, token, LABEL_OK, False)
-            declencher_resolveur(pr, dry=dry)
+            declencher_resolveur(pr, dry=dry, forcer=dispatch_resolveur)
         return r
 
     set_label(pr, repo, token, LABEL_OK, True)
@@ -341,6 +355,9 @@ def main():
     ]
     dry = os.environ.get("HERMES_LITE_DRY_RUN") == "1"
     auto_rebase = os.environ.get("HERMES_AUTO_REBASE", "1") == "1"
+    # Mergify pilote le merge ? Le gate ne merge plus, mais il dispatche quand
+    # même le résolveur sur un vrai conflit (Mergify ne résout pas les conflits).
+    dispatch_resolveur = os.environ.get("HERMES_DISPATCH_RESOLVEUR", "1") == "1"
 
     for lbl, couleur in (
         (LABEL_OK, "0e8a16"),

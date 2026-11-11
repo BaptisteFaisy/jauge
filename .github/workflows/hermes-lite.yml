@@ -42,6 +42,10 @@ env:
   # HERMES_AUTO_REBASE=0 : pas de rebase serveur par le gate (le push du
   # GITHUB_TOKEN ne relance pas la CI : le nouveau head n'aurait aucun check).
   HERMES_AUTO_REBASE: ${{ vars.HERMES_AUTO_REBASE || '1' }}
+  # Mergify est le pilote de merge (HERMES_LITE_DRY_RUN=1) mais ne résout PAS les
+  # conflits : le gate continue donc de dispatcher le résolveur Hermes sur un vrai
+  # conflit, même en dry-run. Mettre à 0 pour couper complètement le résolveur.
+  HERMES_DISPATCH_RESOLVEUR: ${{ vars.HERMES_DISPATCH_RESOLVEUR || '1' }}
   MERGE_METHOD: rebase
 
 jobs:
