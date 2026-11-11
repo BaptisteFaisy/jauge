@@ -9,6 +9,11 @@ Jauge is a managed service sold by an AWS MSP: a subscription plus a share of
 verified savings. It is built for the **AWS MSP AI Hackathon** — Track 2,
 *Deliver AI-Driven Outcomes for Customers*.
 
+> **Live portal:** https://baptistefaisy.github.io/jauge/ — the demo portal, published on GitHub Pages
+> from this repository. It runs on a recorded snapshot of the real API (no
+> backend), so approvals and rollouts are simulated in your browser; every figure
+> shown was computed by the code, never by a language model.
+>
 > The normative specification and the internal working notes are in French under
 > `docs/fr/`. Every submission deliverable — this README, the High-Level Design,
 > the architecture document, the portal — is in English.
@@ -187,6 +192,18 @@ eight detected levers, a `ticket-classifier` recommendation pending approval, a
 rollout at stage 50 % with online quality 0.995.
 
 ### See it in the portal
+
+Two ways to open it:
+
+| Mode | Where | Data | Writes |
+|---|---|---|---|
+| **Public, static** | https://baptistefaisy.github.io/jauge/ (GitHub Pages, published by `.github/workflows/pages.yml`) | Snapshot `portal/data/demo.json`, recorded from the real API by `scripts/export_portail_statique.py` | Simulated in the browser (decision, staged rollout, rollback); lost on reload |
+| **Local, live** | `uv run uvicorn jauge.api.app:app` | The seeded in-memory store, through the real modules | Real: the API writes to the store and the audit log |
+
+Both serve the same portal code. In static mode `portal/js/statique.js` answers
+instead of the network — with the **same** JSON shapes, the same tenant
+isolation (403 `tenant_isolation_violation`) and the same refusal to roll out
+without approval (409 `approval_required`). The header says which mode is live.
 
 The static portal (`portal/`, no build step) is served by the control-plane API.
 One command starts everything — the ASGI entry point `jauge.api.app:app` seeds

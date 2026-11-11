@@ -1,0 +1,70 @@
+name: Pages
+
+# Publie le portail sur GitHub Pages : https://baptistefaisy.github.io/jauge/
+#
+# Le portail est une SPA **sans étape de build** (HTML + modules ES natifs, aucun
+# npm) : le job se contente de régénérer l'instantané de démonstration puis
+# d'emballer `portal/`. L'instantané est produit par la vraie application FastAPI
+# (`scripts/export_portail_statique.py`) : les formes JSON publiées sont celles
+# de l'API, jamais des données recopiées à la main.
+#
+# Deux jobs : `build` sur nos runners self-hosted (il faut uv + le dépôt),
+# `deploy` sur un runner hébergé GitHub — c'est l'environnement `github-pages`
+# qui pousse l'artefact, avec le jeton OIDC.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "portal/**"
+      - "scripts/export_portail_statique.py"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: build
+    runs-on: [self-hosted, jauge-worker]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Régénérer l'instantané de démonstration
+        run: |
+          set -euo pipefail
+          export PATH="/home/baptiste/.local/bin:$PATH"
+          export UV_CACHE_DIR=/home/baptiste/.cache/uv
+          uv sync --frozen --all-groups
+          uv run python scripts/export_portail_statique.py
+      - name: Préparer Pages
+        uses: actions/configure-pages@v5
+      - name: Empaqueter le portail
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: portal
+
+  deploy:
+    name: deploy
+    needs: build
+    # Runner hébergé : seul l'environnement `github-pages` peut publier, et le
+    # dépôt est public donc les minutes hébergées ne sont pas facturées.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publier sur GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
