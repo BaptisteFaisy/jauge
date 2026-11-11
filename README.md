@@ -108,9 +108,10 @@ design rationale: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 ## What is in this repository today
 
 Status on `main`, stated plainly: **every module of the build plan is merged** —
-M1 to M16 of [`docs/MODULES.md`](docs/MODULES.md). What is left is not code but
-gestures: a real AWS deployment, the video shoot, and the Devpost submission
-(see [`docs/SUBMISSION.md`](docs/SUBMISSION.md)).
+M1 to M18 of [`docs/MODULES.md`](docs/MODULES.md), including the wiring of the
+agent and API ports onto the real modules (M17) and the pre-submission finishes
+(M18). What is left is not code but gestures: a real AWS deployment, the video
+shoot, and the Devpost submission (see [`docs/SUBMISSION.md`](docs/SUBMISSION.md)).
 
 | Area | Status |
 |---|---|
@@ -132,6 +133,7 @@ gestures: a real AWS deployment, the video shoot, and the Devpost submission
 | CDK control plane (M10) + single per-customer CloudFormation template (M11) | **Delivered** — `infra/control-plane/`, `infra/client-account/` |
 | Synthetic-traffic demo and offline seed (M12), static no-build portal (M13) | **Delivered** — `demo/`, `portal/` |
 | End-to-end acceptance R1–R13, including negative security tests (M15) | **Delivered** — `tests/recette/` |
+| Real adapters wiring the agent and API ports onto the modules (M17), seeded ASGI entry point, `/health` probe, rollout driven through the API (M18) | **Delivered** — `src/jauge/integration/`, `jauge.api.app:app` |
 
 The whole test suite runs offline — no AWS account, no network, no credentials.
 The real boto3/Bedrock adapters are written but exercised only through their
@@ -224,6 +226,7 @@ minute-by-minute test path: [`docs/TEST-INSTRUCTIONS.md`](docs/TEST-INSTRUCTIONS
 | `src/jauge/pricing_data/` + `data/pricing/` | Dated price table loader, validation, demo price file | Delivered (M2) |
 | `src/jauge/api/` | Control-plane REST API (FastAPI) | Delivered (M8) |
 | `src/jauge/reports/` | Monthly report generation | Delivered (M9) |
+| `src/jauge/integration/` | Real adapters wiring the agent and API ports onto the modules | Delivered (M17) |
 | `infra/control-plane/` | AWS CDK app for the MSP account | Delivered (M10) |
 | `infra/client-account/` | Single CloudFormation template deployed per customer | Delivered (M11) |
 | `demo/` | Synthetic traffic generator and demo applications | Delivered (M12) |
@@ -246,6 +249,7 @@ Work breakdown, module ownership and per-module "definition of done":
 | [`docs/DEMO-SCRIPT.md`](docs/DEMO-SCRIPT.md) | The 3-minute video, timed, with the shooting checklist |
 | [`docs/SUBMISSION.md`](docs/SUBMISSION.md) | Submission checklist and the answer to the four judging criteria |
 | [`docs/TEST-INSTRUCTIONS.md`](docs/TEST-INSTRUCTIONS.md) | How to run it, demo accounts, guided test path |
+| [`docs/deploy-client.md`](docs/deploy-client.md) | Installing the data plane in a customer AWS account — one CloudFormation template, one command |
 | [`docs/fr/cahier-des-charges-finops-ia.md`](docs/fr/cahier-des-charges-finops-ia.md) | Normative specification (French) — requirement ids `EF-*`, `ENF-*`, `R*` |
 
 ---

@@ -37,8 +37,8 @@ three minutes)
 ### 1.2 Demo data
 
 - Customer **A**: three applications — a support assistant on a large model, a
-  ticket classifier on the same large model while a small one suffices, a nightly
-  document summariser left on the Standard tier.
+  ticket classifier on the same large model while a cheaper one suffices, a
+  nightly document summariser left on the Standard tier.
 - Customer **B**: one application, to show the fleet view.
 - All traffic is synthetic. No real customer data.
 
@@ -94,7 +94,7 @@ these are *targets*, not measurements).
 **Say**
 > "The ticket classifier runs on a large model. Jauge draws a reproducible sample
 > of 200 real requests, replays them on the current model twice — once for a fresh
-> reference, once to measure the model's own variability — then on three cheaper
+> reference, once to measure the model's own variability — then on two cheaper
 > candidates. Everything runs inside the customer's account, on the Flex tier.
 > A judge model scores each pair, and deterministic checks catch anything a
 > generous judge would let through."

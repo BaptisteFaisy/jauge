@@ -15,7 +15,7 @@ the one-sentence answer to each of the four judging criteria (§19.2).
 Legend — **Done**: already true in the repository. **Partly done**: code
 delivered, a live step remains. **Pending**: needs a human action outside the
 repository (AWS deployment, video, Devpost submission). Every module of
-`docs/MODULES.md` (M1–M16) is merged on `main`; no line waits on code any more.
+`docs/MODULES.md` (M1–M18) is merged on `main`; no line waits on code any more.
 
 ### 1.1 Track and description
 
@@ -138,7 +138,7 @@ deterministic core of the claim.
 | `R10` MSP role denied on the log bucket | M15 acceptance test; IAM screenshot in the video |
 | `R11` customer A refused on customer B data | `tests/api/test_isolation.py` (36 cases), `tests/recette/test_r11_cloisonnement.py` (M15) |
 
-Every module of `docs/MODULES.md` (M1–M16) is merged on `main`; each shipped its
+Every module of `docs/MODULES.md` (M1–M18) is merged on `main`; each shipped its
 own pull request with its own tests.
 
 ---

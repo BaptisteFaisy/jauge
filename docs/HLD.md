@@ -456,7 +456,7 @@ with synthetic logs and fake adapters.
 ## 14. Implementation status
 
 This HLD describes the design as built. **Every module of the build plan
-(`docs/MODULES.md`, M1–M16) is merged on `main`.** Beyond the shared library —
+(`docs/MODULES.md`, M1–M18) is merged on `main`.** Beyond the shared library —
 entities (`src/jauge/models/`), errors and ids (`src/jauge/common/`), the
 deterministic engine (`src/jauge/engine/`), the tenant-scoped store
 (`src/jauge/store/`) — every feature module is delivered: attribution and CUR 2.0
@@ -466,8 +466,11 @@ decision rule and human review (M5), staged rollout with rollback and savings
 verification (M6), the Strands agents (M7), the control-plane REST API (M8), the
 monthly report (M9), the infrastructure as code — CDK control plane and
 per-customer CloudFormation template (M10/M11, `infra/`), the demo and the static
-portal (M12/M13, `demo/`, `portal/`), and the acceptance scenarios R1–R13 with
-their negative security tests (M15, `tests/recette/`).
+portal (M12/M13, `demo/`, `portal/`), the acceptance scenarios R1–R13 with
+their negative security tests (M15, `tests/recette/`), the wiring of the agent
+and API ports onto the real modules (M17, `src/jauge/integration/`), and the
+pre-submission finishes (M18: seeded ASGI entry point, `/health` probe,
+rollout driven through the API).
 
 The suite is covered by offline tests — **1078 passed** on `main` — with
 no AWS call: the real boto3/Bedrock adapters are written but exercised only through
