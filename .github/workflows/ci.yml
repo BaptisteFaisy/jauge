@@ -63,6 +63,12 @@ jobs:
       - name: Tailles (fichiers < 500 lignes, fonctions < 50 lignes)
         run: python3 scripts/check_limits.py
 
+  # La suite est découpée en trois jobs : un job unique dépassait le budget de
+  # 5 min (mesuré le 2026-11-11 : « The job has exceeded the maximum execution
+  # time of 5m0s » sur la PR #32, 1 078 tests). Règle user 2026-10-24 : on
+  # découpe, on n'allonge JAMAIS un timeout. Le job `test` garde son nom (check
+  # requis de la protection de branche et de la file Mergify) ; `test-2` et
+  # `test-3` sont à ajouter aux checks requis une fois ce workflow sur main.
   test:
     name: test
     runs-on: [self-hosted, jauge-worker]
@@ -72,12 +78,48 @@ jobs:
         with:
           fetch-depth: 1
           persist-credentials: false
-      - name: Dépendances + tests
+      - name: Dépendances + tests (lot 1 : API, attribution)
         run: |
           set -euo pipefail
           command -v uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
           uv sync --frozen --all-groups
-          uv run pytest -q -m 'not infra and not slow'
+          uv run pytest -q -m 'not infra and not slow' tests/api tests/attribution
+
+  test-2:
+    name: test-2
+    runs-on: [self-hosted, jauge-worker]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Dépendances + tests (lot 2 : démo, recette)
+        run: |
+          set -euo pipefail
+          command -v uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
+          uv sync --frozen --all-groups
+          uv run pytest -q -m 'not infra and not slow' tests/demo tests/recette
+
+  test-3:
+    name: test-3
+    runs-on: [self-hosted, jauge-worker]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Dépendances + tests (lot 3 : tout le reste)
+        run: |
+          set -euo pipefail
+          command -v uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
+          uv sync --frozen --all-groups
+          # Tout ce qui n'est pas dans les lots 1 et 2 : les nouveaux dossiers
+          # de tests sont couverts ici sans avoir à modifier ce workflow.
+          uv run pytest -q -m 'not infra and not slow' \
+            --ignore=tests/api --ignore=tests/attribution \
+            --ignore=tests/demo --ignore=tests/recette
 
   iac:
     name: iac
