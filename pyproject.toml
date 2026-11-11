@@ -57,7 +57,6 @@ ignore = ["E501"]  # longueur de ligne gérée par le formatter
 pythonpath = ["."]
 testpaths = ["tests"]
 addopts = "-q --strict-markers"
-norecursedirs = ["tests/infra"]
 markers = [
     "infra: tests d'infrastructure (CDK/CloudFormation), plus lents",
     "slow: tests longs, exclus du chemin critique de la CI",

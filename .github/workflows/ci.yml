@@ -100,7 +100,7 @@ jobs:
             echo "aucun gabarit dans infra/ pour l'instant"
           fi
           if [ -d tests/infra ]; then
-            uv run --group dev --group infra pytest -q -m infra tests/infra
+            uv run --group dev --group infra pytest -q -m infra
           else
             echo "aucun test infra pour l'instant"
           fi

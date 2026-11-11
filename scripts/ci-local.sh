@@ -34,7 +34,7 @@ else
   echo "    (aucun gabarit dans infra/)"
 fi
 if [ -d tests/infra ]; then
-  uv run pytest -q -m infra tests/infra
+  uv run pytest -q -m infra
 else
   echo "    (aucun test infra pour l'instant)"
 fi
