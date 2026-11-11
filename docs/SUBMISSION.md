@@ -23,7 +23,7 @@ gesture or a module still in flight. Each pending line names its owner action.
 | 2 | English description: features, problem, measured results | **Pending** | Draft from [`README.md`](../README.md) and [`HLD.md`](HLD.md) §1; measured results only after the shoot table in [`DEMO-SCRIPT.md`](DEMO-SCRIPT.md#43-numbers-to-write-down-during-the-shoot) is filled |
 | 3 | Public portal URL + demo credentials in the test instructions | **Pending** | URL into [`TEST-INSTRUCTIONS.md`](TEST-INSTRUCTIONS.md#3-demo-accounts-planned) once the portal is deployed (M13) |
 | 4 | Private repository shared with `testing@devpost.com` and `aws-msp@amazon.com` | **Pending** | GitHub → Settings → Collaborators, two read-only invites |
-| 5 | Code actually calls an AWS AI service at runtime | **Pending** | Bedrock calls in replay (M4) and evaluation (M5); AgentCore Runtime for agents (M7); the local demo uses fake adapters, so this must be shown **live** in the video |
+| 5 | Code actually calls an AWS AI service at runtime | **Partly done** | The real adapters are in the repository: `BedrockModeleClient` (`bedrock-runtime`, `Converse`) in `src/jauge/replay/client.py`, and the Bedrock evaluation-job / S3 clients in `src/jauge/evaluation/judge.py`. What remains: run them **live** against AWS in the demo environment and show it in the video — the test suite stays offline on purpose |
 | 6 | ~3-minute video, public on YouTube, English, no third-party brand or music | **Pending** | Script ready: [`DEMO-SCRIPT.md`](DEMO-SCRIPT.md) |
 | 7 | Architecture diagram | **Done** | [`architecture.mmd`](architecture.mmd) + [`architecture.svg`](architecture.svg), explained in [`ARCHITECTURE.md`](ARCHITECTURE.md) |
 | 8 | High-Level Design document | **Done** | [`HLD.md`](HLD.md) |
@@ -114,13 +114,19 @@ deterministic core of the claim.
 | `EF-ATT-05` daily aggregation | `src/jauge/engine/attribution.py` (`agreger_requetes`), `src/jauge/models/cost.py`, `tests/engine/test_attribution.py` |
 | `EF-ATT-06` bill reconciliation | `src/jauge/engine/attribution.py` (`rapprocher_facture`), `RapprochementJour` |
 | `EF-ATT-07` unattributed spend and causes | `RapprochementJour.part_non_attribuee_pourcentage`, `causes_non_attribuees` |
-| `EF-EVA-03` rate and confidence interval | `src/jauge/engine/stats.py` (`intervalle_wilson`), `ResultatCandidat.intervalle_confiance_*` |
+| `EF-REJ-01` stratified reproducible sample | `src/jauge/replay/sampling.py`, `tests/replay/test_sampling.py` |
+| `EF-REJ-02`, `EF-REJ-03`, `EF-REJ-04` replay, Flex tier, measurements | `src/jauge/replay/executor.py` (+ `client.py` boto3 adapter, `cost.py`, `statemachine.py`), `tests/replay/` |
+| `EF-EVA-01`, `EF-EVA-02` judge and deterministic checks | `src/jauge/evaluation/judge.py`, `checks.py`, `tests/evaluation/test_judge.py`, `test_checks.py` |
+| `EF-EVA-03` rate and confidence interval | `src/jauge/engine/stats.py` (`intervalle_wilson`), `ResultatCandidat.intervalle_confiance_*`, `tests/evaluation/test_scoring.py` |
+| `EF-EVA-05` human review and judge/human agreement | `src/jauge/evaluation/human_review.py`, `tests/evaluation/test_human_review.py` |
+| §12 agents as tools, guardrails, traces | `src/jauge/agents/`, `tests/agents/` |
 | `EF-EVA-04` natural variability of the current model | `ResultatCandidat.auto_accord_modele_actuel`, §13.2 (two runs of the current model) |
 | `EF-REC-01` recommendation format (Annexe B) | `src/jauge/models/recommendation.py` (`Recommandation`, `MetriquesQualite`, `MetriquesCout`, `MetriquesLatence`) |
 | `EF-REC-02` human approval required | `StatutRecommandation`, `approvedBy`, `ApprobationRequiseError` |
 | `EF-BAS-01..03` staged rollout and rollback | `BasculeProgressive` (`palier_actuel_pourcentage`, `seuil_alerte`, `annule_automatiquement`) |
 | `EF-VER-01` constant-volume verification | `VerificationEconomie`, `engine/stats.economie_mensuelle` |
-| `ENF-CONF-01` text stays in the customer account | `PaireRejoueeDataPlane` docstring and type boundary; `HLD.md` §3 |
+| `ENF-CONF-01` text stays in the customer account | `PaireRejoueeDataPlane` docstring and type boundary; `tests/evaluation/test_confidentialite.py`; `src/jauge/replay/sampling.py` carries metadata only; `HLD.md` §3 |
+| `ENF-IA-03` replayed content is data, not instruction | `src/jauge/agents/guardrails.py`, `tests/agents/test_guardrails.py` |
 | `ENF-SEC-02` tenant isolation | `src/jauge/store/protocol.py` (`tenant_id` first), `CloisonnementError`, `tests/store/test_memory_store.py` |
 | `ENF-IA-01` no number computed by a model | `HLD.md` §12 (D6), `engine/**` docstrings |
 | `ENF-COUT-01` campaign cost capped | `Tenant.plafond_campagne_usd`, `PlafondDepasseError`, `Campagne.cout_estime_usd` |
@@ -163,7 +169,7 @@ claims made in the description.
 
 | Gap | Consequence for judging | Mitigation |
 |---|---|---|
-| The public portal is not deployed yet (M13) | Judges cannot click a URL until it is | Local run instructions are complete and offline; portal URL added when deployed |
+| The public portal is not deployed yet (M13), and the API (M8) and demo seed (M12) are still in pull requests | Judges cannot click a URL until they land | Local run instructions are complete and offline; portal URL added when deployed |
 | `uv run python -m demo.seed` and `uvicorn jauge.api.app:app` do not exist yet | The quickstart is partly forward-looking | Marked **planned** in [`TEST-INSTRUCTIONS.md`](TEST-INSTRUCTIONS.md); what runs today (`uv sync`, `uv run pytest`) is stated as the current state |
 | Multi-turn and tool-using applications are out of v1 | A judge may ask about agentic workloads | Declared as a limit in `HLD.md` §2.2 and §13.1, with the reason (replay fidelity) |
 | Judge bias is mitigated, not eliminated | Legitimate question on measurement rigour | Deterministic checks, 30-pair human review, self-agreement column, declared in `HLD.md` §8.7 |

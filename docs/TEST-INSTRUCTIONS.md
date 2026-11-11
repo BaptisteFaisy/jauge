@@ -38,7 +38,7 @@ Expected output — the last line is the summary (`-q` is already set in
 
 ```
 ...                                                                      [100%]
-93 passed in 0.67s
+348 passed in 1:41
 ```
 
 The count grows as modules land; the summary line is the source of truth.
@@ -55,6 +55,9 @@ The suite covers what is delivered today:
 | `tests/evaluation/test_judge.py`, `test_human_review.py` | Judge selection and capability registry; 30-pair human sub-sample and judge/human agreement |
 | `tests/evaluation/test_confidentialite.py` | No request or response text ever appears in a decision, a candidate result or a review sub-sample |
 | `tests/store/test_memory_store.py` | The store contract and tenant isolation (customer B on customer A's data → refusal) |
+| `tests/pricing_data/test_loader.py`, `test_dates.py`, `test_seed.py` | Dated price-table loader and validation: an invalid row names the offending line; a price change takes effect on its date without recomputing the past |
+| `tests/replay/test_sampling.py`, `test_executor.py`, `test_cost.py`, `test_client.py`, `test_statemachine.py` | Stratified reproducible sample (same seed → same sample), replay of the current model twice for its own variability, Flex-tier runs, campaign cost estimate and cap, Step Functions definition |
+| `tests/agents/test_orchestrator.py`, `test_tools.py`, `test_guardrails.py`, `test_schemas.py`, `test_ports.py`, `test_traces_sessions.py`, `test_strands_integration.py` | Orchestrator plus four specialists used as tools, guardrails (no request text reaches an agent tool), schema-validated outputs, traces and sessions — all offline |
 
 ### 1.3 The same checks the CI runs
 
