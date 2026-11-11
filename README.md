@@ -118,7 +118,10 @@ Status on `main`, stated plainly — this section is updated as modules land.
 | Wilson confidence interval, percentiles, minimum sample size, monthly saving, percentage drop | **Delivered** — `src/jauge/engine/stats.py` |
 | Store contract (tenant-scoped) + in-memory implementation | **Delivered** — `src/jauge/store/` |
 | LLM-as-a-judge prompt and adapters, deterministic checks, decision rule with its three conditions, human review sub-sample | **Delivered** — `src/jauge/evaluation/` |
-| Log ingestion, lever rules, replay, rollout, agents, API, reports, portal, infrastructure, demo, end-to-end acceptance | **Planned** — one pull request per module; [`docs/MODULES.md`](docs/MODULES.md) is the authoritative status table |
+| Stratified reproducible sample, replay executor (Flex tier), campaign cost cap, Step Functions definition | **Delivered** — `src/jauge/replay/` |
+| Dated price table loader with validation, demo price file | **Delivered** — `src/jauge/pricing_data/`, `data/pricing/` |
+| Strands agents: orchestrator + four specialists used as tools, guardrails, schemas, traces, sessions | **Delivered** — `src/jauge/agents/` |
+| Log ingestion, lever rules, rollout, API, reports, portal, infrastructure, demo, end-to-end acceptance | **Planned** — one pull request per module; [`docs/MODULES.md`](docs/MODULES.md) is the authoritative status table |
 
 The test suite runs entirely offline — no AWS account, no network, no
 credentials. `uv run pytest` prints the current count and duration on its last
@@ -149,8 +152,8 @@ uv sync --all-groups
 
 # 2. Run the test suite — offline, no AWS account, no credentials
 uv run pytest
-#   ... [100%]
-#   93 passed in 0.67s        (count at the time of writing)
+#   ...                                              [100%]
+#   348 passed in 1:41        (count at the time of writing; it grows)
 
 # 3. Run the same gates as CI
 bash scripts/ci-local.sh
@@ -182,10 +185,11 @@ Full judge instructions, demo accounts and a minute-by-minute test path:
 | `src/jauge/store/` | Persistence contract + in-memory implementation | Delivered |
 | `src/jauge/attribution/` | Invocation-log ingestion, tagging, unattributed spend | Planned (M1) |
 | `src/jauge/levers/` | Savings-lever detection rules | Planned (M3) |
-| `src/jauge/replay/` | Stratified reproducible sampling, replay execution, Step Functions definition | Planned (M4) |
+| `src/jauge/replay/` | Stratified reproducible sampling, replay execution, Step Functions definition | Delivered (M4) |
 | `src/jauge/evaluation/` | LLM-as-a-judge scoring, deterministic checks, decision rule, human review | Delivered (M5) |
 | `src/jauge/rollout/` | Gateway rules, staged rollout, automatic rollback, savings verification | Planned (M6) |
-| `src/jauge/agents/` | Strands agents: orchestrator + cost analyst + replay planner + results reader + writer | Planned (M7) |
+| `src/jauge/agents/` | Strands agents: orchestrator + cost analyst + replay planner + results reader + writer | Delivered (M7) |
+| `src/jauge/pricing_data/` + `data/pricing/` | Dated price table loader, validation, demo price file | Delivered (M2) |
 | `src/jauge/api/` | Control-plane REST API (FastAPI) | Planned (M8) |
 | `src/jauge/reports/` | Monthly report generation | Planned (M9) |
 | `infra/control-plane/` | AWS CDK app for the MSP account | Planned (M10) |
@@ -193,7 +197,7 @@ Full judge instructions, demo accounts and a minute-by-minute test path:
 | `demo/` | Synthetic traffic generator and demo applications | Planned (M12) |
 | `portal/` | Static web portal, no build step | Planned (M13) |
 | `docs/` | HLD, architecture, demo script, submission checklist, test instructions | Delivered |
-| `tests/` | Unit and isolation (negative security) tests, end-to-end acceptance | Partly delivered — engine, store and evaluation today |
+| `tests/` | Unit and isolation (negative security) tests, end-to-end acceptance | Partly delivered — engine, store, evaluation, replay, pricing data and agents today |
 
 Work breakdown, module ownership and per-module "definition of done":
 [`docs/MODULES.md`](docs/MODULES.md).

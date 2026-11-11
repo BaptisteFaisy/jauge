@@ -68,7 +68,7 @@ No pull. The control plane never reads the customer's S3.
 | Models | Amazon Bedrock | Inference, Standard / Flex tiers | — |
 | Invocation logs | Bedrock model invocation logging → S3 (KMS) | Request, response, tokens, request metadata, tier | Template `infra/client-account/` *(planned, M11)* |
 | Analytics | Glue Data Catalog + Athena | Tables over logs and CUR 2.0 | Same template |
-| Replay machine | Step Functions + Lambda | Draw sample, replay, launch evaluation, store results | `src/jauge/replay/statemachine/` *(planned, M4)* |
+| Replay machine | Step Functions + Lambda | Draw sample, replay, launch evaluation, store results | `src/jauge/replay/` — **delivered** (sampling, executor, cost cap, state-machine definition) |
 | Evaluation | Bedrock model-evaluation jobs | Judge verdict + explanation per pair; deterministic checks; decision rule | `src/jauge/evaluation/` — **delivered** (decision, checks, judge prompt, human review); the Bedrock evaluation-job adapter is wired in M4/M15 |
 | Replay results | S3 (KMS) | Pairs, explanations, per-request measurements | Same |
 | Invoiced cost | CUR 2.0 + Cost Explorer | Dollars per tag, reconciliation source | Same |
@@ -82,8 +82,8 @@ No pull. The control plane never reads the customer's S3.
 | Portal | CloudFront + S3 (static SPA, no build step) | Customer dashboard, fleet dashboard, approval, rollout tracking, human review link | `portal/` *(planned, M13)* |
 | Identity | Cognito | Users, roles (`EF-POR-01`), demo account for judges (`EF-POR-02`) | `src/jauge/api/auth.py` *(planned, M8)* |
 | API | API Gateway + Lambda running the FastAPI app | Every endpoint of specification §15 | `src/jauge/api/` *(planned, M8)* |
-| Agents | Strands agents on AgentCore Runtime | Orchestrator + cost analyst + replay planner + results reader + writer | `src/jauge/agents/` *(planned, M7)* |
-| Agent tools | AgentCore Gateway + Lambda | `query_cost_aggregates`, `list_levers`, `estimate_campaign_cost`, `start_replay`, `get_replay_results`, `save_recommendation` | `src/jauge/agents/ports.py` *(planned, M7)* |
+| Agents | Strands agents on AgentCore Runtime | Orchestrator + cost analyst + replay planner + results reader + writer | `src/jauge/agents/` — **delivered** (the Runtime deployment is M10) |
+| Agent tools | AgentCore Gateway + Lambda | `query_cost_aggregates`, `list_levers`, `estimate_campaign_cost`, `start_replay`, `get_replay_results`, `save_recommendation` | `src/jauge/agents/ports.py` + `tools*.py` — **delivered** behind a port protocol |
 | State | DynamoDB | Tenants, applications, aggregates, reconciliation, levers, campaigns, recommendations, rollouts, verifications, audit | `src/jauge/store/` — protocol + memory **delivered**, DynamoDB adapter *(planned)* |
 | Reports | S3 | Monthly report (Markdown + JSON) | `src/jauge/reports/` *(planned, M9)* |
 | Infrastructure | AWS CDK (Python) | API, Cognito, DynamoDB, CloudFront/S3, AgentCore, Budgets | `infra/control-plane/` *(planned, M10)* |
@@ -100,6 +100,9 @@ No pull. The control plane never reads the customer's S3.
 | `src/jauge/store/protocol.py` | `Store` contract — every read takes `tenant_id` first | **Delivered** |
 | `src/jauge/store/memory.py` | `MemoryStore`, tenant-isolated, for tests and the local demo | **Delivered** |
 | `src/jauge/evaluation/` | Judge prompt and adapters, deterministic checks, decision rule, human review sub-sample | **Delivered** |
+| `src/jauge/replay/` | Stratified reproducible sampling, replay executor, cost estimate and cap, Step Functions definition | **Delivered** |
+| `src/jauge/pricing_data/` | Dated price-table loader with validation (`data/pricing/` holds the demo table) | **Delivered** |
+| `src/jauge/agents/` | Orchestrator plus four specialists as tools, guardrails, schema-validated outputs, traces and sessions | **Delivered** |
 
 The shared library is what every module codes against. Modules never import
 each other's internals; where a module needs a service that does not exist yet it
@@ -359,9 +362,11 @@ campaigns, decisions and rules.
 
 ## 14. What exists today
 
-`main` currently contains the shared library: entities, deterministic engine,
-store contract and in-memory store, and the evaluation module, plus their tests.
-The modules that build the data plane, the control plane, the demo and the
+`main` currently contains the shared library (entities, deterministic engine,
+store contract and in-memory store) plus three feature modules: evaluation,
+replay and Strands agents, and the dated price-table loader — all covered by
+offline tests. The modules that build the data plane (log ingestion, levers,
+rollout), the control plane (API, portal, infrastructure), the demo and the
 end-to-end acceptance are delivered through their own pull requests —
 `docs/MODULES.md` is the authoritative status table. Every path marked
 *(planned)* above is one of those modules.

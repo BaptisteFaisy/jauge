@@ -138,10 +138,11 @@ purposes (cost and quality measurement) are written into the contract.
 |---|---|---|---|
 | Invocation logs | Bedrock model invocation logging → S3 | Request, response, token counts, request metadata, service tier | `EF-ATT-02` |
 | Analytics tables | Glue Data Catalog + Athena | Tables over invocation logs and over CUR 2.0 | `EF-ATT-05`, `EF-ATT-08` |
-| Replay engine | Step Functions + Lambda | Draw the sample, replay on current and candidate models, launch evaluation, store results | `EF-REJ-01` … `EF-REJ-04` |
+| Replay engine | Step Functions + Lambda (`src/jauge/replay/`) | Draw the sample, replay on current and candidate models, launch evaluation, store results | `EF-REJ-01` … `EF-REJ-04` |
 | Evaluation | Bedrock model-evaluation jobs; decision rule in `src/jauge/evaluation/` | Judge verdict and explanation per pair; deterministic checks; decision | `EF-EVA-01` … `EF-EVA-03` |
+| Price table | `data/pricing/` JSON loaded by `src/jauge/pricing_data/` | Dated prices per model, region and tier, validated at load | `EF-ATT-04` |
 | Routing | AgentCore Gateway (inference target + rules) | Staged rollout without touching application code | `EF-BAS-01` … `EF-BAS-03` |
-| Agents and their tools | Strands Agents on AgentCore Runtime + AgentCore Gateway + Lambda | Orchestration, interpretation, writing; tools read aggregates, estimate and start a campaign | §12 |
+| Agents and their tools | Strands Agents on AgentCore Runtime + AgentCore Gateway + Lambda (`src/jauge/agents/`) | Orchestration, interpretation, writing; tools read aggregates, estimate and start a campaign | §12 |
 | Portal | CloudFront + S3 + API Gateway + Lambda + Cognito | MSP and customer UI | `EF-RAP-01`, `EF-RAP-02`, `EF-POR-01`, `EF-POR-02` |
 | State | DynamoDB (+ S3 for reports) | Aggregates, campaigns, recommendations, rollouts, audit | `EF-ADM-02` |
 | Infrastructure as code | AWS CDK (MSP) + one CloudFormation template per customer | Reproducibility | `ENF-REP-01` |
@@ -455,14 +456,17 @@ with synthetic logs and fake adapters.
 ## 14. Implementation status
 
 This HLD describes the target design. What `main` contains today is the shared
-library: entities (`src/jauge/models/`), the typed error hierarchy and id helpers
-(`src/jauge/common/`), the deterministic engine — request cost with a dated price
-table, daily aggregation, bill reconciliation, Wilson intervals and saving
-arithmetic (`src/jauge/engine/`) — the store contract with its in-memory
-implementation (`src/jauge/store/`), and the evaluation module — judge prompt and
+library — entities (`src/jauge/models/`), the typed error hierarchy and id helpers
+(`src/jauge/common/`), the deterministic engine for request cost, daily
+aggregation, bill reconciliation, Wilson intervals and saving arithmetic
+(`src/jauge/engine/`), the store contract with its in-memory implementation
+(`src/jauge/store/`) — plus four feature modules: evaluation (judge prompt and
 adapters, deterministic checks, the decision rule of §8.4 with its relative
-reading of the current model, human review sub-sample
-(`src/jauge/evaluation/`). All of it is covered by offline tests.
+reading of the current model, human review sub-sample), replay (stratified
+reproducible sampling, executor, cost estimate and cap, Step Functions
+definition), the dated price-table loader, and the Strands agents (orchestrator
+plus four specialists as tools, guardrails, schema-validated outputs, traces and
+sessions). All of it is covered by offline tests, with no AWS call.
 
 The data plane, the control plane, the demo and the end-to-end acceptance are
 delivered module by module through their own pull requests (`docs/MODULES.md`,
