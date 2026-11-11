@@ -56,7 +56,7 @@ ignore = ["E501"]  # longueur de ligne gérée par le formatter
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
-addopts = "-q --strict-markers"
+addopts = "-q --strict-markers --import-mode=importlib"
 markers = [
     "infra: tests d'infrastructure (CDK/CloudFormation), plus lents",
     "slow: tests longs, exclus du chemin critique de la CI",
