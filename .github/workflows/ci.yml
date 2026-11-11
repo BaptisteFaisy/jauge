@@ -24,9 +24,15 @@ concurrency:
 
 env:
   # uv est installé dans ~/.local/bin sur les runners self-hosted (r630).
-  PATH: /home/baptiste/.local/bin:/usr/local/bin:/usr/bin:/bin
+  PATH: /home/baptiste/.local/node/bin:/home/baptiste/.local/bin:/usr/local/bin:/usr/bin:/bin
   UV_CACHE_DIR: /home/baptiste/.cache/uv
   UV_NO_PROGRESS: "1"
+  # aws-cdk-lib est un paquet jsii : il lance un processus Node (d'où node dans
+  # le PATH) et extrait son runtime dans un répertoire temporaire. TMPDIR est
+  # fixé hors de /tmp : un `package.json` tiers y déclare `"type": "module"`,
+  # ce qui fait échouer le runtime jsii (« require is not defined in ES module
+  # scope »). Ne pas supprimer ce fichier : il appartient à un autre projet.
+  TMPDIR: /home/baptiste/.cache/jauge-tmp
 
 jobs:
   lint:
@@ -85,6 +91,8 @@ jobs:
       - name: CloudFormation (cfn-lint) + CDK (assertions)
         run: |
           set -euo pipefail
+          mkdir -p "$TMPDIR"
+          command -v node >/dev/null || { echo "::error::Node.js absent : aws-cdk-lib (jsii) en a besoin"; exit 1; }
           command -v uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
           uv sync --frozen --all-groups
           shopt -s nullglob globstar
