@@ -7,7 +7,7 @@ minimal du runbook `labkit-hermes-prompt.md` §6.
 
 Chaîne exécutée :
 1. clone jetable du dépôt + `checkout` de la branche de la PR ;
-2. rebase sur `origin/<base>` ; à chaque conflit : jambe **Fireworks**
+2. rebase sur `origin/<base>` ; à chaque conflit : jambe **InferHub**
    (`resolve.py`), puis repli **déterministe** (`rebase.py`) ;
 3. validation par **la toolchain du dépôt** : `bash scripts/ci-local.sh`
    (ruff + limites + pytest + cfn-lint) — jamais `npm`/`tsc` ici ;
@@ -155,12 +155,12 @@ def executer(args, transport=None) -> int:
     # Le PAT (contents:write) sert aux opérations git : un push fait avec le
     # GITHUB_TOKEN ne déclenche AUCUN workflow (anti-récursion GitHub).
     jeton = (os.environ.get("HERMES_PUSH_TOKEN") or "").strip() or gh.jeton()
-    cle = (os.environ.get(resolve.FIREWORKS_KEY_ENV) or "").strip()
+    cle = (os.environ.get(resolve.INFERHUB_KEY_ENV) or "").strip()
     if not jeton:
         print("[resolver] GH_TOKEN absent — abandon", flush=True)
         return 1
     if not cle:
-        print("[resolver] FIREWORKS_API_KEY absente : 100 % déterministe", flush=True)
+        print("[resolver] INFERHUB_API_KEY absente : 100 % déterministe", flush=True)
     donnees = gh.pr(args.pr)
     if donnees is None:
         print("[resolver] PR #%s illisible ou fermée — abandon transitoire" % args.pr, flush=True)

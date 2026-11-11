@@ -14,7 +14,7 @@ résolveur :
 
 1. clone le dépôt dans un dossier **jetable** (jamais le workspace du runner) ;
 2. rebase la branche de la PR sur `origin/main` ;
-3. résout chaque conflit : jambe **Fireworks** d'abord, repli **déterministe**
+3. résout chaque conflit : jambe **InferHub** d'abord, repli **déterministe**
    ensuite ;
 4. **valide avec la toolchain du dépôt** : `bash scripts/ci-local.sh`
    (ruff + limites de taille + pytest + cfn-lint) ;
@@ -29,7 +29,7 @@ et un humain est prévenu. Jamais d'échec silencieux.
 
 | Fichier | Rôle |
 |---|---|
-| `.github/hermes/resolve.py` | décision pure : fichiers dérivés/binaires, hunks, garde-fou de sortie, jambe Fireworks |
+| `.github/hermes/resolve.py` | décision pure : fichiers dérivés/binaires, hunks, garde-fou de sortie, jambe InferHub |
 | `.github/hermes/resolve_selftest.py` | selftests du noyau (extraits pour garder `resolve.py` court) |
 | `.github/hermes/rebase.py` | primitives git : rebase, résolution fichier par fichier, passes IA/déterministe |
 | `.github/hermes/resolver.py` | orchestration : clone, validation, push, rapport |
@@ -45,11 +45,11 @@ Aucune logique métier dans le YAML : les workflows appellent un script Python
 (stdlib seule, aucun `pip`). C'est la leçon des heredocs Python multi-lignes
 dans un bloc `run: |` (indentation cassée sur un runner le 2026-10-24).
 
-## 3. Jambe LLM : Fireworks
+## 3. Jambe LLM : InferHub
 
-- Endpoint : `https://api.fireworks.ai/inference/v1/chat/completions`
-- Modèle : `accounts/fireworks/models/deepseek-v4p1-flash-1017`
-- Clé : secret `FIREWORKS_API_KEY` (jamais affichée, jamais journalisée)
+- Endpoint : `https://api.inferhub.dev/v1/chat/completions`
+- Modèle : `combo/cheap`
+- Clé : secret `INFERHUB_API_KEY` (jamais affichée, jamais journalisée)
 
 **Sans clé : 100 % déterministe + escalade humaine.** Aucun chemin ne « réussit »
 en silence : soit la résolution aboutit, soit la PR reçoit un rapport d'échec et
@@ -98,11 +98,11 @@ python3 .github/hermes/watchdog.py  --selftest
 
 Couverture :
 
-- `resolve.py` : contrôle **« jambe directe = Fireworks »** (URL, modèle, nom du
-  secret), **« clé Fireworks ⇒ disponible »** (et clé vide/absente ⇒
+- `resolve.py` : contrôle **« jambe directe = InferHub »** (URL, modèle, nom du
+  secret), **« clé InferHub ⇒ disponible »** (et clé vide/absente ⇒
   indisponible), liste des dérivés, découpage des hunks (styles merge et diff3),
   refus des sorties d'IA (vides, tronquées, à marqueurs, JSON ou Python
-  invalides), repli heuristique, et jambe Fireworks pilotée par un transport
+  invalides), repli heuristique, et jambe InferHub pilotée par un transport
   factice (forme du corps vérifiée, aucun réseau).
 - `rebase.py` : **vrai rebase git** dans un dépôt jetable — une source en
   conflit escalade, un dérivé est résolu côté base, une doc est fusionnée en
@@ -122,26 +122,32 @@ les joue sur toute PR qui touche `.github/hermes/**`.
 
 Secrets (noms seuls — aucune valeur n'est jamais affichée) :
 
-| Nom | Rôle | Obligatoire |
-|---|---|---|
-| `FIREWORKS_API_KEY` | jambe LLM directe Fireworks | non — absent ⇒ 100 % déterministe |
-| `HERMES_PUSH_TOKEN` | PAT `contents: write` pour le push git (déclenche les vrais événements) | non — absent ⇒ ré-armement par dispatch |
+| Nom | Rôle | Obligatoire | État |
+|---|---|---|---|
+| `INFERHUB_API_KEY` | jambe LLM directe InferHub (`combo/cheap`) | non — absent ⇒ 100 % déterministe | **posé le 2026-11-11** |
+| `HERMES_PUSH_TOKEN` | PAT `contents: write` pour le push git (déclenche les vrais événements) | non — absent ⇒ ré-armement par dispatch | absent : le ré-armement par `workflow_dispatch` suffit (vérifié) |
 
 Le `GITHUB_TOKEN` du workflow suffit pour l'API (labels, commentaires,
 check-runs, dispatches) ; il ne suffit **pas** pour que le push déclenche la CI
 (anti-récursion GitHub), d'où le ré-armement explicite de `ci.yml` et du gate.
 
 Variables de dépôt (non secrètes) : aucune n'est nécessaire. `HERMES_LLM_MODEL`
-n'est **pas** utilisée : le modèle Fireworks est fixé dans `resolve.py`.
+n'est **pas** utilisée : le modèle InferHub est fixé dans `resolve.py`.
 
 ## 8. Limites connues
 
-1. **Budget de 5 minutes par job** (règle user 2026-10-24, garde `ci-budget`) :
-   le job de résolution est plafonné à 5 min, dont 200 s de validation. Mesure
-   sur le runner (cache uv chaud) : `scripts/ci-local.sh` = **4 s** (lint 1 s,
-   limites < 1 s, 22 tests 1 s, pas de gabarit infra). Un `ci-local.sh` plus
-   lent que 200 s ferait échouer le run **sans push** (escalade) : le budget ne
-   s'allonge pas.
+1. **Budget CI et exemption du résolveur** (règle user 2026-10-24, garde
+   `ci-budget`) : le verdict d'une PR reste ≤ 5 min par job. Le job de
+   résolution, lui, porte `timeout-minutes: 10` avec le marqueur explicite
+   `# CI-BUDGET-EXEMPT` — il n'est **jamais** un check de PR (lancement en
+   `workflow_dispatch` seulement) et il rejoue toute la toolchain du dépôt sur
+   l'arbre rebasé avant de pousser. Mesure du 2026-11-11 : `scripts/ci-local.sh`
+   = **222 s** (1 078 tests + cfn-lint + tests CDK), d'où `VALIDATION_TIMEOUT`
+   à 270 s. Une validation qui dépasse fait échouer le run **sans push**
+   (escalade) : le budget ne s'allonge pas tout seul.
+   Le garde-fou `check_timeouts.py` accepte une exemption **seulement** si la
+   ligne porte `CI-BUDGET-EXEMPT` avec sa raison ; sinon tout dépassement reste
+   une erreur, et l'exemption est signalée en avertissement à chaque run.
 2. **Pas de résolution par hunk** : les fichiers dont un côté dépasse 12 000
    caractères ne sont pas découpés (`duello` le faisait) ; ils partent en
    escalade. Suffisant pour Jauge (aucun fichier de cette taille hors `uv.lock`,
@@ -159,15 +165,17 @@ n'est **pas** utilisée : le modèle Fireworks est fixé dans `resolve.py`.
    le gate re-dispatch avec backoff (`min(5·2ⁿ, 30)` min), escalade informative
    au-delà de 3 tentatives.
 
-## 9. Ordre de fusion prévu
+## 9. Ordre de fusion — réalisé le 2026-11-11
 
-1. Cette PR (`feat/hermes-resolver`) est ouverte en **draft**, volontairement
-   **non fusionnée** : le runbook demande de merger la CI d'abord.
-2. La CI du dépôt (`ci.yml`) doit être verte et ses checks connus.
-3. Poser les secrets `FIREWORKS_API_KEY` et `HERMES_PUSH_TOKEN` (action user).
-4. Passer la PR en « ready » puis la merger.
-5. Premier essai sur un vrai conflit, puis sortie du dry-run du gate
-   (`HERMES_LITE_DRY_RUN=0`).
+1. CI du dépôt (`ci.yml`) mergée d'abord, checks connus : `lint`, `limits`,
+   `test`, `iac`, `ci-budget`.
+2. Résolveur livré en PR **draft** (#10), passé « ready » puis mergé une fois la
+   CI verte.
+3. Secret `INFERHUB_API_KEY` posé ; `HERMES_PUSH_TOKEN` volontairement absent
+   (le ré-armement par dispatch déclenche la CI et le gate).
+4. Gate hors dry-run (`HERMES_LITE_DRY_RUN=0`) : c'est lui qui merge, avec
+   `HERMES_REQUIRED_CHECKS=lint,limits,test,iac,ci-budget`.
+5. Essai sur un conflit réel : voir §11.
 
 ## 10. Écarts au runbook
 
@@ -175,7 +183,7 @@ n'est **pas** utilisée : le modèle Fireworks est fixé dans `resolve.py`.
 |---|---|---|
 | `resolve.py --selftest` + `resolver.py --selftest` | + `rebase.py`, `dispatch.py`, `watchdog.py` | chaque module porte son propre selftest ; `resolver.py` les agrège |
 | Fichiers < 500 lignes / fonctions < 50 lignes | respecté **sans exclusion** : `resolve.py` 313 l, `resolver.py` 356 l, `rebase.py` 272 l, `dispatch.py` 273 l, `gh.py` 246 l, `resolve_selftest.py` 234 l, `watchdog.py` 196 l, `gate.py` 378 l | `.github/` est exclu du garde `check_limits.py` : la contrainte est tenue à la main |
-| Var `HERMES_LLM_MODEL=combo/cheap` | non posée | la jambe est Fireworks, modèle fixé dans le code |
+| Var `HERMES_LLM_MODEL=combo/cheap` | non posée | la jambe est InferHub, modèle fixé dans le code |
 | `hermes-worker.yml` (ré-armement générique) | non porté | un seul point d'entrée suffit ; le ré-armement est fait par le résolveur |
 | Résolution par hunk | non portée | voir limites §8.2 |
 | Watchdog en cron `*/5` | déclenchement événementiel (`workflow_run`) + manuel | le planificateur GitHub est peu fiable (leçon [WD-EVENT]) et un cron réveille le gate sans événement à traiter |

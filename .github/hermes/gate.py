@@ -133,7 +133,7 @@ def required_checks_green(repo, token, pr, required):
 def declencher_resolveur(pr, dry=False):
     """[M16] Vrai conflit → lance `hermes-resolver.yml` sur cette PR.
 
-    Le résolveur rebase, résout (jambe Fireworks puis repli déterministe),
+    Le résolveur rebase, résout (jambe InferHub puis repli déterministe),
     valide avec `bash scripts/ci-local.sh`, pousse en `--force-with-lease` et
     rapporte sur la PR. La logique (anti-doublon, backoff, escalade) vit dans
     `dispatch.py`, testée par `dispatch.py --selftest`.
@@ -251,7 +251,7 @@ def handle_pr(pr, repo, token, required, dry=False, auto_rebase=True):
             False,
             "Conflits avec %s — résolveur Hermes lancé" % base_ref,
             "Le gate a détecté un VRAI conflit : `hermes-resolver.yml` rebase la "
-            "branche, résout les conflits (Fireworks puis repli déterministe), "
+            "branche, résout les conflits (InferHub puis repli déterministe), "
             "valide avec la toolchain du dépôt et pousse. Rebase manuel possible "
             "en parallèle, le label `hermes/intervention-humaine` informe un humain.",
         )

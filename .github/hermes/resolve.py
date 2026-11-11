@@ -4,12 +4,12 @@
 Porté du sous-agent `duello` (`.github/workflows/hermes-conflict-resolver.yml`,
 ~1 630 lignes) et réduit au **viable minimal** du runbook
 `labkit-hermes-prompt.md` phase 3. Ce module est de la **décision pure** :
-aucune écriture disque, un seul appel réseau possible (`appeler_fireworks`),
+aucune écriture disque, un seul appel réseau possible (`appeler_inferhub`),
 injectable — donc entièrement testable **sans secret**.
 
 Règles dures :
-- jambe LLM directe = **Fireworks** (`deepseek-v4p1-flash-1017`), clé lue dans
-  `FIREWORKS_API_KEY`. Pas de clé → 100 % déterministe + escalade humaine,
+- jambe LLM directe = **InferHub** (`deepseek-v4p1-flash-1017`), clé lue dans
+  `INFERHUB_API_KEY`. Pas de clé → 100 % déterministe + escalade humaine,
   jamais d'échec silencieux ;
 - fichiers **dérivés/binaires** : jamais soumis à l'IA (voir `docs/HERMES.md`) ;
 - une sortie d'IA vide, tronquée ou contenant des marqueurs de conflit est
@@ -26,11 +26,11 @@ import urllib.error
 import urllib.request
 
 # ---------------------------------------------------------------- jambe LLM
-FIREWORKS_URL = "https://api.fireworks.ai/inference/v1/chat/completions"
-FIREWORKS_MODEL = "accounts/fireworks/models/deepseek-v4p1-flash-1017"
-FIREWORKS_KEY_ENV = "FIREWORKS_API_KEY"
-# Jambe directe du chantier Jauge : Fireworks, jamais Agnes (runbook §6.3).
-JAMBE_DIRECTE = "fireworks"
+INFERHUB_URL = "https://api.inferhub.dev/v1/chat/completions"
+INFERHUB_MODEL = "combo/cheap"
+INFERHUB_KEY_ENV = "INFERHUB_API_KEY"
+# Jambe directe du chantier Jauge : InferHub, jamais Agnes (runbook §6.3).
+JAMBE_DIRECTE = "inferhub"
 
 # Bornes reprises de `duello` : au-delà, le fichier entier ne tient pas dans un
 # prompt sans troncature (une troncature produit du code invalide à coup sûr).
@@ -80,9 +80,9 @@ def est_binaire(chemin: str) -> bool:
 
 
 def jambe_llm_disponible(env=None) -> bool:
-    """Vrai si la clé Fireworks est présente : sans elle, 100 % déterministe."""
+    """Vrai si la clé InferHub est présente : sans elle, 100 % déterministe."""
     source = os.environ if env is None else env
-    return bool((source.get(FIREWORKS_KEY_ENV) or "").strip())
+    return bool((source.get(INFERHUB_KEY_ENV) or "").strip())
 
 
 def motif_sans_ia(chemin: str, *cotes: str) -> str | None:
@@ -238,15 +238,15 @@ def extraire_contenu(reponse: dict) -> str | None:
     return texte
 
 
-def appeler_fireworks(sysmsg: str, texte: str, cle: str, transport=None, timeout: int = 180):
-    """Un appel à la jambe directe Fireworks. Rend le texte, ou None.
+def appeler_inferhub(sysmsg: str, texte: str, cle: str, transport=None, timeout: int = 180):
+    """Un appel à la jambe directe InferHub. Rend le texte, ou None.
 
     `transport(url, corps, cle, timeout)` est injectable : les selftests
     vérifient la forme du corps et le refus des sorties invalides **sans
     réseau ni secret**.
     """
     corps = {
-        "model": FIREWORKS_MODEL,
+        "model": INFERHUB_MODEL,
         "messages": [
             {"role": "system", "content": sysmsg},
             {"role": "user", "content": texte},
@@ -255,7 +255,7 @@ def appeler_fireworks(sysmsg: str, texte: str, cle: str, transport=None, timeout
         "temperature": 0.0,
     }
     envoi = transport if transport is not None else _poste
-    return extraire_contenu(envoi(FIREWORKS_URL, corps, cle, timeout))
+    return extraire_contenu(envoi(INFERHUB_URL, corps, cle, timeout))
 
 
 SYSTEME_FICHIER = (
@@ -283,7 +283,7 @@ def resoudre_fichier(
         "FICHIER: %s\n\n===== BASE (ancêtre) =====\n%s\n===== A (base de la PR) =====\n%s"
         "\n===== B (PR) =====\n%s"
     ) % (chemin, base_t[:40000], ours_t[:40000], theirs_t[:40000])
-    sortie = appeler_fireworks(SYSTEME_FICHIER, demande, cle, transport=transport)
+    sortie = appeler_inferhub(SYSTEME_FICHIER, demande, cle, transport=transport)
     if sortie is None:
         return None
     if sortie_ia_valide(chemin, sortie, ours_t, theirs_t):

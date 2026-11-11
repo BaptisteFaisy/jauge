@@ -22,6 +22,12 @@ SKIP_FILES = set()  # le garde-fou se contrôle lui-même
 TOP_KEY = re.compile(r"^[A-Za-z_][A-Za-z0-9_-]*:")
 JOB_KEY = re.compile(r"^  ([A-Za-z0-9_.-]+):\s*(#.*)?$")
 TIMEOUT = re.compile(r"^    timeout-minutes:\s*(\d+)\s*(#.*)?$")
+# Une exemption doit être explicite, datée et justifiée sur la ligne même :
+#   timeout-minutes: 10  # CI-BUDGET-EXEMPT: <raison mesurée>
+# Elle ne vaut que pour les jobs qui ne rendent PAS le verdict d'une PR
+# (ex. le résolveur de conflits en workflow_dispatch). Le garde-fou reste
+# strict par défaut : sans ce marqueur, tout dépassement est une erreur.
+EXEMPTION = "CI-BUDGET-EXEMPT"
 
 
 def read_lines(path):
@@ -48,6 +54,7 @@ def scan_jobs(lines):
         match = TIMEOUT.match(line)
         if match and jobs:
             jobs[-1][1] = int(match.group(1))
+            jobs[-1].append(bool(match.group(2) and EXEMPTION in match.group(2)))
     return jobs
 
 
@@ -58,15 +65,22 @@ def check_file(path, errors, warnings):
     if not jobs:
         warnings.append("%s: aucun job détecté (workflow vide ?)" % rel)
         return
-    for name, timeout in jobs:
+    for entree in jobs:
+        name, timeout = entree[0], entree[1]
+        exempt = entree[2] if len(entree) > 2 else False
         if timeout is None:
             errors.append(
                 "%s: job '%s' sans timeout-minutes (défaut 360 min, interdit)" % (rel, name)
             )
-        elif timeout > MAX_MINUTES:
+        elif timeout > MAX_MINUTES and not exempt:
             errors.append(
                 "%s: job '%s' timeout-minutes: %d > %d (budget CI)"
                 % (rel, name, timeout, MAX_MINUTES)
+            )
+        elif timeout > MAX_MINUTES and exempt:
+            warnings.append(
+                "%s: job '%s' timeout-minutes: %d > %d — exemption %s explicite"
+                % (rel, name, timeout, MAX_MINUTES, EXEMPTION)
             )
     if not any(line.startswith("concurrency:") for line in lines):
         warnings.append("%s: pas de concurrency (annulation des runs obsolètes)" % rel)

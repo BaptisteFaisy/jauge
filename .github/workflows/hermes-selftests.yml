@@ -3,7 +3,7 @@ name: Hermes selftests
 # Les modules Hermes (`.github/hermes/**`) ne sont pas couverts par `pytest` :
 # ce sont des scripts CI stdlib, hors paquet `jauge`. Ce workflow les teste
 # donc directement — chaque module porte son `--selftest`, sans réseau et sans
-# secret (la jambe Fireworks est pilotée par un transport factice, et le rebase
+# secret (la jambe InferHub est pilotée par un transport factice, et le rebase
 # est joué sur un vrai dépôt git jetable).
 #
 # Coût : quelques secondes. Aucune dépendance (pas de `uv`, pas de `pip`).
