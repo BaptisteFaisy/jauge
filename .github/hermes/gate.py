@@ -12,6 +12,7 @@ API = "https://api.github.com"
 CHECK_NAME = "hermes-lite/verdict"
 LABEL_OK = "hermes/approuvee"
 LABEL_CONFLIT = "hermes/conflit"
+LABEL_ESCALADE = "hermes/intervention-humaine"
 
 import json
 import time
@@ -129,6 +130,24 @@ def required_checks_green(repo, token, pr, required):
     return True
 
 
+def declencher_resolveur(pr, dry=False):
+    """[M16] Vrai conflit → lance `hermes-resolver.yml` sur cette PR.
+
+    Le résolveur rebase, résout (jambe Fireworks puis repli déterministe),
+    valide avec `bash scripts/ci-local.sh`, pousse en `--force-with-lease` et
+    rapporte sur la PR. La logique (anti-doublon, backoff, escalade) vit dans
+    `dispatch.py`, testée par `dispatch.py --selftest`.
+
+    Best effort : une erreur de dispatch ne doit jamais empêcher le gate de
+    conclure son verdict.
+    """
+    try:
+        import dispatch
+
+        dispatch.dispatch_resolver(pr, dry=dry)
+    except Exception as e:  # noqa: BLE001 - best effort, jamais bloquant
+        print("[gate] #%s dispatch résolveur : %r" % (pr.get("number"), e), flush=True)
+
 def settle_after_refresh(repo, token, num, required, attempts=20, pause=10, dry=False):
     """[HERMES-REFRESH] Ré-évalue la PR après le rebase serveur, DANS CE RUN.
 
@@ -160,12 +179,14 @@ def settle_after_refresh(repo, token, num, required, attempts=20, pause=10, dry=
                 token,
                 sha,
                 False,
-                "Conflits avec %s — intervention humaine" % base_ref,
-                "Le rebase automatique a révélé un conflit. Rebase manuel "
-                "puis push, ou label `hermes/intervention-humaine`.",
+                "Conflits avec %s — résolveur Hermes lancé" % base_ref,
+                "Le rebase automatique a révélé un VRAI conflit : "
+                "`hermes-resolver.yml` est lancé pour le résoudre, puis la PR "
+                "sera ré-évaluée. Rebase manuel possible en parallèle.",
             )
             set_label(pr, repo, token, LABEL_CONFLIT, True)
             set_label(pr, repo, token, LABEL_OK, False)
+            declencher_resolveur(pr, dry=dry)
             return "conflict"
         set_label(pr, repo, token, LABEL_OK, True)
         create_check(
@@ -228,13 +249,15 @@ def handle_pr(pr, repo, token, required, dry=False, auto_rebase=True):
             token,
             sha,
             False,
-            "Conflits avec %s — intervention humaine" % base_ref,
-            "Le gate ne résout pas les conflits (pas d IA ici). "
-            "Rebase manuel puis push, ou utilise le label "
-            "`hermes/intervention-humaine` pour suspendre.",
+            "Conflits avec %s — résolveur Hermes lancé" % base_ref,
+            "Le gate a détecté un VRAI conflit : `hermes-resolver.yml` rebase la "
+            "branche, résout les conflits (Fireworks puis repli déterministe), "
+            "valide avec la toolchain du dépôt et pousse. Rebase manuel possible "
+            "en parallèle, le label `hermes/intervention-humaine` informe un humain.",
         )
         set_label(pr, repo, token, LABEL_CONFLIT, True)
         set_label(pr, repo, token, LABEL_OK, False)
+        declencher_resolveur(pr, dry=dry)
         return "conflict"
     set_label(pr, repo, token, LABEL_CONFLIT, False)
 
@@ -265,12 +288,13 @@ def handle_pr(pr, repo, token, required, dry=False, auto_rebase=True):
                 token,
                 sha,
                 False,
-                "Conflits avec %s — intervention humaine" % base_ref,
-                "Le rebase automatique a été refusé. Rebase manuel "
-                "puis push, ou label `hermes/intervention-humaine`.",
+                "Conflits avec %s — résolveur Hermes lancé" % base_ref,
+                "Le rebase automatique a été refusé : `hermes-resolver.yml` est "
+                "lancé pour résoudre le conflit puis pousser la branche.",
             )
             set_label(pr, repo, token, LABEL_CONFLIT, True)
             set_label(pr, repo, token, LABEL_OK, False)
+            declencher_resolveur(pr, dry=dry)
         return r
 
     set_label(pr, repo, token, LABEL_OK, True)
@@ -318,10 +342,12 @@ def main():
     dry = os.environ.get("HERMES_LITE_DRY_RUN") == "1"
     auto_rebase = os.environ.get("HERMES_AUTO_REBASE", "1") == "1"
 
-    for lbl in (LABEL_OK, LABEL_CONFLIT):
-        ensure_label(
-            repo, token, lbl, "0e8a16" if lbl == LABEL_OK else "d73a4a", "Posé par hermes-lite"
-        )
+    for lbl, couleur in (
+        (LABEL_OK, "0e8a16"),
+        (LABEL_CONFLIT, "d73a4a"),
+        (LABEL_ESCALADE, "fbca04"),
+    ):
+        ensure_label(repo, token, lbl, couleur, "Posé par hermes-lite / le résolveur Hermes")
 
     with open(os.environ["GITHUB_EVENT_PATH"]) as fh:
         event = json.load(fh)
