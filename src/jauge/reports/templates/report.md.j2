@@ -1,0 +1,154 @@
+{# Gabarit du rapport mensuel par client (EF-RAP-03).
+   Langue : anglais (document destiné au client final, BRIEF §2.8).
+   Aucun calcul ici : toutes les valeurs viennent de RapportMensuel (ENF-IA-01). #}
+# Bedrock AI cost report — {{ rapport.tenant_nom }}
+
+**Reporting period:** {{ rapport.periode_debut.isoformat() }} to {{ rapport.periode_fin.isoformat() }} ({{ "%02d"|format(rapport.mois) }}/{{ rapport.annee }})
+**Report ID:** `{{ rapport.id }}`
+**Currency:** {{ rapport.devise }}
+
+## 1. Executive summary
+
+{% if rapport.synthese %}{{ rapport.synthese.texte }}
+{% else %}No narrative summary was attached to this report.
+{% endif %}
+{% if rapport.synthese and rapport.synthese.degradee %}
+> The narrative summary was generated deterministically because the language model was unavailable or its output was rejected. All figures below are unaffected.
+{% endif %}
+
+## 2. Key figures
+
+| Indicator | Value |
+|---|---|
+| Total Bedrock spend | {{ rapport.cout_total_usd|usd }} {{ rapport.devise }} |
+| Requests attributed | {{ rapport.nombre_requetes|nombre }} |
+| Attribution coverage | {{ rapport.couverture_attribution_pourcentage|pct }} |
+| Spend vs. previous month | {{ rapport.tendance.variation_usd|usd }} {{ rapport.devise }} ({{ rapport.tendance.variation_pourcentage|pct }}, {{ libelles_sens.get(rapport.tendance.sens, rapport.tendance.sens) }}) |
+| Previous month spend | {{ rapport.tendance.cout_mois_precedent_usd|usd }} {{ rapport.devise }} |
+| Bill reconciliation gap | {% if rapport.ecart_facture.disponible %}{{ rapport.ecart_facture.ecart_pourcentage|pct }}{% if rapport.ecart_facture.conforme %} (within the 3% target){% else %} (above the 3% target){% endif %}{% else %}not available{% endif %} |
+| Verified savings on the invoice | {{ rapport.economies.constatees_usd|usd }} {{ rapport.devise }} |
+| Expected savings from approved changes | {{ rapport.economies.attendues_usd|usd }} {{ rapport.devise }} |
+| Remaining identified savings | {{ rapport.economies.restantes_usd|usd }} {{ rapport.devise }} |
+
+## 3. Spend by application
+
+{% if rapport.par_application %}
+| Application | Requests | Spend ({{ rapport.devise }}) | Share |
+|---|---:|---:|---:|
+{% for ligne in rapport.par_application %}| {{ ligne.libelle }} | {{ ligne.nombre_requetes|nombre }} | {{ ligne.cout_usd|usd }} | {{ ligne.part_pourcentage|pct }} |
+{% endfor %}
+{% else %}No application spend was recorded for this period.
+{% endif %}
+
+## 4. Spend by team
+
+{% if rapport.par_equipe %}
+| Team | Requests | Spend ({{ rapport.devise }}) | Share |
+|---|---:|---:|---:|
+{% for ligne in rapport.par_equipe %}| {{ ligne.libelle }} | {{ ligne.nombre_requetes|nombre }} | {{ ligne.cout_usd|usd }} | {{ ligne.part_pourcentage|pct }} |
+{% endfor %}
+{% else %}No team spend was recorded for this period.
+{% endif %}
+
+## 5. Spend by model
+
+{% if rapport.par_modele %}
+| Model | Requests | Spend ({{ rapport.devise }}) | Share |
+|---|---:|---:|---:|
+{% for ligne in rapport.par_modele %}| {{ ligne.libelle }} | {{ ligne.nombre_requetes|nombre }} | {{ ligne.cout_usd|usd }} | {{ ligne.part_pourcentage|pct }} |
+{% endfor %}
+{% else %}No model spend was recorded for this period.
+{% endif %}
+
+## 6. Bill reconciliation
+
+{% if rapport.ecart_facture.disponible %}
+| Item | Value ({{ rapport.devise }}) |
+|---|---:|
+| Cost recomputed from invocation logs | {{ rapport.ecart_facture.cout_recalcule_usd|usd }} |
+| Amount billed by AWS | {{ rapport.ecart_facture.cout_facture_usd|usd }} |
+| Difference | {{ rapport.ecart_facture.ecart_usd|usd }} |
+| Difference in percent | {{ rapport.ecart_facture.ecart_pourcentage|pct }} |
+| Days reconciled | {{ rapport.ecart_facture.jours_rapproches|nombre }} |
+
+The production target is a difference below 3%. {% if rapport.ecart_facture.conforme %}This period meets it.{% else %}This period does not meet it; the causes below are being investigated.{% endif %}
+
+{% if rapport.ecart_facture.causes_non_attribuees %}
+Unattributed spend causes reported this period:
+
+{% for cause in rapport.ecart_facture.causes_non_attribuees %}- {{ cause }}
+{% endfor %}
+{% endif %}
+{% else %}No bill reconciliation was available for this period, so the difference between recomputed and billed cost cannot be stated.
+{% endif %}
+
+## 7. Savings levers
+
+{% if rapport.leviers %}
+| Lever | Application | Status | Estimated saving ({{ rapport.devise }}/month) | Confidence |
+|---|---|---|---:|---:|
+{% for levier in rapport.leviers %}| {{ libelles_levier.get(levier.type_levier, levier.type_levier) }} | {{ levier.application_nom }} | {{ libelles_statut.get(levier.statut, levier.statut) }} | {{ levier.economie_mensuelle_estimee_usd|usd }} | {{ levier.confiance|ratio }} |
+{% endfor %}
+
+Estimated savings are produced by deterministic rules over the invocation aggregates. They are an upper bound until a replay campaign proves that quality holds.
+{% else %}No open savings lever was detected in this period.
+{% endif %}
+
+## 8. Savings — expected and verified
+
+Two different numbers are reported here on purpose. *Expected* savings are the commitments attached to approved, rolling-out or applied recommendations. *Verified* savings are measured on the invoice thirty days after a change, at constant volume.
+
+| Item | Value ({{ rapport.devise }}) |
+|---|---:|
+| Expected savings (approved recommendations) | {{ rapport.economies.attendues_usd|usd }} |
+| Verified savings (invoice) | {{ rapport.economies.constatees_usd|usd }} |
+| Gap between expected and verified | {{ rapport.economies.ecart_usd|usd }} |
+| Verified share of expected | {{ rapport.economies.taux_realisation_pourcentage|pct }} |
+| Remaining identified savings | {{ rapport.economies.restantes_usd|usd }} |
+| Verifications recorded | {{ rapport.economies.nombre_verifications|nombre }} |
+
+## 9. Recommendations awaiting approval
+
+{% if rapport.recommandations_en_attente %}
+| Application | Current model | Proposed model | Expected saving ({{ rapport.devise }}/month) | Status |
+|---|---|---|---:|---|
+{% for reco in rapport.recommandations_en_attente %}| {{ reco.application_nom }} | {{ reco.modele_actuel }} | {{ reco.modele_cible }} | {{ reco.economie_mensuelle_attendue_usd|usd }} | {{ reco.statut }} |
+{% endfor %}
+
+No model change is applied without the application owner's explicit approval.
+{% else %}No recommendation is awaiting approval.
+{% endif %}
+
+## 10. Staged rollouts
+
+{% if rapport.bascules %}
+| Application | Target model | Current share | Online quality | Alert threshold | State |
+|---|---|---:|---:|---:|---|
+{% for bascule in rapport.bascules %}| {{ bascule.application_nom }} | {{ bascule.modele_cible }} | {{ bascule.palier_actuel_pourcentage }}% | {{ bascule.qualite_en_ligne_mesuree|ratio }} | {{ bascule.seuil_alerte|ratio }} | {% if bascule.annule_automatiquement %}rolled back automatically{% elif bascule.actif %}in progress{% else %}completed{% endif %}{% if bascule.motif_annulation %} ({{ bascule.motif_annulation }}){% endif %} |
+{% endfor %}
+{% else %}No staged rollout was active during this period.
+{% endif %}
+
+## Appendix A — Methodology
+
+Every figure in this report is computed by Jauge's code from invocation logs, the AWS invoice and a dated price table. The language model writes prose only; it computes no number.
+
+| Item | Value |
+|---|---|
+| Quality threshold applied | {{ rapport.methodologie.seuil_qualite|ratio }} |
+| Lower confidence bound required | {{ rapport.methodologie.seuil_intervalle_bas|ratio }} |
+| Confidence level | {{ rapport.methodologie.intervalle_confiance_pourcentage|pct }} (Wilson interval) |
+| z-score used | {{ "%.4f"|format(rapport.methodologie.z_score) }} |
+| Replay sample size | {{ rapport.methodologie.taille_echantillon|nombre }} requests |
+| Price table effective date | {% if rapport.methodologie.date_table_tarifs %}{{ rapport.methodologie.date_table_tarifs.isoformat() }}{% else %}not provided{% endif %} |
+| Region | {{ rapport.methodologie.region }} |
+| Currency | {{ rapport.methodologie.devise }} |
+
+**Data sources**
+
+{% for source in rapport.methodologie.sources %}- {{ source }}
+{% endfor %}
+
+**What this report does not contain.** Request texts and model responses never leave the client's AWS account. Jauge's control plane stores and reports aggregates, scores and identifiers only.
+
+**Known limits.** A replay sample of the default size does not cover rare cases; staged rollouts and online monitoring cover that risk. Reconciliations cover the days listed above only, so a partial month shows a partial gap.
