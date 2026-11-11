@@ -37,6 +37,10 @@ def deterministic(*parties: object) -> str:
 
     Sert aux clés d'agrégat (application|modèle|jour) et à l'identifiant d'une
     paire rejouée (requête|modèle|campagne), qui doit être recalculable.
+
+    L'empreinte ne dépend que des parties fournies : elle est identique d'une
+    machine à l'autre et d'une exécution à l'autre, ce qui permet de rejouer un
+    tirage ou de retrouver un agrégat sans base de données partagée.
     """
     joint = "|".join(str(partie) for partie in parties)
     return hashlib.sha256(joint.encode("utf-8")).hexdigest()[:16]
