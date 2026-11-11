@@ -68,6 +68,22 @@ class ControlPlaneConfig:
         return f"{registre}/{self.nom('agents')}:latest"
 
 
+def _booleen(valeur: Any, defaut: bool = True) -> bool:
+    """Interprète un booléen venu du contexte CDK.
+
+    En ligne de commande, `-c jauge.enable_api_access_logs=false` arrive comme la
+    **chaîne** « false » : `bool("false")` vaut True, ce qui inverserait le
+    réglage. Les chaînes vides sont traitées comme le défaut CDK.
+    """
+    if isinstance(valeur, bool):
+        return valeur
+    if valeur is None or valeur == "":
+        return defaut
+    if isinstance(valeur, str):
+        return valeur.strip().lower() not in {"false", "0", "no", "non", "off"}
+    return bool(valeur)
+
+
 def config_depuis_contexte(
     contexte: dict[str, Any] | None, compte: str, region: str
 ) -> ControlPlaneConfig:
@@ -91,5 +107,5 @@ def config_depuis_contexte(
         log_retention_days=int(valeurs.get("log_retention_days", 30)),
         api_stage_name=str(valeurs.get("api_stage_name", "prod")),
         agent_image_uri=valeurs.get("agent_image_uri") or None,
-        enable_api_access_logs=bool(valeurs.get("enable_api_access_logs", True)),
+        enable_api_access_logs=_booleen(valeurs.get("enable_api_access_logs"), True),
     )
