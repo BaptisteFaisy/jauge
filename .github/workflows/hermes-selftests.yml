@@ -1,0 +1,50 @@
+name: Hermes selftests
+
+# Les modules Hermes (`.github/hermes/**`) ne sont pas couverts par `pytest` :
+# ce sont des scripts CI stdlib, hors paquet `jauge`. Ce workflow les teste
+# donc directement — chaque module porte son `--selftest`, sans réseau et sans
+# secret (la jambe Fireworks est pilotée par un transport factice, et le rebase
+# est joué sur un vrai dépôt git jetable).
+#
+# Coût : quelques secondes. Aucune dépendance (pas de `uv`, pas de `pip`).
+
+on:
+  pull_request:
+    paths:
+      - ".github/hermes/**"
+      - ".github/workflows/hermes*.yml"
+      - "docs/HERMES.md"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hermes-selftests-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  PATH: /home/baptiste/.local/bin:/usr/local/bin:/usr/bin:/bin
+  PYTHONUTF8: "1"
+  PYTHONIOENCODING: utf-8
+
+jobs:
+  selftests:
+    name: hermes-selftests
+    runs-on: [self-hosted, jauge-worker]
+    timeout-minutes: 5
+    steps:
+      - name: Checkout (superficiel)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Selftests des modules Hermes (sans réseau, sans secret)
+        run: |
+          set -euo pipefail
+          for module in resolve resolver rebase dispatch watchdog; do
+            echo "==> ${module}.py --selftest"
+            python3 ".github/hermes/${module}.py" --selftest
+          done
+      - name: Budget CI (tous les jobs ≤ 5 min)
+        run: python3 .github/ci-budget/check_timeouts.py

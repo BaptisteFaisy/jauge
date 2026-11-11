@@ -1,0 +1,98 @@
+name: Hermes résolveur (conflits)
+
+# Résolveur de conflits du chantier Jauge — porté du sous-agent `duello`
+# (`hermes-conflict-resolver.yml`, ~1 630 lignes de YAML + heredoc) vers des
+# modules Python séparés et testables :
+#   .github/hermes/resolver.py  orchestration (clone, validation, push, rapport)
+#   .github/hermes/rebase.py    primitives git (rebase, résolution, hunks)
+#   .github/hermes/resolve.py   décision pure + jambe LLM Fireworks
+#   .github/hermes/dispatch.py  anti-doublon, backoff, escalade
+#   .github/hermes/gh.py        accès API partagé (labels, checks, comments)
+#
+# Lancé par le gate (`hermes-lite.yml` → `dispatch.py`) sur un VRAI conflit,
+# ou à la main : gh workflow run hermes-resolver.yml -f pr_number=12 \
+#   -f head_ref=feat/x -f base_ref=main -f head_sha=<sha>
+#
+# Ce qu'il fait : rebase de la branche sur sa base, résolution des conflits
+# (jambe Fireworks, puis repli déterministe), validation par la toolchain du
+# dépôt (`bash scripts/ci-local.sh`), `push --force-with-lease` sur la branche
+# de la PR seulement, puis rapport (commentaire marqué + check-run).
+#
+# Budget CI (règle user 2026-10-24) : 5 minutes par job, jamais plus. Le job
+# clone le dépôt dans un dossier jetable (jamais dans le workspace du runner),
+# puis rend la main : une résolution plus longue doit être découpée, pas
+# rallongée (voir docs/HERMES.md § Limites).
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "Numéro de la pull request à réparer"
+        required: true
+        type: string
+      head_ref:
+        description: "Branche de la PR (seule branche qui sera poussée)"
+        required: true
+        type: string
+      base_ref:
+        description: "Branche de base"
+        required: true
+        default: "main"
+        type: string
+      head_sha:
+        description: "SHA de tête au moment du dispatch (protection anti-course)"
+        required: false
+        default: ""
+        type: string
+
+concurrency:
+  # Un seul résolveur par PR : deux runs simultanés se marcheraient dessus.
+  group: hermes-resolver-${{ inputs.pr_number }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write # pousser sur la branche de la PR (jamais sur main)
+  pull-requests: write # commentaires, labels
+  checks: write # check-run du résolveur (verrou anti-doublon + rapport)
+  actions: write # ré-armement des checks quand aucun PAT n'est configuré
+
+env:
+  # uv est installé dans ~/.local/bin sur les runners self-hosted (r630) ;
+  # le cache y est déjà chaud (voir ci.yml).
+  PATH: /home/baptiste/.local/bin:/usr/local/bin:/usr/bin:/bin
+  UV_CACHE_DIR: /home/baptiste/.cache/uv
+  UV_NO_PROGRESS: "1"
+  PYTHONUTF8: "1"
+  PYTHONIOENCODING: utf-8
+
+jobs:
+  resolver:
+    name: resolver
+    runs-on: [self-hosted, jauge-worker]
+    timeout-minutes: 5
+    steps:
+      - name: Checkout (superficiel — le travail se fait dans un clone jetable)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Rebase + résolution + validation + push
+        env:
+          # Jeton d'API : labels, commentaires, check-runs, dispatches.
+          GH_TOKEN: ${{ github.token }}
+          # PAT fine-grained `contents: write` (recommandé). Sert au push git :
+          # un push fait avec le GITHUB_TOKEN ne déclenche AUCUN workflow
+          # (anti-récursion GitHub) et laisserait la PR sans checks.
+          HERMES_PUSH_TOKEN: ${{ secrets.HERMES_PUSH_TOKEN }}
+          # Jambe LLM directe : Fireworks. Absente => 100 % déterministe +
+          # escalade humaine (jamais d'échec silencieux).
+          FIREWORKS_API_KEY: ${{ secrets.FIREWORKS_API_KEY }}
+          # Toolchain du dépôt : Python (uv + ruff + pytest + cfn-lint).
+          # Jamais npm/tsc/gradle sur ce dépôt.
+          VALIDATION_CMD: "bash scripts/ci-local.sh"
+          VALIDATION_TIMEOUT: "200"
+          PR_NUMBER: ${{ inputs.pr_number }}
+          HEAD_REF: ${{ inputs.head_ref }}
+          BASE_REF: ${{ inputs.base_ref }}
+          HEAD_SHA: ${{ inputs.head_sha }}
+        run: python3 .github/hermes/resolver.py

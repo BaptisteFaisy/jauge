@@ -1,0 +1,71 @@
+name: Hermes chien de garde (réveil du gate)
+
+# Une PR devient « en conflit » SANS qu'aucun événement ne la concerne : il
+# suffit qu'une autre PR soit fusionnée dans `main`. Sans réveil, elle reste en
+# conflit indéfiniment et le résolveur n'est jamais lancé.
+#
+# Ce workflow réveille le balayage du gate (`hermes-lite.yml`) :
+#   - à la fin de la CI sur `main` (donc juste après une fusion) : chemin
+#     ÉVÉNEMENTIEL, pas planifié — le planificateur GitHub livre mal les crons
+#     et un cron coûte sur un dépôt privé (leçon [WD-EVENT] du chantier) ;
+#   - à la main (`workflow_dispatch`), avec option « forcer ».
+#
+# Il ne fait rien si un balayage est déjà en attente ou en cours : un dispatch
+# de trop annulerait le run en attente du même groupe de concurrence (leçon
+# [WD-NO-STORM]).
+#
+# Logique dans `.github/hermes/watchdog.py` (stdlib, testable) :
+#   python3 .github/hermes/watchdog.py --selftest
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      forcer:
+        description: "Forcer le réveil même si un réveil a eu lieu il y a moins de 10 min"
+        required: false
+        type: boolean
+        default: false
+
+# `actions: write` est INDISPENSABLE : le POST .../dispatches est refusé (403)
+# avec un jeton sans droits, et le chien de garde échouerait à chaque réveil.
+permissions:
+  actions: write
+  contents: read
+
+# Groupe PROPRE : jamais en concurrence avec le gate (sinon on annulerait le
+# balayage qu'on vient de déclencher).
+concurrency:
+  group: hermes-watchdog
+  cancel-in-progress: false
+
+env:
+  PATH: /home/baptiste/.local/bin:/usr/local/bin:/usr/bin:/bin
+  PYTHONUTF8: "1"
+  PYTHONIOENCODING: utf-8
+
+jobs:
+  watchdog:
+    name: watchdog
+    runs-on: [self-hosted, jauge-worker]
+    timeout-minutes: 5
+    steps:
+      - name: Checkout (superficiel)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Réveiller le balayage du gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # Fin de CI sur main : le gate a pu se suspendre juste avant, donc le
+          # rate-limit de 10 min ne doit pas faire patienter. Le déclenchement
+          # manuel garde le rate-limit sauf option « forcer ».
+          FORCER: >-
+            ${{ github.event_name == 'workflow_run'
+            && github.event.workflow_run.conclusion == 'success'
+            || inputs.forcer }}
+        run: python3 .github/hermes/watchdog.py
