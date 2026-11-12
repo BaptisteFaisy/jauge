@@ -29,6 +29,29 @@ from jauge.rollout.controller import (
     QualiteEnLigne,
     SuiviBascule,
 )
+from jauge.rollout.devis import (
+    BornesEchantillon,
+    EstimationShadow,
+    cout_unitaire,
+    estimer_cout_shadow,
+    verifier_plafond,
+)
+from jauge.rollout.fantome import (
+    DUREE_MINIMUM_HEURES_DEFAUT,
+    PALIER_OMBRE,
+    POURCENTAGE_CANARI_DEFAUT,
+    VOLUME_MINIMUM_REQUETES_DEFAUT,
+    ControleurFantome,
+    DecisionOmbre,
+    EtatOmbre,
+    FakePasserelleFantome,
+    ObservationOmbre,
+    PasserelleFantome,
+    PhaseBascule,
+    RegleOmbre,
+    ReglesOmbre,
+    decider_passage_canari,
+)
 from jauge.rollout.gateway import (
     PRIORITE_PAR_DEFAUT,
     AgentCoreGatewayClient,
@@ -36,6 +59,12 @@ from jauge.rollout.gateway import (
     FakePasserelleClient,
     PasserelleClient,
     ReglePasserelle,
+)
+from jauge.rollout.journal import (
+    JournalEtape,
+    JournalEtapes,
+    StatutEtape,
+    maintenant,
 )
 from jauge.rollout.ticket import (
     EmetteurTicket,
@@ -51,22 +80,45 @@ from jauge.rollout.verify import (
 )
 
 __all__ = [
+    "DUREE_MINIMUM_HEURES_DEFAUT",
+    "PALIER_OMBRE",
+    "POURCENTAGE_CANARI_DEFAUT",
     "PRIORITE_PAR_DEFAUT",
+    "VOLUME_MINIMUM_REQUETES_DEFAUT",
     "AgentCoreGatewayClient",
     "AppelPasserelle",
+    "BornesEchantillon",
     "ConfirmationFacture",
+    "ControleurFantome",
     "ControlleurBascule",
+    "DecisionOmbre",
     "EmetteurTicket",
+    "EstimationShadow",
+    "EtatOmbre",
     "FakeEmetteurTicket",
     "FakePasserelleClient",
+    "FakePasserelleFantome",
+    "JournalEtape",
+    "JournalEtapes",
     "MesureEnLigne",
+    "ObservationOmbre",
     "PasserelleClient",
+    "PasserelleFantome",
+    "PhaseBascule",
     "QualiteEnLigne",
+    "RegleOmbre",
     "ReglePasserelle",
+    "ReglesOmbre",
+    "StatutEtape",
     "SuiviBascule",
     "TicketChangementModele",
     "confirmer_par_etiquette",
     "cout_par_requete",
+    "cout_unitaire",
+    "decider_passage_canari",
+    "estimer_cout_shadow",
     "generer_ticket",
+    "maintenant",
     "verifier_economie",
+    "verifier_plafond",
 ]
