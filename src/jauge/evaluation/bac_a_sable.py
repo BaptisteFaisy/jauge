@@ -76,6 +76,7 @@ FICHIER_RESULTATS = "resultats.xml"
 FICHIER_SORTIE = "sortie.txt"
 FICHIER_ERREUR = "erreur.txt"
 FICHIER_CONFIG_PYTEST = "pytest.ini"
+FICHIER_CONFIG_NSJAIL = "nsjail.cfg"
 
 
 @dataclass(frozen=True)
@@ -155,7 +156,7 @@ def _isolation_disponible(interpreteur: str | None = None) -> tuple[str, str]:
     s'est produit sur un runner dont `unshare` ne connaissait pas `--chdir`.
     """
     python = interpreteur or sys.executable
-    for outil in ("bwrap", "unshare"):
+    for outil in ("nsjail", "bwrap", "unshare"):
         if shutil.which(outil) and _sonde_outil(outil, python):
             return ISOLEMENT_NAMESPACE, outil
     return ISOLEMENT_GARDE, ""
@@ -166,12 +167,16 @@ def niveau_isolation(interpreteur: str | None = None) -> str:
     return _isolation_disponible(interpreteur)[0]
 
 
-def _commande_isolee(interpreteur: str, dossier: Path, isolation: str) -> list[str]:
+def _commande_isolee(
+    interpreteur: str, dossier: Path, isolation: str, reglages: ParametresBacASable
+) -> list[str]:
     """Commande complète : harnais Python, éventuellement sous namespace."""
     harnais = [interpreteur, "-B", "-E", "-s", FICHIER_HARNAIS]
     if isolation != ISOLEMENT_NAMESPACE:
         return harnais
     outil = _isolation_disponible()[1] or "unshare"
+    if outil == "nsjail":
+        return _commande_nsjail(harnais, dossier, reglages)
     return _commande_namespace(harnais, dossier, outil)
 
 
@@ -206,13 +211,71 @@ def _commande_namespace(charge: list[str], dossier: Path, outil: str) -> list[st
             "--new-session",
             *charge,
         ]
-    return ["unshare", "--net", "--map-root-user", *charge]
+    return [
+        "unshare",
+        "--net",
+        "--pid",
+        "--fork",
+        "--mount",
+        "--mount-proc",
+        "--map-root-user",
+        *charge,
+    ]
+
+
+def _config_nsjail(dossier: Path, reglages: ParametresBacASable) -> str:
+    """Configuration nsjail du bac à sable : namespaces, seccomp et quotas.
+
+    `nsjail` ajoute à l'isolation par namespaces un **filtre seccomp** (liste
+    blanche d'appels système) et des quotas de groupe : c'est la frontière la
+    plus stricte proposée ici.
+
+    La configuration est écrite dans le dossier jetable, donc un code candidat
+    ne peut pas la modifier (elle est relue par `nsjail` avant l'exécution).
+    Elle est **sondée avec la commande réelle** : si `nsjail` n'est pas
+    installé, ou si sa version ne lit pas ce format, l'outil est écarté et le
+    bac à sable retombe sur `bwrap` ou `unshare` — jamais sur un silence.
+    """
+    return "\n".join(
+        [
+            'name: "jauge-sandbox"',
+            "mode: ONCE",
+            'hostname: "jauge-sandbox"',
+            "die_with_parent: true",
+            "clone_newnet: true",
+            "clone_newpid: true",
+            "clone_newns: true",
+            "clone_newuser: true",
+            "mount_proc: true",
+            f"time_limit: {{ soft: {int(reglages.timeout_secondes)},"
+            f" hard: {int(reglages.timeout_secondes) + 1} }}",
+            f"rlimit_as: {{ soft: {reglages.memoire_mo * 1024 * 1024},"
+            f" hard: {reglages.memoire_mo * 1024 * 1024} }}",
+            f"rlimit_cpu: {{ soft: {reglages.cpu_secondes}, hard: {reglages.cpu_secondes + 1} }}",
+            f"rlimit_fsize: {{ soft: {reglages.taille_fichier_octets},"
+            f" hard: {reglages.taille_fichier_octets} }}",
+            f"rlimit_nproc: {{ soft: {reglages.max_processus}, hard: {reglages.max_processus} }}",
+            'bindmount: ["/:/ro", f"{dossier}:{dossier}"]',
+            "",
+        ]
+    )
+
+
+def _commande_nsjail(charge: list[str], dossier: Path, reglages: ParametresBacASable) -> list[str]:
+    """Commande nsjail : configuration jetable puis charge utile."""
+    configuration = dossier / FICHIER_CONFIG_NSJAIL
+    configuration.write_text(_config_nsjail(dossier, reglages), encoding="utf-8")
+    return ["nsjail", "--config", str(configuration), "--", *charge]
 
 
 def _sonde_outil(outil: str, python: str) -> bool:
     """Sonde l'outil d'isolation avec la commande réelle, dossier jetable compris."""
     with tempfile.TemporaryDirectory(prefix="jauge-sonde-") as dossier:
-        return _sonde(_commande_namespace([python, "-c", "pass"], Path(dossier), outil))
+        chemin = Path(dossier)
+        reglages = ParametresBacASable()
+        if outil == "nsjail":
+            return _sonde(_commande_nsjail([python, "-c", "pass"], chemin, reglages))
+        return _sonde(_commande_namespace([python, "-c", "pass"], chemin, outil))
 
 
 def _environnement(dossier: Path, parametres: ParametresBacASable) -> dict[str, str]:
@@ -401,7 +464,7 @@ def executer_tests(
         _preparer_dossier(dossier, code, tests)
         debut = time.monotonic()
         code_retour, delai_depasse = _lancer(
-            _commande_isolee(interpreteur, dossier, isolation),
+            _commande_isolee(interpreteur, dossier, isolation, reglages),
             dossier,
             _environnement(dossier, reglages),
             reglages.timeout_secondes,

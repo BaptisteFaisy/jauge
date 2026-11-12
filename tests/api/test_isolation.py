@@ -70,6 +70,18 @@ CAS_R11 = [
     ),
     ("POST", f"/v1/tenants/{CLIENT_B}/reports", {}, RoleUtilisateur.RESPONSABLE_COMPTE),
     ("POST", "/v1/chat", {"question": "Coût ?", "tenant_id": CLIENT_B}, RoleUtilisateur.DIRECTEUR),
+    (
+        "POST",
+        f"/v1/applications/{APP_B}/protocoles",
+        {"modele_juge_id": "eu.anthropic.claude-3-5-sonnet-20241022-v2:0"},
+        RoleUtilisateur.ANALYSTE_FINOPS,
+    ),
+    (
+        "POST",
+        f"/v1/applications/{APP_B}/verite-terrain",
+        {"porte": "numerique", "reponse_candidate": "1", "valeur_attendue": 1.0},
+        RoleUtilisateur.ANALYSTE_FINOPS,
+    ),
 ]
 
 

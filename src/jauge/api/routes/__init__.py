@@ -14,12 +14,14 @@ from jauge.api.routes import (
     killswitch,
     levers,
     pricing,
+    protocoles,
     recommendations,
     reports,
     rollouts,
     savings,
     settings,
     tenants,
+    verite,
 )
 
 #: Ordre d'enregistrement dans l'application (l'ordre n'a pas d'effet sur le routage).
@@ -33,6 +35,8 @@ ROUTEURS = (
     costs.router,
     levers.router,
     pricing.router,
+    protocoles.router,
+    verite.router,
     campaigns.router,
     recommendations.router,
     rollouts.router,
