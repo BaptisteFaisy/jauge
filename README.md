@@ -118,12 +118,13 @@ agent and API ports onto the real modules (M17) and the pre-submission finishes
 (M18). What is left is not code but gestures: a real AWS deployment, the video
 shoot, and the Devpost submission (see [`docs/SUBMISSION.md`](docs/SUBMISSION.md)).
 
-On top of the build plan, **five of the ten tracks** selected in
-[`docs/backlog/README.md`](docs/backlog/README.md) are merged: the signed proof
-pack, the counterfactual backtest, cost-weighted quality with per-stratum
-regression detection, the token-diet lever, and the customer kill-switch with its
-anonymity guards. The five others are **not delivered** — the backlog states each
-one's real state, including the partial untested code waiting in worktrees.
+On top of the build plan, the **ten tracks** selected in
+[`docs/backlog/README.md`](docs/backlog/README.md) are all merged: the signed
+proof pack, the counterfactual backtest, cost-weighted quality with per-stratum
+regression detection, the token-diet lever, the customer kill-switch with its
+anonymity guards, the pre-registered evaluation protocol, the judge calibration
+suite, the deterministic ground-truth gates, the shadow-then-canary traffic, and
+the historised price catalogue.
 
 | Area | Status |
 |---|---|
@@ -152,11 +153,16 @@ one's real state, including the partial untested code waiting in worktrees.
 | Token-diet lever: prompt compression detected on aggregates, proven by replay on deterministic variants | **Delivered** — `src/jauge/levers/token_diet.py`, `src/jauge/replay/variantes.py`, `variantes_preuve.py` (track 8) |
 | Customer kill-switch: every processing route refuses with 409 `traitement_suspendu`, refusal journaled | **Delivered** — `src/jauge/api/killswitch.py`, `tests/api/test_killswitch_routes.py` (track 9) |
 | k-anonymity and differential-privacy noise on published aggregates, cross-customer benchmark restricted to MSP roles | **Delivered** — `src/jauge/reports/anonymisation.py`, `GET /v1/benchmarks/parc` (track 9) |
+| Pre-registered evaluation protocol: immutable protocol hashed with the campaign, non-inferiority margin | **Delivered** — `src/jauge/evaluation/protocole.py`, `src/jauge/replay/scellement.py` (track 1) |
+| Judge calibration: position, verbosity and formatting bias measured, golden trap items, false-accept and false-reject rates | **Delivered** — `src/jauge/evaluation/calibration.py`, `aptitude_judge.py`, `jeux_calibration*.py` (track 2) |
+| Ground-truth gates: candidate code executed in a sandbox, JSON validated against its schema, numeric answer compared to a reference — the judge is not consulted where the truth is objective | **Delivered** — `src/jauge/evaluation/bac_a_sable.py`, `verite_terrain.py` (track 3) |
+| Shadow traffic then canary before the switch: the candidate answers on a copy of the real traffic and is never served, then 1 % of real traffic with pre-committed rollback triggers | **Delivered** — `src/jauge/rollout/shadow.py`, `canary.py` (track 7) |
+| Historised price catalogue with the period of validity of each line, and the proofs a price drop makes stale | **Delivered** — `src/jauge/pricing_data/catalogue.py`, `surveillance.py`, `GET /v1/pricing/catalogue` (track 10) |
 
 The whole test suite runs offline — no AWS account, no network, no credentials.
 The real boto3/Bedrock adapters are written but exercised only through their
 interface with fake clients, so the suite never reaches AWS. On `main` today
-`uv run pytest` reports **1395 passed** (the duration depends on the machine).
+`uv run pytest` reports **1620 passed** (the duration depends on the machine).
 
 ### Results: measured vs target
 
@@ -184,7 +190,7 @@ uv sync --all-groups
 # 2. Run the test suite — offline, no AWS account, no credentials
 uv run pytest
 #   ...                                              [100%]
-#   1395 passed in 1:22    (count at the time of writing)
+#   1620 passed in 1:22    (count at the time of writing)
 
 # 3. Run the same gates as CI
 bash scripts/ci-local.sh
@@ -262,7 +268,7 @@ minute-by-minute test path: [`docs/TEST-INSTRUCTIONS.md`](docs/TEST-INSTRUCTIONS
 | `demo/` | Synthetic traffic generator and demo applications | Delivered (M12) |
 | `portal/` | Static web portal, no build step | Delivered (M13) |
 | `docs/` | HLD, architecture, demo script, submission checklist, test instructions | Delivered |
-| `tests/` | Unit and isolation (negative security) tests, end-to-end acceptance | Delivered — 1395 passed, offline |
+| `tests/` | Unit and isolation (negative security) tests, end-to-end acceptance | Delivered — 1620 passed, offline |
 
 Work breakdown, module ownership and per-module "definition of done":
 [`docs/MODULES.md`](docs/MODULES.md).
