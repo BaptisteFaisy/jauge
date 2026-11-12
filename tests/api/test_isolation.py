@@ -82,6 +82,24 @@ CAS_R11 = [
         {"porte": "numerique", "reponse_candidate": "1", "valeur_attendue": 1.0},
         RoleUtilisateur.ANALYSTE_FINOPS,
     ),
+    (
+        "POST",
+        f"/v1/applications/{APP_B}/ombre",
+        {
+            "modele_candidat": PETIT_MODELE,
+            "taille_max": 5,
+            "plafond_usd": 1.0,
+            "approuve_par": "analyste-finops",
+            "observations": [],
+        },
+        RoleUtilisateur.ANALYSTE_FINOPS,
+    ),
+    (
+        "GET",
+        f"/v1/applications/{APP_B}/ombre",
+        None,
+        RoleUtilisateur.DIRECTEUR,
+    ),
 ]
 
 
