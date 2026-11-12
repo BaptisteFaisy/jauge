@@ -248,3 +248,24 @@ def test_aiguillage_des_taches_vers_les_portes() -> None:
         "calcul": "numerique",
         "redaction": "juge",
     }
+
+
+def test_la_porte_code_refuse_sans_isolation_noyau(monkeypatch) -> None:
+    """Sans isolation noyau, la porte ne s'exécute pas : elle ne prouve rien.
+
+    C'est la différence avec l'ancien comportement : au lieu de faire tourner
+    du code hostile dans un simple sous-processus, la porte se déclare non
+    applicable et rend la main au juge.
+    """
+    from jauge.evaluation import bac_a_sable
+    from jauge.evaluation.verite_terrain import porte_code
+
+    monkeypatch.setattr(
+        bac_a_sable, "niveau_isolation", lambda interpreteur=None: bac_a_sable.ISOLEMENT_GARDE
+    )
+
+    verdict = porte_code(CODE_JUSTE, AttenduVerite(TypePorte.CODE, tests=TEST_JUSTE))
+
+    assert verdict.ok is True
+    assert verdict.critique is False
+    assert "non exécutable" in verdict.motif

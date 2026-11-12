@@ -29,6 +29,14 @@ from jauge.evaluation.bac_a_sable import (
     niveau_isolation,
 )
 
+#: Ces tests lancent réellement un sous-processus : ils exigent une isolation
+#: par le noyau (bwrap, unshare ou nsjail). Sans elle, le bac à sable refuse
+#: l'exécution — c'est le comportement voulu, pas une panne.
+exige_isolation = pytest.mark.skipif(
+    niveau_isolation() != ISOLEMENT_NAMESPACE,
+    reason="le test exige une isolation par le noyau (bwrap, unshare ou nsjail)",
+)
+
 CODE_JUSTE = "def triple(x):\n    return x * 3\n"
 TEST_JUSTE = "from solution import triple\n\n\ndef test_triple():\n    assert triple(2) == 6\n"
 TEST_FAUX = "from solution import triple\n\n\ndef test_triple():\n    assert triple(2) == 7\n"
@@ -101,6 +109,7 @@ def test_environnement_sans_secrets_ni_proxy_de_l_hote(monkeypatch: pytest.Monke
     assert "HTTPS_PROXY" not in environnement
 
 
+@exige_isolation
 def test_code_juste_passe() -> None:
     """Exécution réelle : les tests fournis passent, le verdict est rendu."""
     resultat = executer_tests(CODE_JUSTE, TEST_JUSTE)
@@ -113,6 +122,7 @@ def test_code_juste_passe() -> None:
     assert resultat.duree_ms > 0
 
 
+@exige_isolation
 def test_code_faux_echoue_en_nommant_les_tests() -> None:
     """Exécution réelle : l'échec nomme le test, sans recopier le code candidat."""
     resultat = executer_tests(CODE_JUSTE, TEST_FAUX)
@@ -123,6 +133,7 @@ def test_code_faux_echoue_en_nommant_les_tests() -> None:
     assert "triple" not in resultat.motif.replace("test_triple", "")
 
 
+@exige_isolation
 def test_delai_depasse_interrompt_l_execution() -> None:
     """Exécution réelle : une boucle infinie est tuée au délai imposé."""
     code = "import time\n\n\ndef attente():\n    time.sleep(30)\n"
@@ -136,6 +147,7 @@ def test_delai_depasse_interrompt_l_execution() -> None:
     assert "délai" in resultat.motif
 
 
+@exige_isolation
 def test_acces_reseau_refuse() -> None:
     """Exécution réelle : une tentative réseau échoue, quel que soit le niveau.
 
@@ -158,6 +170,7 @@ def test_acces_reseau_refuse() -> None:
     assert resultat.ok is False
 
 
+@exige_isolation
 def test_sortie_bornee() -> None:
     """La sortie rendue est tronquée à la borne configurée (pas de fuite massive)."""
     code = "def bavard():\n    return None\n"
@@ -169,3 +182,26 @@ def test_sortie_bornee() -> None:
 
     assert resultat.execute is True
     assert len(resultat.sortie) <= 200
+
+
+def test_la_config_nsjail_fige_les_quotas() -> None:
+    """La configuration nsjail fige temps, mémoire, CPU, taille et processus.
+
+    Elle n'est jamais exécutée si `nsjail` n'est pas installé (la sonde
+    l'écarte), mais son contenu fige les bornes **avant** l'exécution.
+    """
+    from pathlib import Path
+
+    from jauge.evaluation import bac_a_sable
+
+    config = bac_a_sable._config_nsjail(
+        Path("/tmp/x"), ParametresBacASable(timeout_secondes=3.0, memoire_mo=128, cpu_secondes=5)
+    )
+
+    assert "time_limit: { soft: 3, hard: 4 }" in config
+    assert "rlimit_as: { soft: 134217728, hard: 134217728 }" in config
+    assert "rlimit_cpu: { soft: 5, hard: 6 }" in config
+    assert "clone_newnet: true" in config
+    assert "clone_newpid: true" in config
+    assert "die_with_parent: true" in config
+    assert "mount_proc: true" in config

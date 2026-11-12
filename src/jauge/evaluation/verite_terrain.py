@@ -143,8 +143,18 @@ def _convertir(brut: str) -> float | None:
 def porte_code(
     code: str, attendu: AttenduVerite, parametres: ParametresBacASable | None = None
 ) -> ResultatControle:
-    """Exécute le code produit avec les tests de la tâche, dans le bac à sable."""
-    resultat = executer_tests(code, attendu.tests, parametres)
+    """Exécute le code produit avec les tests de la tâche, dans le bac à sable.
+
+    **Par défaut, l'isolation noyau est exigée** : si la machine ne sait pas
+    tenir une isolation par le noyau, la porte ne s'exécute pas et se déclare
+    non applicable — elle ne prouve rien et ne bloque rien, au lieu de faire
+    tourner du code hostile dans un simple sous-processus. Un appelant qui
+    accepte explicitement le mode dégradé doit le demander
+    (`ParametresBacASable(exiger_namespace=False)`), et le motif dit alors
+    quelle isolation a été obtenue.
+    """
+    reglages = parametres or ParametresBacASable(exiger_namespace=True)
+    resultat = executer_tests(code, attendu.tests, reglages)
     if not resultat.execute:
         return non_applicable(f"porte code non exécutable : {resultat.motif}")
     if resultat.ok:
