@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from jauge.api.audit import AuditSink, journaliser
 from jauge.api.auth import RoleUtilisateur, Utilisateur
 from jauge.api.deps import DepAudit, DepStore, DepUtilisateur
+from jauge.api.killswitch import DepKillSwitch, garde_traitement
 from jauge.api.routes.applications import application_controlee
 from jauge.api.tenancy import exiger_role, localiser
 from jauge.common.errors import EtatIncompatibleError
@@ -68,10 +69,12 @@ def decider_recommandation(
     utilisateur: DepUtilisateur,
     store: DepStore,
     audit: DepAudit,
+    kill_switch: DepKillSwitch,
 ) -> Recommandation:
     """Approuve ou refuse une recommandation (ENF-IA-02 : décision humaine)."""
     exiger_role(utilisateur, *ROLES_DECISION)
     reco = recommandation_controlee(reco_id, utilisateur, store, audit, "decision")
+    garde_traitement(kill_switch, audit, utilisateur)(reco.tenantId, "decision_recommandation")
     if reco.status != StatutRecommandation.EN_ATTENTE_APPROBATION:
         raise EtatIncompatibleError(
             "Cette recommandation a déjà été tranchée",

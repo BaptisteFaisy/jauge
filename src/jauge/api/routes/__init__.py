@@ -4,11 +4,14 @@ from __future__ import annotations
 
 from jauge.api.routes import (
     applications,
+    backtest,
+    benchmark,
     campaigns,
     chat,
     costs,
     demo,
     health,
+    killswitch,
     levers,
     recommendations,
     reports,
@@ -21,6 +24,9 @@ from jauge.api.routes import (
 #: Ordre d'enregistrement dans l'application (l'ordre n'a pas d'effet sur le routage).
 ROUTEURS = (
     health.router,
+    backtest.router,
+    benchmark.router,
+    killswitch.router,
     tenants.router,
     applications.router,
     costs.router,

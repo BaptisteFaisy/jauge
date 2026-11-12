@@ -9,5 +9,21 @@ d'authentification et de rôles (`auth`), le cloisonnement par client
 from __future__ import annotations
 
 from jauge.api.app import creer_app
+from jauge.api.killswitch import (
+    ActionKillSwitch,
+    EtatKillSwitch,
+    EtatKillSwitchClient,
+    KillSwitchStore,
+    MemoryKillSwitchStore,
+    TraitementSuspenduError,
+)
 
-__all__ = ["creer_app"]
+__all__ = [
+    "ActionKillSwitch",
+    "EtatKillSwitch",
+    "EtatKillSwitchClient",
+    "KillSwitchStore",
+    "MemoryKillSwitchStore",
+    "TraitementSuspenduError",
+    "creer_app",
+]

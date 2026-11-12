@@ -5,8 +5,8 @@ Deux choses :
 - le **port** lit les leviers enregistrés dans le store et les classe par
   économie mensuelle décroissante (EF-LEV-06), avec la fonction de classement
   du module M3 (`jauge.levers.detector.classer_par_economie`) ;
-- le **service de détection** exécute le détecteur réel — les sept règles de
-  l'Annexe A (`jauge.levers.detecter_leviers`) — sur un `ContexteLevier`, puis
+- le **service de détection** exécute le détecteur réel — les huit règles par
+  défaut (`jauge.levers.detecter_leviers`) — sur un `ContexteLevier`, puis
   enregistre les leviers trouvés dans le store.
 
 C'est le même code qu'en production : aucun calcul n'est dupliqué (ENF-IA-01).
@@ -69,7 +69,7 @@ class ServiceDetectionLeviers:
         self._store = store
 
     def detecter(self, contexte: ContexteLevier) -> list[Levier]:
-        """Applique les sept règles de l'Annexe A et enregistre le résultat."""
+        """Applique les huit règles par défaut et enregistre le résultat."""
         leviers = detecter_leviers(contexte)
         for levier in leviers:
             self._store.enregistrer_levier(levier)

@@ -149,7 +149,12 @@ def test_classement_coherent_avec_les_regles_existantes(fabriquer_contexte) -> N
 
 
 def test_identifiant_distinct_de_la_regle_sorties_trop_longues(fabriquer_contexte) -> None:
-    """Le repli de type ne provoque aucune collision d'identifiant."""
+    """La diète de jetons a son **propre** type de levier (aucune collision).
+
+    Elle était auparavant reclassée « sorties trop longues » faute de valeur dans
+    `TypeLevier` ; la valeur `DIETE_JETONS` a été ajoutée au socle, donc les deux
+    leviers sont maintenant réellement distincts.
+    """
     contexte = fabriquer_contexte(
         profil={
             **PROMPT_GONFLE,
@@ -164,7 +169,9 @@ def test_identifiant_distinct_de_la_regle_sorties_trop_longues(fabriquer_context
     sorties = RegleSortiesTropLongues().detecter(contexte)
 
     assert diet is not None and sorties is not None
-    assert diet.type_levier is sorties.type_levier  # repli documenté
+    assert diet.type_levier is TypeLevier.DIETE_JETONS
+    assert diet.type_levier is not sorties.type_levier
+    assert diet.id != sorties.id
     assert diet.id != sorties.id
     assert MARQUEUR_LOCAL == "diete_jetons"
     assert PART_COMPRESSIBLE == 0.35

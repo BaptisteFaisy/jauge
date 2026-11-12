@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field
 from jauge.api.audit import AuditSink, journaliser
 from jauge.api.auth import RoleUtilisateur, Utilisateur
 from jauge.api.deps import DepAudit, DepPortBascules, DepReglages, DepStore, DepUtilisateur
+from jauge.api.killswitch import DepKillSwitch, garde_traitement
 from jauge.api.ports import BasculePort
 from jauge.api.routes.recommendations import recommandation_controlee
 from jauge.api.tenancy import exiger_role, localiser
@@ -160,10 +161,14 @@ def demarrer_bascule(
     reglages: DepReglages,
     audit: DepAudit,
     port: DepPortBascules,
+    kill_switch: DepKillSwitch,
 ) -> ResultatBascule:
     """Démarre la bascule d'une recommandation approuvée (ENF-IA-02)."""
     exiger_role(utilisateur, *ROLES_BASCULE)
     reco = recommandation_controlee(reco_id, utilisateur, store, audit, "bascule")
+    # Le kill-switch prime sur l'approbation : c'est un droit du client, il coupe
+    # tout traitement avant même qu'on examine l'état de la recommandation.
+    garde_traitement(kill_switch, audit, utilisateur)(reco.tenantId, "demarrage_bascule")
     if reco.status != StatutRecommandation.APPROUVEE:
         _refuser_sans_approbation(reco, utilisateur, audit)
     application = store.obtenir_application(reco.tenantId, reco.applicationId)

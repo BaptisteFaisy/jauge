@@ -33,7 +33,21 @@ devant un juge du hackathon.
 
 ## Top 10
 
+**Bilan (2026-11-12).** Cinq pistes sur dix sont fusionnées dans `main` :
+n° 4 (PR #48), n° 5 (PR #47), n° 6 (PR #51), n° 8 (PR #46), n° 9 (PR #45).
+La branche `feat/integration-top10` les câble : exports publics, routeurs
+`backtest`, `killswitch` et `benchmark`, garde kill-switch sur les routes qui
+engagent un traitement, point `GET /v1/benchmarks/parc` et huitième règle de
+levier. La suite compte **1 395 tests** verts, contre 1 109 à la génération de
+ce backlog. Les cinq pistes restantes (n° 1, 2, 3, 7, 10) ne sont **pas
+livrées** : du code partiel sans tests dort dans des worktrees ; la piste n° 7
+n'a aucun fichier.
+
 ### 1. Protocole d'évaluation pré-enregistré + marge de non-infériorité
+
+**Statut (2026-11-12).** Non livré — worktree `~/tmp/jauge-t1-protocole` :
+`src/jauge/evaluation/protocole.py` et `src/jauge/replay/scellement.py` écrits,
+non committés, sans tests.
 
 **Quoi.** Figer, *avant* le moindre rejeu, un protocole immuable : métriques,
 prompt du juge, seuils, plan d'échantillonnage, marge de non-infériorité
@@ -52,6 +66,10 @@ première objection d'un juge technique.
 
 ### 2. Suite de calibration du juge (biais mesurés, pas supposés)
 
+**Statut (2026-11-12).** Non livré — worktree `~/tmp/jauge-t2-calibration` :
+`calibration.py`, `aptitude_juge.py`, `jeux_calibration.py` et
+`jeux_calibration_corpus.py` écrits, non committés, sans tests.
+
 **Quoi.** Un jeu de calibration qui mesure le juge lui-même : aveuglement sur le
 modèle producteur, ordre des réponses randomisé, tests de biais de position /
 verbosité / formatage, **items-pièges** dorés glissés dans le lot, et calcul des
@@ -68,6 +86,9 @@ hypothèse en chiffre publié dans la recommandation.
 
 ### 3. Portes déterministes à vérité terrain
 
+**Statut (2026-11-12).** Non livré — worktree `~/tmp/jauge-t3-verite-terrain` :
+`src/jauge/evaluation/bac_a_sable.py` écrit, non committé, sans tests.
+
 **Quoi.** Là où une réponse objective existe, ne pas demander au juge : exécuter
 le code généré dans un bac à sable et lancer les tests, valider le JSON contre le
 schéma, comparer une réponse numérique à un solveur.
@@ -82,6 +103,11 @@ le plus solide face à un acheteur sceptique.
 **Idées brutes.** axe 2 n° 28, 48, 49, 50, 51.
 
 ### 4. Qualité pondérée par le coût + régression détectée par strate
+
+**Statut (2026-11-12).** Livré — PR #48 : `src/jauge/evaluation/ponderation.py`,
+`src/jauge/evaluation/strates.py`, `src/jauge/engine/stats.py` ; tests
+`tests/evaluation/test_ponderation.py`, `tests/evaluation/test_strates.py`,
+`tests/engine/test_stats_ponderation.py`.
 
 **Quoi.** Deux changements de lecture : le titre devient **qualité par dollar**
 (et non qualité brute), et la décision se prend aussi **par strate** (type de
@@ -98,6 +124,10 @@ comme limite). Pondérer par le coût aligne la preuve sur l'objectif FinOps.
 
 ### 5. Backtest contrefactuel : « ce que ça aurait coûté le mois dernier »
 
+**Statut (2026-11-12).** Livré — PR #47 : `src/jauge/replay/backtest.py`, point
+d'API `GET /v1/applications/{app_id}/backtest` ; tests
+`tests/replay/test_backtest.py`, `tests/api/test_route_backtest.py`.
+
 **Quoi.** Rejouer un candidat sur les journaux du mois précédent et rendre
 l'économie **contrefactuelle** en dollars, avec un intervalle P10/P50/P90 — sans
 rien changer à la production.
@@ -112,6 +142,12 @@ le portail, un point d'API `GET /v1/applications/{id}/backtest`.
 **Idées brutes.** axe 1 n° 59 ; axe 7 n° 21, 24, 87, 90.
 
 ### 6. « Proof pack » signé, reproductible par un tiers
+
+**Statut (2026-11-12).** Livré — PR #51 : `src/jauge/reports/proof_pack.py` et
+ses modules (`_coherence`, `_depot`, `_entrees`, `_rendu`, `_sections`,
+`_verif_base`, `_verification`), `src/jauge/reports/scellement.py` ; rendus JSON
+et Markdown, chaîne de hachage, dépôt mémoire/S3, rejeu de vérification ; 5
+fichiers de tests.
 
 **Quoi.** Un dossier de preuve auto-portant par campagne : échantillon figé,
 réponses de référence et candidates, scores du juge avec explications, intervalle
@@ -130,6 +166,9 @@ seul.
 
 ### 7. Trafic fantôme puis canary avant la bascule
 
+**Statut (2026-11-12).** Non livré — worktree `~/tmp/jauge-t7-shadow-canary` :
+rien, aucun fichier.
+
 **Quoi.** Deux étapes avant le trafic réel : le **shadow** répond en parallèle
 sur un échantillon sans rien renvoyer à l'utilisateur, puis le **canary** bascule
 un petit pourcentage avec déclencheur de retour arrière pré-engagé.
@@ -143,6 +182,10 @@ répond à l'objection « votre rejeu ne reproduit pas la production » (§21).
 **Idées brutes.** axe 2 n° 84, 85, 87, 88 ; axe 6 n° 33, 84.
 
 ### 8. Nouvelle famille de leviers : la diète de jetons prouvée par rejeu
+
+**Statut (2026-11-12).** Livré — PR #46 : `src/jauge/levers/token_diet.py`,
+`src/jauge/replay/variantes.py`, `src/jauge/replay/variantes_preuve.py` ; tests
+dédiés.
 
 **Quoi.** Optimiser le **prompt** au lieu du modèle : compresser le prompt
 système, retirer les exemples inutiles, raccourcir les consignes de sortie — et
@@ -159,6 +202,12 @@ levier, donc un coût de développement faible pour un différenciateur fort.
 
 ### 9. Kill-switch client + garde-fous de confidentialité des agrégats
 
+**Statut (2026-11-12).** Livré — PR #45 : `src/jauge/api/killswitch.py`,
+`src/jauge/api/routes/killswitch.py`, `src/jauge/reports/anonymisation.py` ; API
+`POST`/`GET /v1/tenants/{id}/kill-switch` et `GET`/`PUT
+/v1/tenants/{id}/confidentialite` ; tests `tests/api/test_killswitch.py`,
+`tests/reports/test_anonymisation.py`.
+
 **Quoi.** Un bouton qui arrête immédiatement tout rejeu et tout jugement pour un
 client (et gèle l'accès aux données), plus un seuil de **k-anonymité** sur tout
 agrégat qui quitte le compte du client, et du bruit différentiellement privé sur
@@ -173,6 +222,10 @@ préalable à tout benchmark inter-clients (un argument commercial majeur).
 **Idées brutes.** axe 4 n° 65, 66, 67, 104, 124 ; axe 8 n° 30, 39.
 
 ### 10. Catalogue de tarifs historisé + alerte de baisse de prix qui rouvre les preuves
+
+**Statut (2026-11-12).** Non livré — worktree `~/tmp/jauge-t10-catalogue-prix` :
+`pricing_data/catalogue.py` et `surveillance.py` écrits, non committés, sans
+tests.
 
 **Quoi.** Exposer la table des tarifs datée comme une API (prix courant et
 historique par modèle, région, niveau), surveiller les changements de prix, et
