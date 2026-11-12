@@ -12,6 +12,10 @@ commentaires sont en français (BRIEF §2.8).
 from __future__ import annotations
 
 from jauge.reports.builder import construire_rapport, mois_precedent, periode_mensuelle
+from jauge.reports.proof_pack import (
+    ProofPack,
+    construire_proof_pack,
+)
 from jauge.reports.schema import (
     AppendiceMethodologique,
     EcartFacture,
@@ -55,6 +59,7 @@ __all__ = [
     "EtatBascule",
     "LevierRapporte",
     "LigneCout",
+    "ProofPack",
     "RapportMensuel",
     "RecommandationEnAttente",
     "RedacteurBedrock",
@@ -65,6 +70,7 @@ __all__ = [
     "TendanceMensuelle",
     "appliquer_synthese",
     "cle_rapport",
+    "construire_proof_pack",
     "construire_rapport",
     "contexte_depuis_rapport",
     "mois_precedent",

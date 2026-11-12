@@ -137,9 +137,20 @@ deterministic core of the claim.
 | `ENF-OBS-01` traces and alarms | [`ARCHITECTURE.md`](ARCHITECTURE.md#12-observability) |
 | `R10` MSP role denied on the log bucket | M15 acceptance test; IAM screenshot in the video |
 | `R11` customer A refused on customer B data | `tests/api/test_isolation.py` (36 cases), `tests/recette/test_r11_cloisonnement.py` (M15) |
+| `EF-EVA-03` cost-weighted quality, regression detected per stratum | `src/jauge/evaluation/ponderation.py`, `strates.py`, `tests/evaluation/test_ponderation.py`, `test_strates.py` |
+| `EF-VER-01` counterfactual backtest at constant volume, with dispersion | `src/jauge/replay/backtest.py`, `tests/replay/test_backtest.py`, `tests/api/test_route_backtest.py` |
+| Evidence verifiable by a third party: signed proof pack, hash chain, replayed verification | `src/jauge/reports/proof_pack*.py`, `scellement.py`, `tests/reports/test_proof_pack*.py` |
+| `EF-LEV-06` token diet, compression proven by replay | `src/jauge/levers/token_diet.py`, `src/jauge/replay/variantes.py`, `variantes_preuve.py`, `tests/levers/test_token_diet.py`, `tests/replay/test_variantes.py`, `test_variantes_preuve.py` |
+| `EF-ADM-01`, `EF-ADM-02` customer kill-switch, journaled, enforced on the processing routes | `src/jauge/api/killswitch.py`, `src/jauge/api/routes/killswitch.py`, `tests/api/test_killswitch.py`, `tests/api/test_killswitch_routes.py` |
+| `EF-RAP-02` cross-customer benchmark under k-anonymity and DP noise | `src/jauge/reports/anonymisation.py`, `src/jauge/api/routes/benchmark.py`, `tests/reports/test_anonymisation.py` |
 
 Every module of `docs/MODULES.md` (M1–M18) is merged on `main`; each shipped its
-own pull request with its own tests.
+own pull request with its own tests. Five of the ten tracks selected in
+`docs/backlog/README.md` shipped the same way — PR #45 (kill-switch, k-anonymity
+and DP noise), #46 (token diet), #47 (counterfactual backtest), #48 (cost-weighted
+quality per stratum), #51 (signed proof pack) — plus the integration branch that
+wires their public exports, routers and guards. The five other tracks are **not
+delivered** (§5).
 
 ---
 
@@ -174,4 +185,5 @@ claims made in the description.
 |---|---|---|
 | The public portal is a **static snapshot**, not the live control plane: https://baptistefaisy.github.io/jauge/ serves recorded API answers, so replay, judge and gateway calls are refused with an explicit `501 static_demo` | Judges can click through every screen and every guard rail (403 cross-tenant, 409 without approval, staged rollout) but cannot trigger a real Bedrock replay | A live URL needs the AWS deployment (credits, Bedrock enabled); local live mode is one command: `uv run uvicorn jauge.api.app:app` |
 | Multi-turn and tool-using applications are out of v1 | A judge may ask about agentic workloads | Declared as a limit in `HLD.md` §2.2 and §13.1, with the reason (replay fidelity) |
-| Judge bias is mitigated, not eliminated | Legitimate question on measurement rigour | Deterministic checks, 30-pair human review, self-agreement column, declared in `HLD.md` §8.7 |
+| Judge bias is mitigated, not eliminated | Legitimate question on measurement rigour | Deterministic checks, 30-pair human review, self-agreement column, declared in `HLD.md` §8.7. The calibration suite that would **measure** the bias (golden trap items, false-accept/false-reject rates) is not delivered — backlog track 2 |
+| Five tracks of the backlog top 10 are **not delivered**: pre-registered evaluation protocol, judge calibration suite, deterministic ground-truth gates, shadow traffic then canary, historised price catalogue | A judge reading the backlog may ask where they are | `docs/backlog/README.md` carries a dated status line under each of the ten tracks, with the real state of the untested partial code; nothing in the demo, the README or the HLD claims them |

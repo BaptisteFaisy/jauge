@@ -20,9 +20,12 @@ from jauge.levers.long_outputs import RegleSortiesTropLongues
 from jauge.levers.oversized import RegleModeleSurdimensionne
 from jauge.levers.priority import ReglePrioritySansBesoin
 from jauge.levers.repeated import RegleRequetesRepetees
+from jauge.levers.token_diet import RegleDieteJetons
 from jauge.models.lever import Levier
 
-# Les sept règles de l'Annexe A : quatre « M » (indispensables) et trois « S ».
+# Huit règles par défaut : les sept de l'Annexe A (quatre « M » indispensables,
+# trois « S »), plus la diète de jetons (top 10, piste 8) qui comprime le prompt
+# au lieu de changer de modèle.
 REGLES_DEFAUT: tuple[Regle, ...] = (
     RegleModeleSurdimensionne(),
     RegleCachePromptsAbsent(),
@@ -31,6 +34,7 @@ REGLES_DEFAUT: tuple[Regle, ...] = (
     RegleRequetesRepetees(),
     RegleErreursEtRelances(),
     ReglePrioritySansBesoin(),
+    RegleDieteJetons(),
 )
 
 
@@ -63,5 +67,5 @@ class DetectorLeviers:
 
 
 def detecter_leviers(contexte: ContexteLevier) -> list[Levier]:
-    """Détection complète d'une application avec les sept règles de l'Annexe A."""
+    """Détection complète d'une application avec les huit règles par défaut."""
     return DetectorLeviers().detecter(contexte)

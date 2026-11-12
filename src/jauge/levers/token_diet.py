@@ -8,13 +8,10 @@ rejeu sur des variantes de prompt (Annexe A, « preuve exigée »).
 La règle ne lit que le profil agrégé et les agrégats : jamais le texte des
 requêtes (ENF-CONF-01). Tous les chiffres sont calculés ici (ENF-IA-01).
 
-Choix du type de levier : `TypeLevier` ne possède pas encore de valeur
-`DIETE_JETONS` et le modèle est verrouillé pour cette PR. On utilise donc un
-**repli documenté** — `SORTIES_TROP_LONGUES` — et un **marqueur local**
-(`diete_jetons`) qui entre dans l'empreinte de l'identifiant du levier : deux
-leviers de types différents n'ont jamais le même `id`. L'évolution du socle
- demandée (ajout de `TypeLevier.DIETE_JETONS` et enregistrement de la règle
-dans `REGLES_DEFAUT`) est signalée dans le corps de la PR.
+Type de levier : `TypeLevier.DIETE_JETONS` existe désormais dans le socle et la
+règle est enregistrée dans `REGLES_DEFAUT` (huitième règle). L'identifiant reste
+bâti sur un **marqueur propre** (`diete_jetons`) plutôt que sur le seul type :
+deux leviers distincts d'une même application n'ont ainsi jamais le même `id`.
 
 Complémentarité : le gaspillage des **sorties** relève déjà de la règle
 EF-LEV-04 (`RegleSortiesTropLongues`) ; la diète de jetons s'attaque au
@@ -37,8 +34,8 @@ from jauge.levers.estimate import tarif_pour
 from jauge.models.lever import Levier, TypeLevier
 from jauge.models.pricing import ServiceTier, TarifModele
 
-# --- Repli de type (en attendant l'évolution du socle) ---------------------
-TYPE_REPLI = TypeLevier.SORTIES_TROP_LONGUES
+# --- Type de levier et marqueur d'identifiant ------------------------------
+TYPE_DIETE = TypeLevier.DIETE_JETONS
 MARQUEUR_LOCAL = "diete_jetons"
 
 # --- Seuils de détection (locaux : `ParametresLevier` est verrouillé) -----
@@ -123,7 +120,7 @@ def estimer_diet_jetons(contexte: ContexteLevier) -> float:
 class RegleDieteJetons:
     """Détecte un gaspillage de jetons d'entrée réparable par compression."""
 
-    type_levier = TYPE_REPLI
+    type_levier = TYPE_DIETE
 
     def detecter(self, contexte: ContexteLevier) -> Levier | None:
         """Renvoie le levier si le prompt gaspille des jetons d'entrée."""

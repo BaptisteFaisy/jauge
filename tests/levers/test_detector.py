@@ -1,4 +1,4 @@
-"""Tests du détecteur : exécution des sept règles et classement (EF-LEV-06)."""
+"""Tests du détecteur : exécution des huit règles et classement (EF-LEV-06)."""
 
 from __future__ import annotations
 
@@ -35,9 +35,14 @@ PROFIL_MIXTE = {
 }
 
 
-def test_sept_regles_par_defaut() -> None:
-    """Le détecteur applique les sept règles de l'Annexe A (4 « M » + 3 « S »)."""
-    assert len(REGLES_DEFAUT) == 7
+def test_huit_regles_par_defaut() -> None:
+    """Le détecteur applique les huit règles par défaut (4 « M » + 3 « S » de
+    l'Annexe A, plus la diète de jetons).
+
+    La huitième est la **diète de jetons** (top 10, piste n° 8) : comprimer le
+    prompt au lieu de changer de modèle, avec la même exigence de preuve.
+    """
+    assert len(REGLES_DEFAUT) == 8
     types = {regle.type_levier for regle in REGLES_DEFAUT}
     assert types == {
         TypeLevier.MODELE_SURDIMENSIONNE,
@@ -47,19 +52,21 @@ def test_sept_regles_par_defaut() -> None:
         TypeLevier.REQUETES_REPETEES,
         TypeLevier.ERREURS_ET_RELANCES,
         TypeLevier.PRIORITY_SANS_BESOIN,
+        TypeLevier.DIETE_JETONS,
     }
 
 
 def test_classement_par_economie_decroissante(fabriquer_contexte) -> None:
-    """Cinq leviers détectés, classés du plus rentable au moins rentable."""
+    """Six leviers détectés, classés du plus rentable au moins rentable."""
     leviers = detecter_leviers(fabriquer_contexte(profil=PROFIL_MIXTE))
 
     assert [levier.type_levier for levier in leviers] == [
         TypeLevier.CACHE_PROMPTS_ABSENT,  # 55,76 $/mois
+        TypeLevier.DIETE_JETONS,  # 25,80 $/mois
         TypeLevier.MODELE_SURDIMENSIONNE,  # 19,17 $/mois
         TypeLevier.TRAITEMENT_DIFFERABLE,  #  9,11 $/mois
-        TypeLevier.REQUETES_REPETEES,  #  6,08 $/mois
-        TypeLevier.ERREURS_ET_RELANCES,  #  0,41 $/mois
+        TypeLevier.REQUETES_REPETEES,  #  6,07 $/mois
+        TypeLevier.ERREURS_ET_RELANCES,  #  0,40 $/mois
     ]
     economies = [levier.economie_mensuelle_estimee_usd for levier in leviers]
     assert economies == sorted(economies, reverse=True)
@@ -144,7 +151,7 @@ def test_economie_totale_coherente_avec_les_regles(fabriquer_contexte) -> None:
     leviers = detecter_leviers(contexte)
     total = sum(levier.economie_mensuelle_estimee_usd for levier in leviers)
 
-    assert total == pytest.approx(55.76 + 19.17 + 9.11 + 6.08 + 0.41, abs=0.05)
+    assert total == pytest.approx(55.76 + 25.80 + 19.17 + 9.11 + 6.07 + 0.40, abs=0.05)
 
 
 def test_toutes_les_regles_respectent_le_protocole() -> None:

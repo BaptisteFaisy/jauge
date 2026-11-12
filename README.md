@@ -118,6 +118,13 @@ agent and API ports onto the real modules (M17) and the pre-submission finishes
 (M18). What is left is not code but gestures: a real AWS deployment, the video
 shoot, and the Devpost submission (see [`docs/SUBMISSION.md`](docs/SUBMISSION.md)).
 
+On top of the build plan, **five of the ten tracks** selected in
+[`docs/backlog/README.md`](docs/backlog/README.md) are merged: the signed proof
+pack, the counterfactual backtest, cost-weighted quality with per-stratum
+regression detection, the token-diet lever, and the customer kill-switch with its
+anonymity guards. The five others are **not delivered** — the backlog states each
+one's real state, including the partial untested code waiting in worktrees.
+
 | Area | Status |
 |---|---|
 | Shared entities: tenants, applications, pricing, daily cost, levers, campaigns, recommendations, rollouts | **Delivered** — `src/jauge/models/` |
@@ -128,7 +135,7 @@ shoot, and the Devpost submission (see [`docs/SUBMISSION.md`](docs/SUBMISSION.md
 | Store contract (tenant-scoped) + in-memory implementation | **Delivered** — `src/jauge/store/` |
 | Log ingestion, tagging, unattributed spend, CUR 2.0 reconciliation (M1) | **Delivered** — `src/jauge/attribution/` |
 | Dated price-table loader with validation, demo price file (M2) | **Delivered** — `src/jauge/pricing_data/`, `data/pricing/` |
-| Savings-lever detection: 4 model rules + 3 service rules, ranked by estimated saving (M3) | **Delivered** — `src/jauge/levers/` |
+| Savings-lever detection: 4 model rules + 3 service rules + the token-diet rule, 8 rules by default, ranked by estimated saving (M3) | **Delivered** — `src/jauge/levers/` |
 | Stratified reproducible sample, replay executor (Flex tier), campaign cost cap, Step Functions definition (M4) | **Delivered** — `src/jauge/replay/` |
 | LLM-as-a-judge prompt and adapters, deterministic checks, decision rule with its three conditions, human review sub-sample (M5) | **Delivered** — `src/jauge/evaluation/` |
 | Gateway rules, staged rollout 10/50/100, automatic rollback, savings verification (M6) | **Delivered** — `src/jauge/rollout/` |
@@ -139,11 +146,17 @@ shoot, and the Devpost submission (see [`docs/SUBMISSION.md`](docs/SUBMISSION.md
 | Synthetic-traffic demo and offline seed (M12), static no-build portal (M13) | **Delivered** — `demo/`, `portal/` |
 | End-to-end acceptance R1–R13, including negative security tests (M15) | **Delivered** — `tests/recette/` |
 | Real adapters wiring the agent and API ports onto the modules (M17), seeded ASGI entry point, `/health` probe, rollout driven through the API (M18) | **Delivered** — `src/jauge/integration/`, `jauge.api.app:app` |
+| Cost-weighted quality (quality per dollar) and regression detected per stratum, with sensitivity analysis | **Delivered** — `src/jauge/evaluation/ponderation.py`, `strates.py` (backlog track 4) |
+| Counterfactual backtest: what last month would have cost at constant volume, with P10/P50/P90 dispersion — `GET /v1/applications/{id}/backtest` | **Delivered** — `src/jauge/replay/backtest.py` (track 5) |
+| Signed proof pack: self-contained evidence file (JSON + Markdown), hash chain, replayable and verifiable by a third party | **Delivered** — `src/jauge/reports/proof_pack*.py`, `scellement.py` (track 6) |
+| Token-diet lever: prompt compression detected on aggregates, proven by replay on deterministic variants | **Delivered** — `src/jauge/levers/token_diet.py`, `src/jauge/replay/variantes.py`, `variantes_preuve.py` (track 8) |
+| Customer kill-switch: every processing route refuses with 409 `traitement_suspendu`, refusal journaled | **Delivered** — `src/jauge/api/killswitch.py`, `tests/api/test_killswitch_routes.py` (track 9) |
+| k-anonymity and differential-privacy noise on published aggregates, cross-customer benchmark restricted to MSP roles | **Delivered** — `src/jauge/reports/anonymisation.py`, `GET /v1/benchmarks/parc` (track 9) |
 
 The whole test suite runs offline — no AWS account, no network, no credentials.
 The real boto3/Bedrock adapters are written but exercised only through their
 interface with fake clients, so the suite never reaches AWS. On `main` today
-`uv run pytest` reports **1078 passed** (the duration depends on the machine).
+`uv run pytest` reports **1395 passed** (the duration depends on the machine).
 
 ### Results: measured vs target
 
@@ -171,7 +184,7 @@ uv sync --all-groups
 # 2. Run the test suite — offline, no AWS account, no credentials
 uv run pytest
 #   ...                                              [100%]
-#   1078 passed in 2:43    (count on `main` at the time of writing)
+#   1395 passed in 1:22    (count at the time of writing)
 
 # 3. Run the same gates as CI
 bash scripts/ci-local.sh
@@ -249,7 +262,7 @@ minute-by-minute test path: [`docs/TEST-INSTRUCTIONS.md`](docs/TEST-INSTRUCTIONS
 | `demo/` | Synthetic traffic generator and demo applications | Delivered (M12) |
 | `portal/` | Static web portal, no build step | Delivered (M13) |
 | `docs/` | HLD, architecture, demo script, submission checklist, test instructions | Delivered |
-| `tests/` | Unit and isolation (negative security) tests, end-to-end acceptance | Delivered — 1078 passed on `main`, offline |
+| `tests/` | Unit and isolation (negative security) tests, end-to-end acceptance | Delivered — 1395 passed, offline |
 
 Work breakdown, module ownership and per-module "definition of done":
 [`docs/MODULES.md`](docs/MODULES.md).

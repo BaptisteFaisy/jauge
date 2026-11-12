@@ -8,7 +8,13 @@ from pydantic import BaseModel, Field
 
 
 class TypeLevier(StrEnum):
-    """Les huit familles de leviers répertoriées en Annexe A."""
+    """Les familles de leviers : les huit de l'Annexe A, plus la diète de jetons.
+
+    `DIETE_JETONS` complète l'Annexe A : au lieu de changer de modèle, on
+    comprime le prompt et on **prouve** par rejeu que la qualité tient (top 10,
+    piste n° 8). Elle s'appuie sur le même mécanisme de preuve que les autres
+    leviers : candidat → rejeu → décision.
+    """
 
     MODELE_SURDIMENSIONNE = "modele_surdimensionne"
     CACHE_PROMPTS_ABSENT = "cache_prompts_absent"
@@ -18,6 +24,7 @@ class TypeLevier(StrEnum):
     ERREURS_ET_RELANCES = "erreurs_et_relances"
     PRIORITY_SANS_BESOIN = "priority_sans_besoin"
     DISTILLATION = "distillation"
+    DIETE_JETONS = "diete_jetons"
 
 
 class StatutLevier(StrEnum):

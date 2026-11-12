@@ -11,6 +11,7 @@ from pydantic import BaseModel
 from jauge.api.audit import journaliser
 from jauge.api.auth import RoleUtilisateur
 from jauge.api.deps import DepAudit, DepPortRapports, DepStore, DepUtilisateur
+from jauge.api.killswitch import DepKillSwitch, garde_traitement
 from jauge.api.tenancy import exiger_role, verifier_acces_tenant
 from jauge.common.errors import IntrouvableError, ValidationError
 
@@ -42,10 +43,12 @@ def generer_rapport(
     store: DepStore,
     port: DepPortRapports,
     audit: DepAudit,
+    kill_switch: DepKillSwitch,
 ) -> dict[str, Any]:
     """Génère le rapport mensuel d'un client (port M9 ; démo locale si activée)."""
     exiger_role(utilisateur, *ROLES_RAPPORT)
     verifier_acces_tenant(utilisateur, tenant_id, audit, "generation_rapport", "tenant")
+    garde_traitement(kill_switch, audit, utilisateur)(tenant_id, "generation_rapport")
     if store.obtenir_tenant(tenant_id) is None:
         raise IntrouvableError("Client introuvable", tenant_id=tenant_id)
     fin = demande.periode_fin or date.today()

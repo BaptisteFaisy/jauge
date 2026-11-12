@@ -7,6 +7,7 @@ from fastapi import APIRouter, status
 from jauge.api.audit import AuditSink, journaliser
 from jauge.api.auth import RoleUtilisateur, Utilisateur
 from jauge.api.deps import DepAudit, DepPortCampagnes, DepStore, DepUtilisateur
+from jauge.api.killswitch import DepKillSwitch, garde_traitement
 from jauge.api.ports import DemandeCampagne
 from jauge.api.routes.applications import application_controlee
 from jauge.api.tenancy import exiger_role, localiser
@@ -34,10 +35,13 @@ def lancer_campagne(
     store: DepStore,
     port: DepPortCampagnes,
     audit: DepAudit,
+    kill_switch: DepKillSwitch,
 ) -> Campagne:
     """Lance une campagne de rejeu (déléguée au port M4, plafond client appliqué)."""
     exiger_role(utilisateur, *ROLES_LANCEMENT)
     application = application_controlee(app_id, utilisateur, store, audit, "lancement_campagne")
+    # Kill-switch du client : s'il a coupé ses traitements, on refuse de lancer.
+    garde_traitement(kill_switch, audit, utilisateur)(application.tenant_id, "lancement_campagne")
     tenant = store.obtenir_tenant(application.tenant_id)
     if tenant is None:  # pragma: no cover - garanti par application_controlee
         raise IntrouvableError("Client introuvable", tenant_id=application.tenant_id)
