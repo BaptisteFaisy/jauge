@@ -24,6 +24,14 @@ identifiants, des verdicts et des nombres calculés ici (ENF-IA-01).
 
 from __future__ import annotations
 
+from jauge.evaluation.bac_a_sable import (
+    ISOLEMENT_GARDE,
+    ISOLEMENT_NAMESPACE,
+    ParametresBacASable,
+    ResultatBacASable,
+    executer_tests,
+    niveau_isolation,
+)
 from jauge.evaluation.checks import (
     CONTROLES_PAR_TACHE,
     ContexteControle,
@@ -97,6 +105,18 @@ from jauge.evaluation.strates import (
     cle_strate,
     construire_entrees,
 )
+from jauge.evaluation.verite_terrain import (
+    AttenduVerite,
+    TypePorte,
+    echecs_de_verite,
+    evaluer_porte,
+    extraire_nombre,
+    non_applicable,
+    porte_code,
+    porte_numerique,
+    porte_schema,
+    portes_par_tache,
+)
 
 __all__ = [
     "CONTROLES_PAR_TACHE",
@@ -158,4 +178,20 @@ __all__ = [
     "valider_juge",
     "verdict_depuis_enregistrement",
     "verdict_depuis_note",
+    "ISOLEMENT_GARDE",
+    "ISOLEMENT_NAMESPACE",
+    "AttenduVerite",
+    "ParametresBacASable",
+    "ResultatBacASable",
+    "TypePorte",
+    "echecs_de_verite",
+    "evaluer_porte",
+    "executer_tests",
+    "extraire_nombre",
+    "niveau_isolation",
+    "non_applicable",
+    "porte_code",
+    "porte_numerique",
+    "porte_schema",
+    "portes_par_tache",
 ]
