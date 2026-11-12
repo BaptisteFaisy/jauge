@@ -35,6 +35,12 @@ CAS_R11 = [
     ("GET", f"/v1/applications/{APP_B}/levers", None, RoleUtilisateur.DIRECTEUR),
     ("GET", f"/v1/applications/{APP_B}/recommendations", None, RoleUtilisateur.DIRECTEUR),
     ("GET", f"/v1/tenants/{CLIENT_B}/savings", None, RoleUtilisateur.DIRECTEUR),
+    (
+        "GET",
+        f"/v1/tenants/{CLIENT_B}/pricing/variations",
+        None,
+        RoleUtilisateur.DIRECTEUR,
+    ),
     ("GET", f"/v1/campaigns/{CAMPAGNE_B}", None, RoleUtilisateur.DIRECTEUR),
     ("GET", f"/v1/campaigns/{CAMPAGNE_B}/results", None, RoleUtilisateur.DIRECTEUR),
     ("GET", f"/v1/rollouts/{BASCULE_B}", None, RoleUtilisateur.DIRECTEUR),
