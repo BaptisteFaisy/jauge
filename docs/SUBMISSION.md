@@ -143,14 +143,19 @@ deterministic core of the claim.
 | `EF-LEV-06` token diet, compression proven by replay | `src/jauge/levers/token_diet.py`, `src/jauge/replay/variantes.py`, `variantes_preuve.py`, `tests/levers/test_token_diet.py`, `tests/replay/test_variantes.py`, `test_variantes_preuve.py` |
 | `EF-ADM-01`, `EF-ADM-02` customer kill-switch, journaled, enforced on the processing routes | `src/jauge/api/killswitch.py`, `src/jauge/api/routes/killswitch.py`, `tests/api/test_killswitch.py`, `tests/api/test_killswitch_routes.py` |
 | `EF-RAP-02` cross-customer benchmark under k-anonymity and DP noise | `src/jauge/reports/anonymisation.py`, `src/jauge/api/routes/benchmark.py`, `tests/reports/test_anonymisation.py` |
+| `EF-EVA-02` judge bias measured, not assumed | `src/jauge/evaluation/calibration.py`, `aptitude_judge.py`, `jeux_calibration_corpus.py`, `tests/evaluation/test_calibration.py`, `test_biais.py` |
+| `EF-EVA-01` pre-registered protocol, immutable and hashed | `src/jauge/evaluation/protocole.py`, `src/jauge/replay/scellement.py`, `tests/evaluation/test_protocole.py`, `tests/replay/test_scellement.py` |
+| Ground truth instead of the judge where one exists | `src/jauge/evaluation/verite_terrain.py`, `bac_a_sable.py`, `tests/evaluation/test_verite_terrain.py`, `test_bac_a_sable.py` |
+| `EF-BAS-01..03` shadow traffic then canary before the switch | `src/jauge/rollout/shadow.py`, `canary.py`, `devis.py`, `journal.py`, `tests/rollout/test_shadow.py`, `test_canary.py` |
+| `EF-ATT-04` historised price catalogue, proofs reopened by a price drop | `src/jauge/pricing_data/catalogue.py`, `surveillance.py`, `impact_prix.py`, `src/jauge/api/routes/pricing.py`, `tests/pricing_data/`, `tests/api/test_route_pricing.py` |
 
 Every module of `docs/MODULES.md` (M1–M18) is merged on `main`; each shipped its
-own pull request with its own tests. Five of the ten tracks selected in
-`docs/backlog/README.md` shipped the same way — PR #45 (kill-switch, k-anonymity
-and DP noise), #46 (token diet), #47 (counterfactual backtest), #48 (cost-weighted
-quality per stratum), #51 (signed proof pack) — plus the integration branch that
-wires their public exports, routers and guards. The five other tracks are **not
-delivered** (§5).
+own pull request with its own tests. The ten tracks selected in `docs/backlog/README.md` shipped the same way — PR #45
+(kill-switch, k-anonymity and DP noise), #46 (token diet), #47 (counterfactual
+backtest), #48 (cost-weighted quality per stratum), #51 (signed proof pack), #54
+(judge calibration), #56 (pre-registered protocol), #60 (historised price
+catalogue), #64 (shadow then canary) and #67 (ground-truth gates) — plus PR #53,
+which wired their public exports, routers and guards together.
 
 ---
 
@@ -185,5 +190,7 @@ claims made in the description.
 |---|---|---|
 | The public portal is a **static snapshot**, not the live control plane: https://baptistefaisy.github.io/jauge/ serves recorded API answers, so replay, judge and gateway calls are refused with an explicit `501 static_demo` | Judges can click through every screen and every guard rail (403 cross-tenant, 409 without approval, staged rollout) but cannot trigger a real Bedrock replay | A live URL needs the AWS deployment (credits, Bedrock enabled); local live mode is one command: `uv run uvicorn jauge.api.app:app` |
 | Multi-turn and tool-using applications are out of v1 | A judge may ask about agentic workloads | Declared as a limit in `HLD.md` §2.2 and §13.1, with the reason (replay fidelity) |
-| Judge bias is mitigated, not eliminated | Legitimate question on measurement rigour | Deterministic checks, 30-pair human review, self-agreement column, declared in `HLD.md` §8.7. The calibration suite that would **measure** the bias (golden trap items, false-accept/false-reject rates) is not delivered — backlog track 2 |
-| Five tracks of the backlog top 10 are **not delivered**: pre-registered evaluation protocol, judge calibration suite, deterministic ground-truth gates, shadow traffic then canary, historised price catalogue | A judge reading the backlog may ask where they are | `docs/backlog/README.md` carries a dated status line under each of the ten tracks, with the real state of the untested partial code; nothing in the demo, the README or the HLD claims them |
+| Judge bias is **measured**, not eliminated | Legitimate question on measurement rigour | The calibration suite now measures position, verbosity and formatting bias, golden trap items, false-accept and false-reject rates (`evaluation/calibration.py`); deterministic checks, 30-pair human review and the self-agreement column remain, declared in `HLD.md` §8.7. Measured is not eliminated — the thresholds stay where the customer puts them |
+| The ten backlog tracks are delivered as **modules**, but three of them have no HTTP entry point yet: the shadow-then-canary traffic, the ground-truth gates and the pre-registered protocol are callable from the code, not from the API or the portal | A judge clicking through the portal will not see them | The modules are documented in `HLD.md` §14 and exposed as public exports; the API routes are the next increment, and the demo script shows the module usage |
+| The execution sandbox is a **subprocess**, not a security boundary: in `garde-python` mode a determined candidate can bypass the language-level network ban, and nothing prevents writing outside the working directory with the rights of the Jauge account | A sceptical judge may probe the isolation | Stated in the module header, isolation level announced in every result, `exiger_namespace=True` refuses execution rather than degrading it; production should run `nsjail` or a dedicated container when `bwrap` is absent |
+| The correspondence between the AWS Price List model identifiers and Jauge's own is not confirmed on a real account | The AWS price source stays a hand-maintained table for now | The adapter exists and is exercised only on its pure conversion functions; the limitation is documented in `SourceTarifsAws`, and the demo table (`data/pricing/`) remains the source of truth (`HLD.md` §13.2, Q3) |

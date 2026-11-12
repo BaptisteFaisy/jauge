@@ -33,21 +33,21 @@ devant un juge du hackathon.
 
 ## Top 10
 
-**Bilan (2026-11-12).** Cinq pistes sur dix sont fusionnées dans `main` :
-n° 4 (PR #48), n° 5 (PR #47), n° 6 (PR #51), n° 8 (PR #46), n° 9 (PR #45).
-La branche `feat/integration-top10` les câble : exports publics, routeurs
+**Bilan (2026-11-12).** **Les dix pistes sont livrées** et fusionnées dans
+`main` : n° 1 (PR #56), n° 2 (PR #54), n° 3 (PR #67), n° 4 (PR #48), n° 5 (PR
+#47), n° 6 (PR #51), n° 7 (PR #64), n° 8 (PR #46), n° 9 (PR #45), n° 10 (PR
+#60). La PR #53 a câblé l'ensemble : exports publics des modules, routeurs
 `backtest`, `killswitch` et `benchmark`, garde kill-switch sur les routes qui
 engagent un traitement, point `GET /v1/benchmarks/parc` et huitième règle de
-levier. La suite compte **1 395 tests** verts, contre 1 109 à la génération de
-ce backlog. Les cinq pistes restantes (n° 1, 2, 3, 7, 10) ne sont **pas
-livrées** : du code partiel sans tests dort dans des worktrees ; la piste n° 7
-n'a aucun fichier.
+levier. La suite compte **1 620 tests** verts, contre 1 109 à la génération de
+ce backlog.
 
 ### 1. Protocole d'évaluation pré-enregistré + marge de non-infériorité
 
-**Statut (2026-11-12).** Non livré — worktree `~/tmp/jauge-t1-protocole` :
-`src/jauge/evaluation/protocole.py` et `src/jauge/replay/scellement.py` écrits,
-non committés, sans tests.
+**Statut (2026-11-12).** Livré — PR #56 : `src/jauge/evaluation/protocole.py`,
+`src/jauge/replay/scellement.py`, décision et campagne enrichies ; tests
+`tests/evaluation/test_protocole.py`, `test_protocole_decision.py`,
+`tests/replay/test_scellement.py`.
 
 **Quoi.** Figer, *avant* le moindre rejeu, un protocole immuable : métriques,
 prompt du juge, seuils, plan d'échantillonnage, marge de non-infériorité
@@ -66,9 +66,9 @@ première objection d'un juge technique.
 
 ### 2. Suite de calibration du juge (biais mesurés, pas supposés)
 
-**Statut (2026-11-12).** Non livré — worktree `~/tmp/jauge-t2-calibration` :
-`calibration.py`, `aptitude_juge.py`, `jeux_calibration.py` et
-`jeux_calibration_corpus.py` écrits, non committés, sans tests.
+**Statut (2026-11-12).** Livré — PR #54 : `src/jauge/evaluation/calibration.py`,
+`aptitude_juge.py`, `jeux_calibration.py`, `jeux_calibration_corpus.py` ; tests
+`tests/evaluation/test_calibration.py`, `test_biais.py`.
 
 **Quoi.** Un jeu de calibration qui mesure le juge lui-même : aveuglement sur le
 modèle producteur, ordre des réponses randomisé, tests de biais de position /
@@ -86,8 +86,9 @@ hypothèse en chiffre publié dans la recommandation.
 
 ### 3. Portes déterministes à vérité terrain
 
-**Statut (2026-11-12).** Non livré — worktree `~/tmp/jauge-t3-verite-terrain` :
-`src/jauge/evaluation/bac_a_sable.py` écrit, non committé, sans tests.
+**Statut (2026-11-12).** Livré — PR #67 : `src/jauge/evaluation/bac_a_sable.py`,
+`harnais_sable.py`, `verite_terrain.py` ; tests
+`tests/evaluation/test_bac_a_sable.py`, `test_verite_terrain.py`.
 
 **Quoi.** Là où une réponse objective existe, ne pas demander au juge : exécuter
 le code généré dans un bac à sable et lancer les tests, valider le JSON contre le
@@ -166,8 +167,9 @@ seul.
 
 ### 7. Trafic fantôme puis canary avant la bascule
 
-**Statut (2026-11-12).** Non livré — worktree `~/tmp/jauge-t7-shadow-canary` :
-rien, aucun fichier.
+**Statut (2026-11-12).** Livré — PR #64 : `src/jauge/rollout/shadow.py`,
+`canary.py`, `ports.py`, `devis.py`, `journal.py` ; tests
+`tests/rollout/test_shadow.py`, `test_canary.py`.
 
 **Quoi.** Deux étapes avant le trafic réel : le **shadow** répond en parallèle
 sur un échantillon sans rien renvoyer à l'utilisateur, puis le **canary** bascule
@@ -223,9 +225,10 @@ préalable à tout benchmark inter-clients (un argument commercial majeur).
 
 ### 10. Catalogue de tarifs historisé + alerte de baisse de prix qui rouvre les preuves
 
-**Statut (2026-11-12).** Non livré — worktree `~/tmp/jauge-t10-catalogue-prix` :
-`pricing_data/catalogue.py` et `surveillance.py` écrits, non committés, sans
-tests.
+**Statut (2026-11-12).** Livré — PR #60 : `src/jauge/pricing_data/catalogue.py`,
+`surveillance.py`, `impact_prix.py`, point d'API `GET /v1/pricing/catalogue` et
+`GET /v1/tenants/{id}/pricing/variations` ; tests `tests/pricing_data/`,
+`tests/api/test_route_pricing.py`.
 
 **Quoi.** Exposer la table des tarifs datée comme une API (prix courant et
 historique par modèle, région, niveau), surveiller les changements de prix, et

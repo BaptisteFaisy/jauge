@@ -123,5 +123,9 @@ def agregats(
 
 @pytest.fixture
 def application(app_classement: Application) -> Application:
-    """Application de la démonstration (alias du nom partagé du socle)."""
+    """Application de la démonstration (alias du nom partagé du socle).
+
+    Partagée par les tests du module : la bascule, le shadow et le canari
+    travaillent tous sur la même application de démonstration.
+    """
     return app_classement

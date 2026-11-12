@@ -340,10 +340,11 @@ this column, every recommendation looks riskier than it is.
 - **Rare cases**: 200 requests do not see them. Staged rollout plus online
   monitoring cover that risk.
 - **Judge bias**: mitigated by deterministic checks, human review and the
-  self-agreement column, not eliminated. The calibration suite that would
-  **measure** it — position, verbosity and formatting bias, golden trap items,
-  false-accept and false-reject rates — is **not delivered**: partial code
-  without tests sits in a worktree (`docs/backlog/README.md`, track 2).
+  self-agreement column, and now **measured** by the calibration suite
+  (`evaluation/calibration.py`): position, verbosity and formatting bias,
+  golden trap items, false-accept and false-reject rates. Measured is not
+  eliminated — the thresholds stay where the customer puts them, and the
+  calibration set is a measuring instrument, not a proof of correctness.
 
 ## 9. Staged rollout and rollback
 
@@ -437,12 +438,7 @@ Measurement limits — replay fidelity, rare cases, judge bias — are declared 
   reconciliation gap is structurally wider on the first days of a new tag.
 - Campaign cost is estimated from an average request cost; a heavy-tailed
   distribution can make the actual cost exceed the estimate.
-- Five of the ten tracks selected in `docs/backlog/README.md` are **not
-  delivered**: the pre-registered evaluation protocol with its non-inferiority
-  margin, the judge calibration suite, the deterministic ground-truth gates,
-  shadow traffic then canary before the switch, and the historised price
-  catalogue with its price-drop alert. Where code exists it is untested and
-  unmerged; the backlog states each track's real condition.
+
 
 ### 13.2 Points to confirm before submission (specification §23)
 
@@ -481,22 +477,24 @@ and API ports onto the real modules (M17, `src/jauge/integration/`), and the
 pre-submission finishes (M18: seeded ASGI entry point, `/health` probe,
 rollout driven through the API).
 
-Beyond the build plan, **five of the ten tracks** selected in
-`docs/backlog/README.md` are merged and tested: cost-weighted quality with
-regression detected per stratum (`evaluation/ponderation.py`,
-`evaluation/strates.py`), the counterfactual backtest exposed at
-`GET /v1/applications/{id}/backtest` (`replay/backtest.py`), the signed proof
-pack — hash chain, JSON and Markdown renderings, verification replayable by a
-third party (`reports/proof_pack*.py`, `reports/scellement.py`), the token-diet
-lever proven by replay on deterministic prompt variants (`levers/token_diet.py`,
-`replay/variantes*.py`), and the customer kill-switch together with k-anonymity
-and differential-privacy noise on published aggregates (`api/killswitch.py`,
-`reports/anonymisation.py`, `GET /v1/benchmarks/parc`). The kill-switch is
-enforced on every route that starts processing — campaign, decision, report,
-rollout — which then refuses with 409 `traitement_suspendu` and journals the
-refusal. The five remaining tracks are **not delivered** (§13.1).
+Beyond the build plan, the **ten tracks** selected in `docs/backlog/README.md`
+are merged and tested: cost-weighted quality with regression detected per
+stratum (`evaluation/ponderation.py`, `evaluation/strates.py`), the
+counterfactual backtest exposed at `GET /v1/applications/{id}/backtest`
+(`replay/backtest.py`), the signed proof pack — hash chain, JSON and Markdown
+renderings, verification replayable by a third party (`reports/proof_pack*.py`,
+`reports/scellement.py`), the token-diet lever proven by replay on deterministic
+prompt variants (`levers/token_diet.py`, `replay/variantes*.py`), the customer
+kill-switch together with k-anonymity and differential-privacy noise on
+published aggregates (`api/killswitch.py`, `reports/anonymisation.py`,
+`GET /v1/benchmarks/parc`), the pre-registered evaluation protocol
+(`evaluation/protocole.py`, `replay/scellement.py`), the judge calibration suite
+(`evaluation/calibration.py`), the deterministic ground-truth gates — where the
+truth is objective the judge is not consulted (`evaluation/bac_a_sable.py`,
+`evaluation/verite_terrain.py`) — and the shadow-then-canary traffic before the
+switch (`rollout/shadow.py`, `rollout/canary.py`).
 
-The suite is covered by offline tests — **1395 passed** — with
+The suite is covered by offline tests — **1620 passed** — with
 no AWS call: the real boto3/Bedrock adapters are written but exercised only through
 their interface with fake clients. What is **not** done is not code but gestures: a
 real AWS deployment (accounts, credits, Bedrock enabled — the adapters have never
