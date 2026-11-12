@@ -119,3 +119,9 @@ def agregats(
             cout_recalcule_usd=round(cout_par_requete * volume, 6),
         )
     ]
+
+
+@pytest.fixture
+def application(app_classement: Application) -> Application:
+    """Application de la démonstration (alias du nom partagé du socle)."""
+    return app_classement
