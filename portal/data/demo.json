@@ -6,7 +6,7 @@
       "t-demo-b"
     ],
     "fenetre_demo": "2026-11-11",
-    "genere_le": "2026-11-11T23:51:56+00:00",
+    "genere_le": "2026-11-12T11:12:33+00:00",
     "points_api": 34,
     "source": "scripts/export_portail_statique.py"
   },
@@ -1646,6 +1646,7 @@
       "application_id": "support-assistant",
       "cout_estime_usd": 47.75842,
       "cout_reel_usd": 4.856481,
+      "echantillon_empreinte": null,
       "graine_aleatoire": 42,
       "id": "c-2e7454af6805",
       "modele_juge_id": "anthropic.claude-opus-4-20250514-v1:0",
@@ -1653,6 +1654,7 @@
         "anthropic.claude-3-5-sonnet-20241022-v2:0",
         "anthropic.claude-3-5-haiku-20241022-v1:0"
       ],
+      "protocole_empreinte": null,
       "resultats": [
         {
           "accord_juge_humain": null,
@@ -1765,12 +1767,14 @@
       "application_id": "doc-summarizer",
       "cout_estime_usd": 143.82,
       "cout_reel_usd": 139.51,
+      "echantillon_empreinte": null,
       "graine_aleatoire": 42,
       "id": "c-63fc9e38631d",
       "modele_juge_id": "eu.anthropic.claude-3-5-sonnet-20241022-v2:0",
       "modeles_candidats": [
         "anthropic.claude-opus-4-20250514-v1:0"
       ],
+      "protocole_empreinte": null,
       "resultats": [
         {
           "accord_juge_humain": null,
@@ -1847,6 +1851,7 @@
       "application_id": "ticket-classifier",
       "cout_estime_usd": 29.5605,
       "cout_reel_usd": 0.482523,
+      "echantillon_empreinte": null,
       "graine_aleatoire": 42,
       "id": "c-a753aa159c45",
       "modele_juge_id": "anthropic.claude-opus-4-20250514-v1:0",
@@ -1854,6 +1859,7 @@
         "anthropic.claude-3-5-sonnet-20241022-v2:0",
         "anthropic.claude-3-5-haiku-20241022-v1:0"
       ],
+      "protocole_empreinte": null,
       "resultats": [
         {
           "accord_juge_humain": null,

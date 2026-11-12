@@ -63,7 +63,12 @@ class ResultatCandidat(BaseModel):
 
 
 class Campagne(BaseModel):
-    """Campagne de rejeu sur une application (§14)."""
+    """Campagne de rejeu sur une application (§14).
+
+    Les deux empreintes de preuve (protocole pré-enregistré, échantillon figé)
+    sont **additives** et optionnelles : les campagnes déjà enregistrées restent
+    lisibles telles quelles, aucune migration n'est requise.
+    """
 
     id: str
     tenant_id: str
@@ -76,6 +81,10 @@ class Campagne(BaseModel):
     cout_estime_usd: float = Field(ge=0.0)
     cout_reel_usd: float = Field(default=0.0, ge=0.0)
     resultats: list[ResultatCandidat] = Field(default_factory=list)
+    #: Empreinte SHA-256 du protocole scellé avant le rejeu (§13, piste n° 1).
+    protocole_empreinte: str | None = None
+    #: Empreinte SHA-256 de l'échantillon figé dès son tirage (§13.1).
+    echantillon_empreinte: str | None = None
 
 
 class PaireRejoueeDataPlane(BaseModel):

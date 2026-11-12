@@ -15,6 +15,20 @@ lui-même qu'à 96 %, un candidat à 95 % est excellent — il fait aussi bien q
 variabilité naturelle du modèle en place. `qualification` porte ce jugement, et
 `lecture_relative` la phrase qui l'accompagne.
 
+Pré-enregistrement (piste n° 1 du top 10) : quand un `ProtocoleEvaluation`
+scellé est présenté, deux choses s'ajoutent, sans rien retirer :
+
+- le protocole est **vérifié** avant toute conclusion (`verifier_scelle`) : si
+  l'empreinte recalculée ne correspond plus à l'empreinte engagée avant le
+  rejeu, la décision est refusée (`EtatIncompatibleError`) plutôt que rendue sur
+  une méthode retouchée ;
+- la **marge de non-infériorité** pré-engagée devient une quatrième condition :
+  le candidat ne doit pas s'effondrer sous l'auto-accord du modèle actuel de plus
+  que la marge annoncée. Le verdict le dit explicitement
+  (`lecture_non_inferiorite`) : « non-inférieur dans la marge de X points » ou
+  « inférieur ». Sans protocole, les trois conditions du §13.4 s'appliquent
+  exactement comme avant — la règle existante n'est ni remplacée ni durcie.
+
 Aucun texte de requête ni de réponse ne traverse ce module (ENF-CONF-01) : la
 décision ne porte que sur des nombres déjà calculés et des noms de contrôles.
 """
@@ -25,13 +39,18 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from enum import StrEnum
 
-from jauge.common.errors import ValidationError
+from jauge.common.errors import EtatIncompatibleError, ValidationError
+from jauge.evaluation.protocole import ProtocoleEvaluation, verifier_scelle
 from jauge.models.campaign import ResultatCandidat
 from jauge.models.tenant import Application
 
 # Écart toléré entre le taux du candidat et l'auto-accord du modèle actuel :
 # en deçà, le candidat fait aussi bien que le modèle en place comparé à lui-même.
 MARGE_AUTO_ACCORD = 0.02
+
+# Tolérance de comparaison flottante : les taux sont arrondis à 1e-6, une marge
+# pré-engagée de 0.05 ne doit pas faire basculer un verdict sur un ulp.
+TOLERANCE_FLOTTANTE = 1e-9
 
 
 class Qualification(StrEnum):
@@ -86,14 +105,22 @@ class DecisionCandidat:
     motifs: tuple[str, ...] = field(default_factory=tuple)
     resultat: ResultatCandidat | None = None
     lecture_relative: str = ""
+    #: Marge de non-infériorité pré-engagée ; `None` sans protocole scellé.
+    marge_non_inferiorite: float | None = None
+    #: Verdict de la condition de non-infériorité ; `None` sans protocole scellé.
+    non_inferiorite: bool | None = None
+    #: Phrase explicite : « non-inférieur dans la marge de X points » ou « inférieur ».
+    lecture_non_inferiorite: str = ""
 
     def vers_dict(self) -> dict[str, object]:
         """Vue sérialisable remise au plan de contrôle (ENF-CONF-01).
 
         Champs scalaires et textes de motifs uniquement : ni requête, ni
-        réponse, ni explication du juge.
+        réponse, ni explication du juge. Les trois clés de non-infériorité
+        n'apparaissent **que** si un protocole scellé a été présenté : sans
+        protocole, la vue reste exactement celle de la règle du §13.4.
         """
-        return {
+        vue: dict[str, object] = {
             "modele_id": self.modele_id,
             "propose": self.propose,
             "qualification": str(self.qualification),
@@ -103,6 +130,15 @@ class DecisionCandidat:
             "motifs": list(self.motifs),
             "lecture_relative": self.lecture_relative,
         }
+        if self.marge_non_inferiorite is not None:
+            vue.update(
+                {
+                    "marge_non_inferiorite": self.marge_non_inferiorite,
+                    "non_inferiorite": self.non_inferiorite,
+                    "lecture_non_inferiorite": self.lecture_non_inferiorite,
+                }
+            )
+        return vue
 
 
 def _pourcentage(valeur: float) -> str:
@@ -137,6 +173,94 @@ def condition_controles(resultat: ResultatCandidat) -> Condition:
     return Condition(nom="controles_deterministes", remplie=remplie, detail=detail)
 
 
+def plancher_non_inferiorite(resultat: ResultatCandidat, marge: float) -> float:
+    """Plancher imposé par la marge pré-engagée : auto-accord du modèle actuel moins la marge."""
+    return resultat.auto_accord_modele_actuel - marge
+
+
+def condition_non_inferiorite(resultat: ResultatCandidat, marge: float) -> Condition:
+    """Condition ajoutée : le candidat reste dans la marge de non-infériorité.
+
+    La marge est **pré-engagée** dans le protocole scellé : elle ne peut pas être
+    élargie après coup pour faire passer un candidat. Elle se lit par rapport à
+    l'auto-accord du modèle actuel (§13.4), pas par rapport à un absolu.
+    """
+    plancher = plancher_non_inferiorite(resultat, marge)
+    remplie = resultat.taux_equivalence >= plancher - TOLERANCE_FLOTTANTE
+    detail = (
+        f"taux {_pourcentage(resultat.taux_equivalence)} pour un plancher de "
+        f"{_pourcentage(plancher)} (auto-accord {_pourcentage(resultat.auto_accord_modele_actuel)} "
+        f"moins la marge de {marge * 100:.1f} points)"
+    )
+    return Condition(nom="non_inferiorite", remplie=remplie, detail=detail)
+
+
+def lecture_non_inferiorite(resultat: ResultatCandidat, marge: float) -> str:
+    """Phrase explicite du verdict de non-infériorité (jamais implicite)."""
+    ecart = (resultat.auto_accord_modele_actuel - resultat.taux_equivalence) * 100
+    if resultat.taux_equivalence >= plancher_non_inferiorite(resultat, marge) - TOLERANCE_FLOTTANTE:
+        return (
+            f"non-inférieur dans la marge de {marge * 100:.1f} points "
+            f"(écart de {max(ecart, 0.0):.1f} point(s) avec l'auto-accord du modèle actuel)"
+        )
+    return (
+        f"inférieur : {ecart:.1f} point(s) sous l'auto-accord du modèle actuel, "
+        f"au-delà de la marge pré-engagée de {marge * 100:.1f} points"
+    )
+
+
+def _conditions(
+    resultat: ResultatCandidat, seuils: SeuilsDecision, marge: float | None
+) -> tuple[Condition, ...]:
+    """Les trois conditions du §13.4, plus la marge pré-engagée si un protocole."""
+    conditions = [
+        condition_taux(resultat, seuils),
+        condition_intervalle(resultat, seuils),
+        condition_controles(resultat),
+    ]
+    if marge is not None:
+        conditions.append(condition_non_inferiorite(resultat, marge))
+    return tuple(conditions)
+
+
+def _seuils_du_protocole(
+    seuils: SeuilsDecision | None, protocole: ProtocoleEvaluation
+) -> SeuilsDecision:
+    """Seuils applicables : ceux du protocole scellé, contradiction refusée.
+
+    Un appelant qui présente des seuils différents de ceux engagés avant le
+    rejeu se voit opposer une erreur explicite : c'est une dérive de méthode,
+    pas une variante d'affichage.
+    """
+    engages = SeuilsDecision(
+        seuil_equivalence=protocole.seuils.seuil_equivalence,
+        seuil_intervalle_bas=protocole.seuils.borne_basse_intervalle,
+    )
+    if seuils is None:
+        return engages
+    ecarts = [
+        abs(present - engage) > TOLERANCE_FLOTTANTE
+        for present, engage in (
+            (seuils.seuil_equivalence, engages.seuil_equivalence),
+            (seuils.seuil_intervalle_bas, engages.seuil_intervalle_bas),
+        )
+    ]
+    if any(ecarts):
+        raise EtatIncompatibleError(
+            "Les seuils présentés ne sont pas ceux du protocole scellé",
+            seuils_presentes={
+                "seuil_equivalence": seuils.seuil_equivalence,
+                "seuil_intervalle_bas": seuils.seuil_intervalle_bas,
+            },
+            seuils_engages={
+                "seuil_equivalence": engages.seuil_equivalence,
+                "seuil_intervalle_bas": engages.seuil_intervalle_bas,
+            },
+            empreinte_protocole=protocole.scelle.empreinte if protocole.scelle else None,
+        )
+    return engages
+
+
 def qualifier(resultat: ResultatCandidat, marge: float = MARGE_AUTO_ACCORD) -> Qualification:
     """Qualifie le taux du candidat **par rapport à l'auto-accord** (§13.4).
 
@@ -161,14 +285,26 @@ def lecture_relative(resultat: ResultatCandidat) -> str:
     )
 
 
-def decider(resultat: ResultatCandidat, seuils: SeuilsDecision | None = None) -> DecisionCandidat:
-    """Applique la règle du §13.4 à un candidat et motive le verdict."""
-    seuils = seuils or SeuilsDecision()
-    conditions = (
-        condition_taux(resultat, seuils),
-        condition_intervalle(resultat, seuils),
-        condition_controles(resultat),
-    )
+def decider(
+    resultat: ResultatCandidat,
+    seuils: SeuilsDecision | None = None,
+    *,
+    protocole: ProtocoleEvaluation | None = None,
+) -> DecisionCandidat:
+    """Applique la règle du §13.4 à un candidat et motive le verdict.
+
+    `protocole` est optionnel. Sans lui, le comportement est inchangé (trois
+    conditions). Avec lui, le protocole est d'abord **vérifié** contre son sceau,
+    ses seuils pré-engagés s'imposent, et la marge de non-infériorité devient une
+    quatrième condition assortie d'une phrase de verdict explicite.
+    """
+    marge = protocole.marge_non_inferiorite if protocole is not None else None
+    if protocole is not None:
+        verifier_scelle(protocole)
+        seuils = _seuils_du_protocole(seuils, protocole)
+    else:
+        seuils = seuils or SeuilsDecision()
+    conditions = _conditions(resultat, seuils, marge)
     motifs = tuple(
         f"{condition.nom} : {condition.detail}" for condition in conditions if not condition.remplie
     )
@@ -182,20 +318,36 @@ def decider(resultat: ResultatCandidat, seuils: SeuilsDecision | None = None) ->
         motifs=motifs,
         resultat=resultat,
         lecture_relative=lecture_relative(resultat),
+        marge_non_inferiorite=marge,
+        non_inferiorite=None if marge is None else _non_inferiorite(conditions),
+        lecture_non_inferiorite=("" if marge is None else lecture_non_inferiorite(resultat, marge)),
     )
 
 
+def _non_inferiorite(conditions: tuple[Condition, ...]) -> bool | None:
+    """Verdict booléen de la condition de non-infériorité, si elle figure."""
+    for condition in conditions:
+        if condition.nom == "non_inferiorite":
+            return condition.remplie
+    return None
+
+
 def decider_lot(
-    resultats: Sequence[ResultatCandidat], seuils: SeuilsDecision | None = None
+    resultats: Sequence[ResultatCandidat],
+    seuils: SeuilsDecision | None = None,
+    *,
+    protocole: ProtocoleEvaluation | None = None,
 ) -> list[DecisionCandidat]:
     """Décide sur un lot de candidats, dans l'ordre reçu (le meilleur reste à voir).
 
     Le tri est laissé à l'appelant : `resultats` peut contenir la référence du
-    modèle actuel, qui n'est jamais proposée.
+    modèle actuel, qui n'est jamais proposée. Le protocole scellé, s'il est
+    présenté, s'applique à **tout** le lot : on ne change pas de méthode entre
+    deux candidats.
     """
     if not resultats:
         raise ValidationError("aucun résultat de candidat à décider")
-    return [decider(resultat, seuils) for resultat in resultats]
+    return [decider(resultat, seuils, protocole=protocole) for resultat in resultats]
 
 
 def candidats_proposes(decisions: Sequence[DecisionCandidat]) -> list[DecisionCandidat]:
