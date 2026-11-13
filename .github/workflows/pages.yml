@@ -33,7 +33,7 @@ concurrency:
 jobs:
   build:
     name: build
-    runs-on: [self-hosted, jauge-worker]
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
@@ -44,7 +44,7 @@ jobs:
         run: |
           set -euo pipefail
           export PATH="/home/baptiste/.local/bin:$PATH"
-          export UV_CACHE_DIR=/home/baptiste/.cache/uv
+          
           uv sync --frozen --all-groups
           uv run python scripts/export_portail_statique.py
       - name: Préparer Pages

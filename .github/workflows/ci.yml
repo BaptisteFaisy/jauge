@@ -24,20 +24,19 @@ concurrency:
 
 env:
   # uv est installé dans ~/.local/bin sur les runners self-hosted (r630).
-  PATH: /home/baptiste/.local/node/bin:/home/baptiste/.local/bin:/usr/local/bin:/usr/bin:/bin
-  UV_CACHE_DIR: /home/baptiste/.cache/uv
+  UV_CACHE_DIR: /home/runner/.cache/uv
   UV_NO_PROGRESS: "1"
   # aws-cdk-lib est un paquet jsii : il lance un processus Node (d'où node dans
   # le PATH) et extrait son runtime dans un répertoire temporaire. TMPDIR est
   # fixé hors de /tmp : un `package.json` tiers y déclare `"type": "module"`,
   # ce qui fait échouer le runtime jsii (« require is not defined in ES module
   # scope »). Ne pas supprimer ce fichier : il appartient à un autre projet.
-  TMPDIR: /home/baptiste/.cache/jauge-tmp
+  TMPDIR: /home/runner/.cache/jauge-tmp
 
 jobs:
   lint:
     name: lint
-    runs-on: [self-hosted, jauge-worker]
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
@@ -47,13 +46,13 @@ jobs:
       - name: Ruff (lint + format)
         run: |
           set -euo pipefail
-          command -v uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
+          command -v uv >/dev/null || python3 -m pip install --quiet --user --break-system-packages uv
           uv tool run --from 'ruff>=0.6' ruff check .
           uv tool run --from 'ruff>=0.6' ruff format --check .
 
   limits:
     name: limits
-    runs-on: [self-hosted, jauge-worker]
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
@@ -71,7 +70,7 @@ jobs:
   # `test-3` sont à ajouter aux checks requis une fois ce workflow sur main.
   test:
     name: test
-    runs-on: [self-hosted, jauge-worker]
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
@@ -81,13 +80,13 @@ jobs:
       - name: "Dépendances + tests (lot 1 : API, attribution)"
         run: |
           set -euo pipefail
-          command -v uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
+          command -v uv >/dev/null || python3 -m pip install --quiet --user --break-system-packages uv
           uv sync --frozen --all-groups
           uv run pytest -q -m 'not infra and not slow' tests/api tests/attribution
 
   test-2:
     name: test-2
-    runs-on: [self-hosted, jauge-worker]
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
@@ -97,13 +96,13 @@ jobs:
       - name: "Dépendances + tests (lot 2 : démo, recette)"
         run: |
           set -euo pipefail
-          command -v uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
+          command -v uv >/dev/null || python3 -m pip install --quiet --user --break-system-packages uv
           uv sync --frozen --all-groups
           uv run pytest -q -m 'not infra and not slow' tests/demo tests/recette
 
   test-3:
     name: test-3
-    runs-on: [self-hosted, jauge-worker]
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
@@ -113,7 +112,7 @@ jobs:
       - name: "Dépendances + tests (lot 3 : tout le reste)"
         run: |
           set -euo pipefail
-          command -v uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
+          command -v uv >/dev/null || python3 -m pip install --quiet --user --break-system-packages uv
           uv sync --frozen --all-groups
           # Tout ce qui n'est pas dans les lots 1 et 2 : les nouveaux dossiers
           # de tests sont couverts ici sans avoir à modifier ce workflow.
@@ -123,7 +122,7 @@ jobs:
 
   iac:
     name: iac
-    runs-on: [self-hosted, jauge-worker]
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
@@ -135,7 +134,7 @@ jobs:
           set -euo pipefail
           mkdir -p "$TMPDIR"
           command -v node >/dev/null || { echo "::error::Node.js absent : aws-cdk-lib (jsii) en a besoin"; exit 1; }
-          command -v uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
+          command -v uv >/dev/null || python3 -m pip install --quiet --user --break-system-packages uv
           uv sync --frozen --all-groups
           shopt -s nullglob globstar
           # *.asl.json = définitions Step Functions, pas des gabarits CloudFormation
