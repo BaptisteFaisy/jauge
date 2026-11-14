@@ -131,11 +131,17 @@ export function creerApi(session) {
     /** `GET /v1/applications/{id}/levers` — leviers détectés. */
     leviers: (id) => appeler("GET", `/v1/applications/${segment(id)}/levers`),
 
+    /** `GET /v1/applications/{id}/ombre` — état de l'observation fantôme/canari. */
+    ombre: (id) => appeler("GET", `/v1/applications/${segment(id)}/ombre`),
+
     /** `GET /v1/campaigns/{id}` — état d'une campagne de rejeu. */
     campagne: (id) => appeler("GET", `/v1/campaigns/${segment(id)}`),
 
     /** `GET /v1/campaigns/{id}/results` — résultats agrégés par candidat. */
     resultats: (id) => appeler("GET", `/v1/campaigns/${segment(id)}/results`),
+
+    /** `GET /v1/campagnes/{id}/protocole` — protocole pré-enregistré (empreintes). */
+    protocoleCampagne: (id) => appeler("GET", `/v1/campagnes/${segment(id)}/protocole`),
 
     /** `GET /v1/applications/{id}/recommendations` — recommandations (Annexe B). */
     recommandations: (id) =>

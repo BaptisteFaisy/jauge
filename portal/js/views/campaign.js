@@ -37,6 +37,38 @@ function carteParametres(campagne) {
   );
 }
 
+/** Protocole pré-enregistré : empreintes, version, marge et seuils (§12). */
+function carteProtocole(protocole) {
+  const empreinte = (protocole && protocole.protocole_empreinte) || null;
+  if (!empreinte) {
+    return carte(
+      "Protocole pré-enregistré",
+      vide("Aucun protocole pré-enregistré pour cette campagne."),
+    );
+  }
+  const seuils = (protocole && protocole.seuils) || {};
+  const lignes = [
+    ["Empreinte du protocole", texteOuTiret(protocole.protocole_empreinte)],
+    ["Empreinte de l'échantillon", texteOuTiret(protocole.echantillon_empreinte)],
+  ];
+  if (protocole.protocole_version) {
+    lignes.push(["Version", texteOuTiret(protocole.protocole_version)]);
+  }
+  if (protocole.marge_non_inferiorite !== null && protocole.marge_non_inferiorite !== undefined) {
+    lignes.push(["Marge de non-infériorité", ratio(protocole.marge_non_inferiorite)]);
+  }
+  if (Object.prototype.hasOwnProperty.call(seuils, "seuil_equivalence")) {
+    lignes.push(["Seuil d'équivalence", ratio(seuils.seuil_equivalence)]);
+  }
+  if (Object.prototype.hasOwnProperty.call(seuils, "borne_basse_intervalle")) {
+    lignes.push(["Borne basse de l'intervalle", ratio(seuils.borne_basse_intervalle)]);
+  }
+  return carte(
+    "Protocole pré-enregistré",
+    tableau({ entetes: ["Champ", "Valeur"], lignes }),
+  );
+}
+
 /** Une ligne par candidat, avec l'intervalle de confiance de Wilson. */
 function ligneCandidat(resultat) {
   const intervalle = `${ratio(resultat.intervalle_confiance_bas)} – ${ratio(resultat.intervalle_confiance_haut)}`;
@@ -107,6 +139,7 @@ export async function rendre(ctx) {
   const campagneId = ctx.parametres.campagneId;
   const campagne = await ctx.api.campagne(campagneId);
   const resultats = await ctx.api.resultats(campagneId).catch(() => []);
+  const protocole = await ctx.api.protocoleCampagne(campagneId).catch(() => null);
   const entete = html`${fil([
     { libelle: "Client dashboard", href: "#/client" },
     { libelle: `Application ${libelle(campagne.application_id)}`, href: `#/app/${campagne.application_id}` },
@@ -126,5 +159,5 @@ export async function rendre(ctx) {
     >
   </p>`;
   return html`${entete}${carteCampagne(campagne)}${carteParametres(campagne)}
-  ${tableauResultats(resultats)}${tableauFamilles(resultats)}${carte("Next step", lienRelecture)}`;
+  ${carteProtocole(protocole)}${tableauResultats(resultats)}${tableauFamilles(resultats)}${carte("Next step", lienRelecture)}`;
 }

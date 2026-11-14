@@ -139,14 +139,52 @@ function carteCoutParRequete(recommandations) {
   );
 }
 
+/** État de l'observation fantôme (shadow) et du canari, tel que renvoyé par l'API. */
+function carteOmbre(ombre) {
+  if (!ombre || !ombre.phase || ombre.phase === "aucune") {
+    return carte(
+      "Ombre et canari",
+      vide("Aucune observation fantôme lancée pour cette application."),
+    );
+  }
+  const genrePhase = ombre.phase === "canari" ? "ok" : "attente";
+  const blocs = [etiquette(libelle(ombre.phase), genrePhase)];
+  const bilan = ombre.bilan;
+  if (bilan) {
+    blocs.push(
+      tableau({
+        entetes: ["Métrique", "Valeur"],
+        lignes: [
+          ["Modèle candidat", texteOuTiret(bilan.modele_candidat)],
+          ["Volume observé", entier(bilan.volume_observe)],
+          ["Taux d'équivalence", ratio(bilan.taux_equivalence)],
+          ["Divergence", bilan.divergence ? "oui" : "non"],
+          ["Coût du shadow", usd(bilan.cout_shadow_usd)],
+        ],
+      }),
+    );
+  }
+  if (ombre.canari) {
+    const canari = ombre.canari;
+    blocs.push(
+      html`<p>
+        Canari ouvert sur ${entier(canari.palier_pourcentage)} % du trafic (règle
+        ${texteOuTiret(canari.regle_id)}).
+      </p>`,
+    );
+  }
+  return carte("Ombre et canari", html`${blocs}`);
+}
+
 /** Vue complète d'une application. */
 export async function rendre(ctx) {
   const appId = ctx.parametres.appId;
   const application = await ctx.api.application(appId);
-  const [couts, leviers, recommandations] = await Promise.all([
+  const [couts, leviers, recommandations, ombre] = await Promise.all([
     ctx.api.couts(appId).catch(() => null),
     ctx.api.leviers(appId).catch(() => []),
     ctx.api.recommandations(appId).catch(() => []),
+    ctx.api.ombre(appId).catch(() => null),
   ]);
   const entete = html`${fil([
     { libelle: "Client dashboard", href: "#/client" },
@@ -167,6 +205,6 @@ export async function rendre(ctx) {
     </p>`,
   );
   return html`${entete}${cartesPeriode(couts)}${carteCoutParRequete(recommandations)}
-  ${seuils}${tableauModeles(couts)}${tableauLeviers(leviers)}
+  ${seuils}${carteOmbre(ombre)}${tableauModeles(couts)}${tableauLeviers(leviers)}
   ${tableauRecommandations(appId, recommandations)}${tableauHistorique(couts)}`;
 }
