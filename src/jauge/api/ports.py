@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field
 
 from jauge.common.errors import PlafondDepasseError, ServiceIndisponibleError, ValidationError
 from jauge.common.ids import aleatoire
+from jauge.common.temps import aujourdhui as date_du_jour
 from jauge.models.campaign import Campagne, StatutCampagne
 from jauge.models.recommendation import BasculeProgressive, Recommandation
 from jauge.models.tenant import Application, Tenant
@@ -222,7 +223,7 @@ class PortChatDemo:
 
     def repondre(self, tenant_id: str, question: str) -> dict[str, object]:
         """Répond avec la dépense récente du client et le nombre de leviers ouverts."""
-        fin = date.today()
+        fin = date_du_jour()
         debut = fin - timedelta(days=30)
         synthese = self._store.synthese_cout(tenant_id, debut, fin)
         leviers = self._store.lister_leviers(tenant_id)

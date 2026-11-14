@@ -47,6 +47,7 @@ from pydantic import BaseModel, ConfigDict
 
 from jauge.common.errors import ValidationError
 from jauge.common.ids import deterministic, horodatage_utc
+from jauge.common.temps import aujourdhui as date_du_jour
 from jauge.engine.calculator import TableTarifs
 from jauge.models.campaign import Campagne
 from jauge.models.pricing import ServiceTier, TarifModele
@@ -269,7 +270,7 @@ class EntreesPreuve:
     @property
     def date_reference(self) -> date:
         """Date d'effet retenue pour les tarifs (Annexe D)."""
-        return self.a_la_date or date.today()
+        return self.a_la_date or date_du_jour()
 
     @property
     def horodatage(self) -> str:

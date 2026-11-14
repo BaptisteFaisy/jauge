@@ -51,6 +51,40 @@ def test_instantane_versionne_est_a_jour(tmp_path: Path) -> None:
     assert genere["meta"]["clients"] == versionne["meta"]["clients"]
 
 
+def test_instantane_ne_derive_pas_du_calendrier(tmp_path: Path, monkeypatch) -> None:
+    """Le garde-fou de la dérive : l'export ignore la date système.
+
+    Le 14/11/2026, `test_instantane_versionne_est_a_jour` a rougi sans aucun
+    changement de code : les points d'API `/costs` calaient leur période sur
+    `date.today()` alors que la fenêtre de démo était figée — l'instantané
+    versionné se périssait donc d'un jour par jour. Lancé avec une horloge
+    décalée de quinze ans, l'export doit rendre le document versionné.
+    """
+
+    class CalendrierDecale:
+        """Substitut d'horloge : `date.today()` rend un jour très éloigné."""
+
+        @staticmethod
+        def today():
+            from datetime import date
+
+            return date(2041, 5, 17)
+
+    monkeypatch.setattr("jauge.common.temps.date", CalendrierDecale)
+    from scripts.export_portail_statique import exporter
+
+    genere = exporter(tmp_path / "demo.json")
+    versionne = json.loads(INSTANTANE.read_text(encoding="utf-8"))
+    genere["meta"].pop("genere_le", None)
+    versionne["meta"].pop("genere_le", None)
+
+    assert genere["reponses"] == versionne["reponses"], (
+        "l'instantané dépend de la date système : le figement de l'horloge "
+        "métier est partiel (voir jauge.common.temps)"
+    )
+    assert genere["meta"]["fenetre_demo"] == versionne["meta"]["fenetre_demo"]
+
+
 def test_instantane_contient_les_deux_clients_de_demo() -> None:
     """Les deux clients de la démonstration (§18.1) sont dans l'instantané."""
     document = json.loads(INSTANTANE.read_text(encoding="utf-8"))

@@ -18,9 +18,8 @@ Exigences visées : EF-EVA-02, EF-LEV-01..06, §13.1, ENF-SEC-02.
 
 from __future__ import annotations
 
-from datetime import date
-
 from jauge.agents.ports import PortProfilTache, ProfilTache
+from jauge.common.temps import aujourdhui as date_du_jour
 from jauge.engine.calculator import TableTarifs
 from jauge.evaluation.checks import controles_pour
 from jauge.integration.plan_de_donnees import PlanDeDonnees
@@ -95,7 +94,7 @@ class AdaptateurProfilTache(PortProfilTache):
             application_id,
             profil_requetes,
             ParametresLevier(
-                date_reference=date.today(),
+                date_reference=date_du_jour(),
                 region=charger_tenant(self._store, tenant_id).region_principale,
             ),
             self._tarifs,

@@ -6,7 +6,7 @@
       "t-demo-b"
     ],
     "fenetre_demo": "2026-11-11",
-    "genere_le": "2026-11-13T13:24:11+00:00",
+    "genere_le": "2026-11-14T13:30:15+00:00",
     "points_api": 34,
     "source": "scripts/export_portail_statique.py"
   },
@@ -343,8 +343,8 @@
       "par_modele": {
         "anthropic.claude-opus-4-20250514-v1:0": 345.0221
       },
-      "periode_debut": "2026-10-14",
-      "periode_fin": "2026-11-13",
+      "periode_debut": "2026-10-12",
+      "periode_fin": "2026-11-11",
       "requetes_total": 1439,
       "tenant_id": "t-demo-a"
     },
@@ -763,8 +763,8 @@
       "par_modele": {
         "anthropic.claude-3-5-sonnet-20241022-v2:0": 8.5192
       },
-      "periode_debut": "2026-10-14",
-      "periode_fin": "2026-11-13",
+      "periode_debut": "2026-10-12",
+      "periode_fin": "2026-11-11",
       "requetes_total": 1396,
       "tenant_id": "t-demo-b"
     },
@@ -1102,8 +1102,8 @@
       "par_modele": {
         "anthropic.claude-opus-4-20250514-v1:0": 292.6679
       },
-      "periode_debut": "2026-10-14",
-      "periode_fin": "2026-11-13",
+      "periode_debut": "2026-10-12",
+      "periode_fin": "2026-11-11",
       "requetes_total": 3477,
       "tenant_id": "t-demo-a"
     },
@@ -1536,8 +1536,8 @@
       "par_modele": {
         "anthropic.claude-opus-4-20250514-v1:0": 31.3401
       },
-      "periode_debut": "2026-10-14",
-      "periode_fin": "2026-11-13",
+      "periode_debut": "2026-10-12",
+      "periode_fin": "2026-11-11",
       "requetes_total": 9094,
       "tenant_id": "t-demo-a"
     },

@@ -15,10 +15,9 @@ Exigences visées : EF-ADM-01, EF-REJ-01, ENF-SEC-02.
 
 from __future__ import annotations
 
-from datetime import date
-
 from jauge.agents.ports import ModeleCandidat, PortModelesCandidats
 from jauge.common.errors import TarifInconnuError
+from jauge.common.temps import aujourdhui as date_du_jour
 from jauge.engine.calculator import TableTarifs
 from jauge.integration.socle import (
     charger_application,
@@ -62,7 +61,7 @@ class AdaptateurCandidats(PortModelesCandidats):
         if self._tarifs is None:
             return False
         try:
-            self._tarifs.trouver(modele_id, region, ServiceTier.STANDARD, date.today())
+            self._tarifs.trouver(modele_id, region, ServiceTier.STANDARD, date_du_jour())
         except TarifInconnuError:
             return False
         return True

@@ -14,6 +14,7 @@ from jauge.common.errors import (
     ValidationError,
 )
 from jauge.common.ids import aleatoire, deterministic, graine_de, horodatage_utc, jour_compact
+from jauge.common.temps import aujourdhui, figer_date
 
 __all__ = [
     "ApprobationRequiseError",
@@ -26,7 +27,9 @@ __all__ = [
     "TarifInconnuError",
     "ValidationError",
     "aleatoire",
+    "aujourdhui",
     "deterministic",
+    "figer_date",
     "graine_de",
     "horodatage_utc",
     "jour_compact",
