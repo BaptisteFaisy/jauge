@@ -486,8 +486,10 @@ Le taux du candidat est toujours présenté à côté de celui du modèle actuel
 | `GET /v1/applications/{id}/costs` | Coûts par jour, modèle, type de requête |
 | `GET /v1/tenants/{id}/reconciliation` | Rapprochement avec la facture |
 | `GET /v1/applications/{id}/levers` | Leviers détectés |
+| `GET /v1/applications/{id}/ombre` | Observation fantôme (shadow) puis canari |
 | `POST /v1/applications/{id}/campaigns`, `GET /v1/campaigns/{id}` | Campagnes de rejeu |
 | `GET /v1/campaigns/{id}/results` | Résultats par candidat |
+| `GET /v1/campagnes/{id}/protocole` | Protocole pré-enregistré (empreintes) |
 | `GET /v1/applications/{id}/recommendations`, `POST /v1/recommendations/{id}/decision` | Recommandations et décisions |
 | `POST /v1/recommendations/{id}/rollout`, `POST /v1/rollouts/{id}/rollback` | Bascule et retour arrière |
 | `GET /v1/tenants/{id}/savings` | Économies attendues et constatées |

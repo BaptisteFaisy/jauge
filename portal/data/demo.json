@@ -6,8 +6,8 @@
       "t-demo-b"
     ],
     "fenetre_demo": "2026-11-11",
-    "genere_le": "2026-11-14T13:30:15+00:00",
-    "points_api": 34,
+    "genere_le": "2026-11-14T15:03:02+00:00",
+    "points_api": 41,
     "source": "scripts/export_portail_statique.py"
   },
   "reponses": {
@@ -387,6 +387,14 @@
         "type_levier": "sorties_trop_longues"
       }
     ],
+    "GET /v1/applications/doc-summarizer/ombre": {
+      "application_id": "doc-summarizer",
+      "bilan": null,
+      "canari": null,
+      "etapes": {},
+      "phase": "aucune",
+      "tenant_id": "t-demo-a"
+    },
     "GET /v1/applications/doc-summarizer/recommendations": [
       {
         "applicationId": "doc-summarizer",
@@ -769,6 +777,14 @@
       "tenant_id": "t-demo-b"
     },
     "GET /v1/applications/kb-search/levers": [],
+    "GET /v1/applications/kb-search/ombre": {
+      "application_id": "kb-search",
+      "bilan": null,
+      "canari": null,
+      "etapes": {},
+      "phase": "aucune",
+      "tenant_id": "t-demo-b"
+    },
     "GET /v1/applications/kb-search/recommendations": [],
     "GET /v1/applications/support-assistant": {
       "description_tache": "Réponse rédigée au client, multi-sujets",
@@ -1160,6 +1176,14 @@
         "type_levier": "erreurs_et_relances"
       }
     ],
+    "GET /v1/applications/support-assistant/ombre": {
+      "application_id": "support-assistant",
+      "bilan": null,
+      "canari": null,
+      "etapes": {},
+      "phase": "aucune",
+      "tenant_id": "t-demo-a"
+    },
     "GET /v1/applications/support-assistant/recommendations": [
       {
         "applicationId": "support-assistant",
@@ -1598,6 +1622,14 @@
         "type_levier": "erreurs_et_relances"
       }
     ],
+    "GET /v1/applications/ticket-classifier/ombre": {
+      "application_id": "ticket-classifier",
+      "bilan": null,
+      "canari": null,
+      "etapes": {},
+      "phase": "aucune",
+      "tenant_id": "t-demo-a"
+    },
     "GET /v1/applications/ticket-classifier/recommendations": [
       {
         "applicationId": "ticket-classifier",
@@ -1642,6 +1674,18 @@
         "tenantId": "t-demo-a"
       }
     ],
+    "GET /v1/campagnes/c-2e7454af6805/protocole": {
+      "echantillon_empreinte": null,
+      "protocole_empreinte": null
+    },
+    "GET /v1/campagnes/c-63fc9e38631d/protocole": {
+      "echantillon_empreinte": null,
+      "protocole_empreinte": null
+    },
+    "GET /v1/campagnes/c-a753aa159c45/protocole": {
+      "echantillon_empreinte": null,
+      "protocole_empreinte": null
+    },
     "GET /v1/campaigns/c-2e7454af6805": {
       "application_id": "support-assistant",
       "cout_estime_usd": 47.75842,

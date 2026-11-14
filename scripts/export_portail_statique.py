@@ -54,8 +54,13 @@ CHEMINS_PAR_APPLICATION = (
     "/v1/applications/{app}/costs",
     "/v1/applications/{app}/levers",
     "/v1/applications/{app}/recommendations",
+    "/v1/applications/{app}/ombre",
 )
-CHEMINS_PAR_CAMPAGNE = ("/v1/campaigns/{campagne}", "/v1/campaigns/{campagne}/results")
+CHEMINS_PAR_CAMPAGNE = (
+    "/v1/campaigns/{campagne}",
+    "/v1/campaigns/{campagne}/results",
+    "/v1/campagnes/{campagne}/protocole",
+)
 CHEMINS_PAR_BASCULE = ("/v1/rollouts/{bascule}",)
 
 
