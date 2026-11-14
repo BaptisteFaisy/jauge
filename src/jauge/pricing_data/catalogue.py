@@ -36,6 +36,7 @@ from typing import Protocol
 from pydantic import BaseModel, Field
 
 from jauge.common.ids import deterministic
+from jauge.common.temps import aujourdhui as date_du_jour
 from jauge.engine.calculator import TableTarifs
 from jauge.models.pricing import ServiceTier, TarifModele
 from jauge.pricing_data.loader import charger_tarifs, lignes
@@ -138,7 +139,7 @@ class SourceTarifsAws:
 
     def _convertir(self, produits: list[dict[str, object]]) -> list[TarifModele]:
         """Convertit les produits du Price List en lignes de tarif datées."""
-        aujourdhui = date.today()
+        aujourdhui = date_du_jour()
         lignes: dict[tuple[str, ServiceTier], list[float]] = {}
         for produit in produits:
             attributs = produit.get("product", {}).get("attributes", {})  # type: ignore[union-attr]

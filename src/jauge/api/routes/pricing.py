@@ -25,6 +25,7 @@ from pydantic import BaseModel, Field
 from jauge.api.deps import DepAudit, DepStore, DepUtilisateur
 from jauge.api.tenancy import verifier_acces_tenant
 from jauge.common.errors import IntrouvableError, ValidationError
+from jauge.common.temps import aujourdhui as date_du_jour
 from jauge.models.pricing import ServiceTier
 from jauge.pricing_data.catalogue import (
     CatalogueTarifs,
@@ -93,7 +94,7 @@ def catalogue_tarifs(
     empreinte que scelle un proof pack, ce qui permet de vérifier qu'une preuve
     a bien été calculée sur les prix annoncés.
     """
-    jour = a_la_date or date.today()
+    jour = a_la_date or date_du_jour()
     prix = catalogue.tarifs_courants(jour, region=region, niveau=niveau)
     return CataloguePublie(
         a_la_date=jour,
@@ -122,7 +123,7 @@ def variations_prix(
     verifier_acces_tenant(utilisateur, tenant_id, audit, "lecture_variations_prix", "tenant")
     if store.obtenir_tenant(tenant_id) is None:
         raise IntrouvableError("Client introuvable", tenant_id=tenant_id)
-    fin = jusqu or date.today()
+    fin = jusqu or date_du_jour()
     if depuis is not None and depuis > fin:
         raise ValidationError(
             "`depuis` must not be after `jusqu`", depuis=str(depuis), jusqu=str(fin)

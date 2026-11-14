@@ -14,10 +14,9 @@ Exigences visées : ENF-COUT-01, §17.1, EF-ADM-01, ENF-IA-01.
 
 from __future__ import annotations
 
-from datetime import date
-
 from jauge.agents.ports import EstimationCampagne, PortEstimationCout
 from jauge.common.errors import ValidationError
+from jauge.common.temps import aujourdhui as date_du_jour
 from jauge.engine.calculator import TableTarifs, calculer_cout_requete
 from jauge.evaluation.judge import RegistreCapacite, choisir_juge
 from jauge.integration.profil import AdaptateurProfilTache
@@ -69,7 +68,7 @@ class AdaptateurEstimation(PortEstimationCout):
         devis = estimer_cout_campagne(
             tarifs=self._tarifs,
             region=tenant.region_principale,
-            a_la_date=date.today(),
+            a_la_date=date_du_jour(),
             modele_actuel=application.modele_actuel,
             candidats=modeles,
             taille_echantillon=taille_echantillon,
@@ -113,7 +112,7 @@ class AdaptateurEstimation(PortEstimationCout):
         )
         detail: dict[str, float] = {}
         for modele_id in [modele_actuel, *candidats]:
-            tarif = self._tarifs.trouver(modele_id, region, NIVEAU_REJEU, date.today())
+            tarif = self._tarifs.trouver(modele_id, region, NIVEAU_REJEU, date_du_jour())
             cout = calculer_cout_requete(tarif, metriques).cout_total
             detail[modele_id] = round(cout * taille, 6)
         return detail

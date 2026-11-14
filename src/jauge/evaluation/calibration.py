@@ -38,10 +38,10 @@ from __future__ import annotations
 import random
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from datetime import date
 
 from jauge.common.errors import ValidationError
 from jauge.common.ids import deterministic, graine_de, jour_compact
+from jauge.common.temps import aujourdhui as date_du_jour
 from jauge.engine.stats import IntervalleTaux, intervalle_wilson
 from jauge.evaluation.aptitude_juge import (
     ObservationCalibration,
@@ -384,7 +384,7 @@ def calibrer(
     return RapportCalibration(
         juge_id=juge.modele_id,
         version_prompt=version_prompt or version_prompt_courante(),
-        jour=jour or jour_compact(date.today()),
+        jour=jour or jour_compact(date_du_jour()),
         graine=graine,
         mesures=mesures,
         aptitude=juger_aptitude(mesures, seuils),

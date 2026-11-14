@@ -14,6 +14,7 @@ from jauge.api.deps import DepAudit, DepPortRapports, DepStore, DepUtilisateur
 from jauge.api.killswitch import DepKillSwitch, garde_traitement
 from jauge.api.tenancy import exiger_role, verifier_acces_tenant
 from jauge.common.errors import IntrouvableError, ValidationError
+from jauge.common.temps import aujourdhui as date_du_jour
 
 router = APIRouter(tags=["rapports"])
 
@@ -51,7 +52,7 @@ def generer_rapport(
     garde_traitement(kill_switch, audit, utilisateur)(tenant_id, "generation_rapport")
     if store.obtenir_tenant(tenant_id) is None:
         raise IntrouvableError("Client introuvable", tenant_id=tenant_id)
-    fin = demande.periode_fin or date.today()
+    fin = demande.periode_fin or date_du_jour()
     debut = demande.periode_debut or (fin - timedelta(days=30))
     if debut > fin:
         raise ValidationError(

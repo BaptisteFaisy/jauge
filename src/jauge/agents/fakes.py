@@ -28,6 +28,7 @@ from jauge.agents.ports import (
 )
 from jauge.common.errors import CloisonnementError, IntrouvableError, ValidationError
 from jauge.common.ids import aleatoire
+from jauge.common.temps import aujourdhui as date_du_jour
 from jauge.engine.calculator import TableTarifs, calculer_cout_requete
 from jauge.models.campaign import ResultatCandidat, StatutCampagne
 from jauge.models.cost import AgregatQuotidien, RapprochementJour, SyntheseCout
@@ -217,7 +218,7 @@ class ServicesFictifs:
         metriques = MetriquesRequete(
             jetons_entree=profil.jetons_entree_moyens, jetons_sortie=profil.jetons_sortie_moyens
         )
-        aujourdhui = date.today()
+        aujourdhui = date_du_jour()
         par_modele: dict[str, float] = {}
         for modele_id in [profil.modele_actuel, *modeles]:
             tarif = table.trouver(modele_id, tenant.region_principale, NIVEAU_REJEU, aujourdhui)
@@ -387,5 +388,5 @@ class ServicesFictifs:
 
     def periode(self, jours: int) -> tuple[date, date]:
         """Fenêtre glissante de `jours` jours finissant aujourd'hui."""
-        fin = date.today()
+        fin = date_du_jour()
         return fin - timedelta(days=jours), fin

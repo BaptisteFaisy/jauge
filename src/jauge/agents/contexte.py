@@ -18,6 +18,7 @@ from jauge.agents.guardrails import verifier_aucun_texte_de_requete
 from jauge.agents.ports import Services
 from jauge.agents.session import SessionCampagne
 from jauge.agents.traces import Traceur
+from jauge.common.temps import aujourdhui as date_du_jour
 
 
 @dataclass
@@ -32,7 +33,7 @@ class ContexteOutils:
 
     def periode(self, jours: int) -> tuple[date, date]:
         """Fenêtre glissante de `jours` jours finissant aujourd'hui."""
-        fin = date.today()
+        fin = date_du_jour()
         return fin - timedelta(days=jours), fin
 
 

@@ -18,6 +18,8 @@ from __future__ import annotations
 
 import argparse
 import json
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
@@ -112,19 +114,31 @@ def _collecter(client: Any, store: Any) -> dict[str, Any]:
         return instantane
 
 
+@contextmanager
+def _reproducible() -> Iterator[None]:
+    """Identifiants déterministes et date figée, rétablis en sortie.
+
+    Les deux leviers de non-reproductibilité d'un instantané : des identifiants
+    tirés au hasard et une période calée sur le jour réel. On les neutralise ici
+    et seulement ici — le reste du code ignore qu'un export est en cours.
+    """
+    from jauge.common.ids import activer_ids_deterministes
+    from jauge.common.temps import figer_date
+
+    activer_ids_deterministes(GRAINE_IDENTIFIANTS)
+    figer_date(DATE_FIN_INSTANTANE)
+    try:
+        yield
+    finally:
+        figer_date(None)
+        activer_ids_deterministes(None)
+
+
 def exporter(sortie: Path) -> dict[str, Any]:
     """Construit l'instantané et l'écrit ; rend le document écrit."""
-    from jauge.common.ids import activer_ids_deterministes
-
-    # Identifiants reproductibles : sans cela, chaque export invente de nouveaux
-    # identifiants de campagne/recommandation/bascule et l'instantané versionné
-    # diffère à chaque régénération (donc impossible à contrôler en CI).
-    activer_ids_deterministes(GRAINE_IDENTIFIANTS)
-    try:
+    with _reproducible():
         application, store = _construire_client()
         reponses = _collecter(application, store)
-    finally:
-        activer_ids_deterministes(None)
     document = {
         "meta": {
             "genere_le": datetime.now(UTC).isoformat(timespec="seconds"),

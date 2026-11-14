@@ -12,6 +12,7 @@ from jauge.api.deps import DepAudit, DepStore, DepUtilisateur
 from jauge.api.routes.applications import application_controlee
 from jauge.api.tenancy import verifier_acces_tenant
 from jauge.common.errors import IntrouvableError
+from jauge.common.temps import aujourdhui as date_du_jour
 from jauge.models.cost import AgregatQuotidien, RapprochementJour
 
 router = APIRouter(tags=["coûts"])
@@ -45,7 +46,7 @@ class CoutApplication(BaseModel):
 
 def _periode(debut: date | None, fin: date | None) -> tuple[date, date]:
     """Période par défaut : les trente derniers jours."""
-    fin_reelle = fin or date.today()
+    fin_reelle = fin or date_du_jour()
     debut_reel = debut or (fin_reelle - timedelta(days=30))
     return debut_reel, fin_reelle
 

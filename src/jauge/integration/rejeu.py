@@ -18,11 +18,10 @@ ENF-IA-01, ENF-SEC-02.
 
 from __future__ import annotations
 
-from datetime import date
-
 from jauge.agents.ports import PortRejeu
 from jauge.common.errors import PlafondDepasseError
 from jauge.common.ids import aleatoire
+from jauge.common.temps import aujourdhui as date_du_jour
 from jauge.engine.calculator import TableTarifs
 from jauge.evaluation.judge import JugeClient
 from jauge.integration.estimation import AdaptateurEstimation
@@ -219,7 +218,7 @@ class AdaptateurRejeu(PortRejeu):
         client = self._modele_client or creer_client_modele(
             mode_demo=self._mode_demo, region=region
         )
-        executeur = ExecuteurRejeu(client, self._tarifs, region=region, a_la_date=date.today())
+        executeur = ExecuteurRejeu(client, self._tarifs, region=region, a_la_date=date_du_jour())
         return executeur.rejouer(
             campagne_id=campagne_id,
             application_id=application.id,

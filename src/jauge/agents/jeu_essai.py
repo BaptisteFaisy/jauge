@@ -17,6 +17,7 @@ from datetime import date, timedelta
 
 from jauge.agents.fakes import ServicesFictifs
 from jauge.agents.ports import ClusterEchec, EntreesRecommandation, ModeleCandidat
+from jauge.common.temps import aujourdhui as date_du_jour
 from jauge.engine.stats import economie_mensuelle
 from jauge.models.campaign import ResultatCandidat
 from jauge.models.cost import AgregatQuotidien, RapprochementJour
@@ -69,7 +70,7 @@ def tarifs_demo() -> list[TarifModele]:
 
 def agregats_demo(tenant: Tenant, app: Application) -> list[AgregatQuotidien]:
     """Dix jours d'agrégats dont la dépense augmente sur la seconde moitié."""
-    aujourdhui = date.today()
+    aujourdhui = date_du_jour()
     return [
         AgregatQuotidien(
             tenant_id=tenant.id,
@@ -117,7 +118,7 @@ def leviers_demo(tenant: Tenant, app: Application) -> list[Levier]:
 
 def rapprochements_demo(tenant: Tenant) -> list[RapprochementJour]:
     """Trois jours de rapprochement, sous la cible de 3 % d'écart (§4)."""
-    aujourdhui = date.today()
+    aujourdhui = date_du_jour()
     return [
         RapprochementJour(
             tenant_id=tenant.id,
